@@ -32,5 +32,5 @@ yarn add -D publiopti
 publiopti -h
 ```
 
-[ci-link]: https://github.com/EmileRolley/publiopti/actions/workflows/run-builds.yml/badge.svg
+[ci-link]: https://github.com/EmileRolley/publiopti/actions/workflows/build.yml/badge.svg
 [npm-link]: https://img.shields.io/npm/v/publiopti
