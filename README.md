@@ -1,2 +1,1 @@
 # publiopti
-Publicodes model optimizer
