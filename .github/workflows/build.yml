@@ -6,8 +6,12 @@ jobs:
   main:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+      - run: yarn install --immutable
         
       - name: Build package
         run: yarn build
