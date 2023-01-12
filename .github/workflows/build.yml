@@ -1,0 +1,16 @@
+name: Build and test
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@2.3.4
+        
+      - name: Build package
+        run: yarn build
+        
+      - name: Test the package
+        run: yarn test
