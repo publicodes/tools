@@ -1,4 +1,6 @@
-const yargs = require('yargs')
-const { hideBin } = require('yargs/helpers')
+#!/usr/bin/env node
 
-yargs(hideBin(process.argv)).commandDir('commands').alias({ h: 'help' }).argv
+const yargs = require("yargs");
+const { hideBin } = require("yargs/helpers");
+
+yargs(hideBin(process.argv)).commandDir("commands").alias({ h: "help" }).argv;

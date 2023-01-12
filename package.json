@@ -3,9 +3,7 @@
   "version": "0.1.1",
   "description": "An optimizer for Publicodes models",
   "main": "src/main.ts",
-  "bin": {
-    "publiopti": "./bin/publiopti.js"
-  },
+  "bin": "src/main.ts",
   "repository": "git@github.com:EmileRolley/publiopti.git",
   "scripts": {
     "build": "tsc -p .",
