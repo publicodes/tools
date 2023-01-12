@@ -4,7 +4,7 @@
   "description": "An optimizer for Publicodes models",
   "main": "src/main.ts",
   "bin": {
-    "publicomp": "./bin/publicomp.js"
+    "publiopti": "./bin/publiopti.js"
   },
   "repository": "git@github.com:EmileRolley/publiopti.git",
   "scripts": {
