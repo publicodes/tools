@@ -1,6 +1,6 @@
 {
   "name": "publiopti",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An optimizer for Publicodes models",
   "main": "src/main.ts",
   "bin": "src/main.ts",
