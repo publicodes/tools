@@ -1,9 +1,9 @@
 {
   "name": "publiopti",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "An optimizer for Publicodes models",
-  "main": "src/main.ts",
-  "bin": "src/main.ts",
+  "main": "bin/publiopti.js",
+  "bin": "bin/publiotpi.js",
   "repository": "git@github.com:EmileRolley/publiopti.git",
   "scripts": {
     "build": "tsc -p .",
