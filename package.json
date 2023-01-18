@@ -1,8 +1,8 @@
 {
   "name": "publiopti",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "An optimizer lib for Publicodes models",
-  "type": "commonjs",
+  "type": "es5",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "module": "build/index.js",
