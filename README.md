@@ -12,7 +12,7 @@
 
 ![CI][ci-link] ![NPM][npm-link]
 
-`publiopti` is a CLI tool to compress models based on [Publicodes](https://publi.codes).
+`publiopti` is a set of optimiation passes for models based on [Publicodes](https://publi.codes).
 
 <i>The project is currenlty in under experimentation by the [datagir](https://github.com/datagir) team, see the [related issue](https://github.com/orgs/datagir/projects/7?pane=issue&itemId=14616629).</i>
 
@@ -28,14 +28,9 @@ yarn add -D publiopti
 
 ## Usage
 
-Via the CLI:
 ```
-publiopti -h
-```
-
-Or directly in JS/TS:
 ```typescript
-import { constantFoldingFromJSONFile } from 'publiopti'
+import { constantFolding } from 'publiopti'
 ```
 
 [ci-link]: https://github.com/EmileRolley/publiopti/actions/workflows/build.yml/badge.svg
