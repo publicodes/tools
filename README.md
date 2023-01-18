@@ -28,8 +28,14 @@ yarn add -D publiopti
 
 ## Usage
 
+Via the CLI:
 ```
 publiopti -h
+```
+
+Or directly in JS/TS:
+```typescript
+import { constantFoldingFromJSONFile } from 'publiopti'
 ```
 
 [ci-link]: https://github.com/EmileRolley/publiopti/actions/workflows/build.yml/badge.svg

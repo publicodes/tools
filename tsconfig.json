@@ -19,6 +19,6 @@
 		"transpileOnly": true,
 		"files": true
 	},
-	"include": ["src/**/*.ts"],
+	"include": ["src/**/*.ts", "./build/"],
 	"exclude": ["./node_modules/", "./build/", "./jest.config.js", "./test/"]
 }

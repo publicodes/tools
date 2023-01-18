@@ -2,8 +2,10 @@
   "name": "publiopti",
   "version": "0.1.3",
   "description": "An optimizer for Publicodes models",
-  "main": "bin/publiopti.js",
-  "bin": "bin/publiotpi.js",
+  "main": "build/index.js",
+  "bin": {
+    "publiopti": "./bin/publiopti.js"
+  },
   "repository": "git@github.com:EmileRolley/publiopti.git",
   "scripts": {
     "build": "tsc -p .",

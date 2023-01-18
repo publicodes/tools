@@ -5,12 +5,8 @@
     on the ruleset before writing it to the JSON file.
 */
 
-import { readFileSync, writeFileSync } from "fs";
-import path from "path";
-import type { ArgumentsCamelCase, Argv } from "yargs";
-import { disabledLogger, getRawNodes, readRawRules } from "../commons";
-import Engine from "publicodes";
-import constantFolding from "../constantFolding";
+import { ArgumentsCamelCase, Argv } from "yargs";
+import { constantFoldingFromJSONFile } from "..";
 
 type Options = {
   model: string;
@@ -50,31 +46,16 @@ exports.builder = (yargs: Argv) => {
 };
 
 exports.handler = (argv: ArgumentsCamelCase<Options>) => {
-  try {
-    const { model, json: jsonPath, ignore } = argv;
-    var rules: any;
-
-    if (path.extname(model) === ".json") {
-      console.log("Parsing rules from the JSON file:", model);
-      rules = JSON.parse(readFileSync(model, "utf8"));
-    } else {
-      const modelPath = path.join(path.resolve(model), "**/*.yaml");
-      console.log(`Parsing rules from ${modelPath}...`);
-      rules = readRawRules(modelPath, ignore ?? []);
-    }
-
-    const engine = new Engine(rules, { logger: disabledLogger });
-
-    console.log("Constant folding pass...");
-    const foldedRules = constantFolding(engine);
-
-    console.log(`Writing in '${jsonPath}'...`);
-    writeFileSync(jsonPath, JSON.stringify(getRawNodes(foldedRules)));
-
-    console.log(`DONE.`);
-    process.exit(0);
-  } catch (error) {
-    console.error(error.message);
-    process.exit(-1);
+  const { model, json: jsonPath, ignore } = argv;
+  const error = constantFoldingFromJSONFile(
+    model,
+    jsonPath,
+    ignore,
+    undefined,
+    true
+  );
+  if (error) {
+    console.error(error);
+    process.exit(1);
   }
 };
