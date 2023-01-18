@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "ES2020",
+		"target": "es5",
 		"moduleResolution": "node",
 		"allowSyntheticDefaultImports": true,
 		"forceConsistentCasingInFileNames": true,
@@ -13,12 +13,12 @@
 			"es2021"
 		],
 		"sourceMap":true,
-		"module": "commonjs"
+		"declaration": true
 	},
 	"ts-node": {
 		"transpileOnly": true,
 		"files": true
 	},
-	"include": ["src/**/*.ts", "./build/"],
+	"include": ["src"],
 	"exclude": ["./node_modules/", "./build/", "./jest.config.js", "./test/"]
 }
