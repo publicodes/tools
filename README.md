@@ -28,7 +28,6 @@ yarn add -D publiopti
 
 ## Usage
 
-```
 ```typescript
 import { constantFolding } from 'publiopti'
 ```
