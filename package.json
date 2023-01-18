@@ -1,10 +1,13 @@
 {
   "name": "publiopti",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "An optimizer lib for Publicodes models",
-  "type": "commonjs",
+  "type": "module",
   "main": "build/index.js",
   "module": "build/index.js",
+  "files": [
+    "build"
+  ],
   "repository": "git@github.com:EmileRolley/publiopti.git",
   "scripts": {
     "build": "tsc -p .",
