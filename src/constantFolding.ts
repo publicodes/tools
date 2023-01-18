@@ -392,7 +392,7 @@ function tryToFoldRule(
  * If the [targets] are specified, at the end, only folded root nodes specified
  * in [targets] are kept. Otherwise, all root nodes are preserved.
  */
-export default function constantFolding(
+export function constantFolding(
   engine: Engine,
   targets?: RuleName[]
 ): ParsedRules {
