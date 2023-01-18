@@ -42,7 +42,6 @@ function initFoldingCtx(engine: Engine, parsedRules: ParsedRules): FoldingCtx {
           if (
             node.nodeKind === "reference" &&
             node.dottedName &&
-            !node.dottedName.endsWith("$SITUATION") &&
             node.dottedName !== ruleName
           ) {
             return acc.add(node.dottedName);
