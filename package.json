@@ -1,8 +1,8 @@
 {
   "name": "publiopti",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "An optimizer lib for Publicodes models",
-  "type": "module",
+  "type": "commonjs",
   "main": "build/index.js",
   "module": "build/index.js",
   "repository": "git@github.com:EmileRolley/publiopti.git",
