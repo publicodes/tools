@@ -354,6 +354,32 @@ describe("Constant folding optim", () => {
       },
     });
   });
+  it("replaceAllRefs bug #1", () => {
+    const rawRules = {
+      biogaz: {
+        formule:
+          "gaz . facteur d'émission * biogaz . facteur d'émission + not foldable",
+      },
+      "biogaz . facteur d'émission": {
+        valeur: 20,
+      },
+      "gaz . facteur d'émission": {
+        valeur: 10,
+      },
+      "not foldable": {
+        question: "The user needs to provide a value.",
+      },
+    };
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      biogaz: {
+        formule: "10 * 20 + not foldable",
+        "est compressée": true,
+      },
+      "not foldable": {
+        question: "The user needs to provide a value.",
+      },
+    });
+  });
   it("replaceAllRefs bug #2", () => {
     const rawRules = {
       boisson: {
@@ -416,6 +442,54 @@ describe("Constant folding optim", () => {
       },
     });
   });
+  it("par défaut = 0", () => {
+    const rawRules = {
+      "chocolat chaud": {
+        formule: "tasse de chocolat chaud * nombre",
+      },
+      "tasse de chocolat chaud": {
+        valeur: 20.3,
+      },
+      "chocolat chaud . nombre": {
+        question: "Nombre de chocolats chauds par semaine",
+        "par défaut": 0,
+      },
+    };
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      "chocolat chaud": {
+        formule: "20.3 * nombre",
+        "est compressée": true,
+      },
+      "chocolat chaud . nombre": {
+        question: "Nombre de chocolats chauds par semaine",
+        "par défaut": 0,
+      },
+    });
+  });
+
+  // TODO:
+  // it("replaceAllRefs bug #3", () => {
+  //   const rawRules = {
+  //     boisson: {
+  //       formule: "tasse de café * café",
+  //     },
+  //     "boisson . café": {
+  //       valeur: 20,
+  //     },
+  //     "boisson . tasse de café": {
+  //       question: "?",
+  //     },
+  //   };
+  //   expect(constantFoldingWith(rawRules)).toStrictEqual({
+  //     boisson: {
+  //       formule: "tasse de café * 20",
+  //       "est compressée": true,
+  //     },
+  //     "boisson . tasse de café": {
+  //       question: "?",
+  //     },
+  //   });
+  // });
   //
   //
   // TODO: not supported yet
@@ -539,29 +613,6 @@ describe("Constant folding optim", () => {
   // 			'est compressée': true,
   // 		},
   // 		'root . unfoldable': {
-  // 			'par défaut': 10,
-  // 		},
-  // 	})
-  // })
-  // TODO:
-  // it('replaceAllRefs bug #3', () => {
-  // 	const rawRules = {
-  // 		boisson: {
-  // 			formule: 'tasse de café * café',
-  // 		},
-  // 		'boisson . café': {
-  // 			valeur: 20,
-  // 		},
-  // 		'boisson . tasse de café': {
-  // 			'par défaut': 10,
-  // 		},
-  // 	}
-  // 	expect(constantFoldingWith(rawRules)).toStrictEqual({
-  // 		boisson: {
-  // 			formule: 'tasse de café * 20',
-  // 			'est compressée': true,
-  // 		},
-  // 		'boisson . nombre': {
   // 			'par défaut': 10,
   // 		},
   // 	})
