@@ -1924,7 +1924,7 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-publicodes@1.0.0-beta.66:
+publicodes@^1.0.0-beta.66:
   version "1.0.0-beta.66"
   resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.0.0-beta.66.tgz#e8149733431268c764ea150dc82d3ce3709d20db"
   integrity sha512-9lnLnbMM8Mz2+WvNK3/DttRbu6UvpoRx/B9XrMWUSgsb760uwQEqdpkHbl1gPlz2WpYSRuKZVyuW8LdfxTFRXw==
