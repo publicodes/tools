@@ -1,6 +1,6 @@
-import { getRawNodes, RuleName, RawRules } from "../src/commons";
+import { getRawNodes, RuleName, RawRules } from "../source/commons";
 
-import { constantFolding } from "../src/constantFolding";
+import { constantFolding } from "../source/constantFolding";
 
 import { callWithEngine } from "./utils.test";
 

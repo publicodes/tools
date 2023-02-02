@@ -1,5 +1,5 @@
-import type { RawRules } from "../src/commons";
-import { getRawNodes } from "../src/commons";
+import type { RawRules } from "../source/commons";
+import { getRawNodes } from "../source/commons";
 
 import { callWithParsedRules } from "./utils.test";
 
