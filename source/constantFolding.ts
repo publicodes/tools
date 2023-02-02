@@ -268,12 +268,21 @@ function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
 }
 
 function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
-  removeRuleFromRefs(ctx.refs.parents, dottedName);
-  removeRuleFromRefs(ctx.refs.childs, dottedName);
-  delete ctx.parsedRules[dottedName];
-  delete ctx.evaluatedRules[dottedName];
-  ctx.refs.parents.delete(dottedName);
-  ctx.refs.childs.delete(dottedName);
+  if (
+    // FIXME: this is a hack to avoid deleting '<> . nombre' rules with a default value
+    // set to 0.
+    !(
+      "question" in ctx.parsedRules[dottedName].rawNode ||
+      "par défaut" in ctx.parsedRules[dottedName].rawNode
+    )
+  ) {
+    removeRuleFromRefs(ctx.refs.parents, dottedName);
+    removeRuleFromRefs(ctx.refs.childs, dottedName);
+    delete ctx.parsedRules[dottedName];
+    delete ctx.evaluatedRules[dottedName];
+    ctx.refs.parents.delete(dottedName);
+    ctx.refs.childs.delete(dottedName);
+  }
   return ctx;
 }
 
@@ -395,6 +404,7 @@ export function constantFolding(
   engine: Engine,
   targets?: RuleName[]
 ): ParsedRules {
+  console.log("publiopti@0.1.18");
   const parsedRules: ParsedRules = engine.getParsedRules();
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules);
 
