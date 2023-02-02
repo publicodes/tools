@@ -404,7 +404,6 @@ export function constantFolding(
   engine: Engine,
   targets?: RuleName[]
 ): ParsedRules {
-  console.log("publiopti@0.1.18");
   const parsedRules: ParsedRules = engine.getParsedRules();
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules);
 
