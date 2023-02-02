@@ -1,12 +1,12 @@
 {
   "name": "publiopti",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "An optimizer lib for Publicodes models",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
- "exports": {
+  "exports": {
     ".": {
       "import": "./dist/index.js",
       "require": "./dist/index.cjs",
