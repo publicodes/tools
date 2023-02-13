@@ -83,7 +83,7 @@ describe("Constant folding optim", () => {
         valeur: "10",
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["ruleA"])).toStrictEqual({
       ruleA: {
         titre: "Rule A",
         formule: "10 * D",
@@ -110,14 +110,10 @@ describe("Constant folding optim", () => {
         valeur: "10",
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["ruleA"])).toStrictEqual({
       ruleA: {
         titre: "Rule A",
         formule: "10 * D",
-        "est compressée": true,
-      },
-      ruleB: {
-        valeur: "30",
         "est compressée": true,
       },
       "ruleA . D": {
@@ -189,11 +185,7 @@ describe("Constant folding optim", () => {
         valeur: 7,
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
-      A: {
-        valeur: "70",
-        "est compressée": true,
-      },
+    expect(constantFoldingWith(rawRules, ["B"])).toStrictEqual({
       B: {
         formule: "70 * D",
         "est compressée": true,

@@ -81,7 +81,6 @@ function isFoldable(rule: RuleNode): boolean {
     // NOTE(@EmileRolley): I assume that a rule can have a [par défaut] attribute without a [question] one.
     // The behavior could be specified.
     "par défaut" in rawNode ||
-    "est compressée" in rawNode ||
     "applicable si" in rawNode ||
     "non applicable si" in rawNode
   );
@@ -185,7 +184,7 @@ function searchAndReplaceConstantValueInParentRefs(
   if (refs) {
     refs
       .map((dottedName) => ctx.parsedRules[dottedName])
-      .filter(isFoldable)
+      .filter((r) => isFoldable(r) && !isAlreadyFolded(r))
       .forEach(({ dottedName: parentDottedName }) => {
         const newRule = lexicalSubstitutionOfRefValue(
           ctx.parsedRules[parentDottedName],
@@ -207,7 +206,7 @@ function searchAndReplaceConstantValueInParentRefs(
   return ctx;
 }
 
-function isAlreadyFolded(rule: RuleNode) {
+function isAlreadyFolded(rule: RuleNode): boolean {
   return rule.rawNode && "est compressée" in rule.rawNode;
 }
 
@@ -227,7 +226,7 @@ function replaceAllPossibleChildRefs(
   if (refs) {
     refs
       .map((dottedName) => ctx.parsedRules[dottedName])
-      .filter(isFoldable)
+      .filter((r) => isFoldable(r) && !isAlreadyFolded(r))
       .forEach(({ dottedName: childDottedName }) => {
         let childNode = ctx.parsedRules[childDottedName];
 
@@ -268,14 +267,7 @@ function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
 }
 
 function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
-  if (
-    // FIXME: this is a hack to avoid deleting '<> . nombre' rules with a default value
-    // set to 0.
-    !(
-      "question" in ctx.parsedRules[dottedName].rawNode ||
-      "par défaut" in ctx.parsedRules[dottedName].rawNode
-    )
-  ) {
+  if (isFoldable(ctx.parsedRules[dottedName])) {
     removeRuleFromRefs(ctx.refs.parents, dottedName);
     removeRuleFromRefs(ctx.refs.childs, dottedName);
     delete ctx.parsedRules[dottedName];
@@ -333,12 +325,16 @@ function tryToFoldRule(
   const { nodeValue, missingVariables, traversedVariables, unit } =
     ctx.evaluatedRules.get(ruleName) ?? ctx.engine.evaluateNode(rule);
 
+  const traversedVariablesWithoutSelf = traversedVariables.filter(
+    (dottedName) => dottedName !== ruleName
+  );
+
   // NOTE(@EmileRolley): we need to evaluate due to possible standalone rule [formule]
   // parsed as a [valeur].
   if (
     rule.rawNode.valeur &&
-    traversedVariables &&
-    traversedVariables.length > 0
+    traversedVariablesWithoutSelf &&
+    traversedVariablesWithoutSelf.length > 0
   ) {
     rule.rawNode.formule = rule.rawNode.valeur;
     delete rule.rawNode.valeur;
@@ -379,7 +375,9 @@ function tryToFoldRule(
         // NOTE(@EmileRolley): for some reason, the [traversedVariables] are not always
         // depencies of the rule. Consequently, we need to keep only the ones that are
         // in the [childs] list in order to avoid removing rules that are not dependencies.
-        traversedVariables?.filter((v: RuleName) => childs.includes(v)) ?? []
+        traversedVariablesWithoutSelf?.filter((v: RuleName) =>
+          childs.includes(v)
+        ) ?? []
       );
     }
     // Otherwise, try to replace internal refs if possible.
@@ -404,22 +402,25 @@ export function constantFolding(
   engine: Engine,
   targets?: RuleName[]
 ): ParsedRules {
-  console.log("--- publiopti@0.1.21 ---");
-
   const parsedRules: ParsedRules = engine.getParsedRules();
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules);
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
-    if (isFoldable(ruleNode)) {
+    if (isFoldable(ruleNode) && !isAlreadyFolded(ruleNode)) {
       ctx = tryToFoldRule(ctx, ruleName, ruleNode);
     }
   });
 
   if (targets) {
     return Object.fromEntries(
-      Object.entries(ctx.parsedRules).filter(([ruleName, _]) => {
+      Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
         const parents = ctx.refs.parents.get(ruleName);
-        return targets.includes(ruleName) || (parents && parents.length > 0);
+        return (
+          !isFoldable(ruleNode) ||
+          targets.includes(ruleName) ||
+          parents?.length > 0 ||
+          ruleNode.rawNode["icônes"] != null
+        );
       })
     );
   }
