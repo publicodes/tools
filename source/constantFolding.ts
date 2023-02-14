@@ -19,6 +19,7 @@ type FoldingCtx = {
   parsedRules: ParsedRules;
   refs: RefMaps;
   evaluatedRules: Map<RuleName, EvaluatedNode>;
+  targetRules?: RuleName[];
 };
 
 function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
@@ -29,7 +30,11 @@ function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
   map.set(key, vals || values);
 }
 
-function initFoldingCtx(engine: Engine, parsedRules: ParsedRules): FoldingCtx {
+function initFoldingCtx(
+  engine: Engine,
+  parsedRules: ParsedRules,
+  targets?: RuleName[]
+): FoldingCtx {
   const refs: RefMaps = { parents: new Map(), childs: new Map() };
   const evaluatedRules: Map<RuleName, EvaluatedNode> = new Map();
 
@@ -65,14 +70,12 @@ function initFoldingCtx(engine: Engine, parsedRules: ParsedRules): FoldingCtx {
     parsedRules,
     refs,
     evaluatedRules,
+    targetRules: targets,
   };
 }
 
-// To be fold, a rule needs to be a constant:
-// - no question
-// - no dependency
 function isFoldable(rule: RuleNode): boolean {
-  if (!rule /* || evaluatedRules.has(rule.dottedName) */) {
+  if (!rule) {
     return false;
   }
   const rawNode = rule.rawNode;
@@ -267,7 +270,10 @@ function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
 }
 
 function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
-  if (isFoldable(ctx.parsedRules[dottedName])) {
+  if (
+    !ctx.targetRules?.includes(dottedName) &&
+    isFoldable(ctx.parsedRules[dottedName])
+  ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName);
     removeRuleFromRefs(ctx.refs.childs, dottedName);
     delete ctx.parsedRules[dottedName];
@@ -318,6 +324,9 @@ function tryToFoldRule(
   const ruleParents = ctx.refs.parents.get(ruleName);
   if (isEmptyRule(rule) && (!ruleParents || ruleParents?.length === 0)) {
     // Empty rule with no parent
+    console.log(
+      `[WARN] - Empty rule '${ruleName}' with no parent, deleting it.`
+    );
     deleteRule(ctx, ruleName);
     return ctx;
   }
@@ -403,7 +412,7 @@ export function constantFolding(
   targets?: RuleName[]
 ): ParsedRules {
   const parsedRules: ParsedRules = engine.getParsedRules();
-  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules);
+  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, targets);
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
     if (isFoldable(ruleNode) && !isAlreadyFolded(ruleNode)) {
@@ -412,14 +421,13 @@ export function constantFolding(
   });
 
   if (targets) {
-    return Object.fromEntries(
+    ctx.parsedRules = Object.fromEntries(
       Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
         const parents = ctx.refs.parents.get(ruleName);
         return (
           !isFoldable(ruleNode) ||
           targets.includes(ruleName) ||
-          parents?.length > 0 ||
-          ruleNode.rawNode["icônes"] != null
+          parents?.length > 0
         );
       })
     );
