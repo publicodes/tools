@@ -19,7 +19,7 @@ type FoldingCtx = {
   parsedRules: ParsedRules;
   refs: RefMaps;
   evaluatedRules: Map<RuleName, EvaluatedNode>;
-  targetRules?: RuleName[];
+  toKeep?: (rule: [RuleName, RuleNode]) => boolean;
 };
 
 function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
@@ -33,7 +33,7 @@ function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
 function initFoldingCtx(
   engine: Engine,
   parsedRules: ParsedRules,
-  targets?: RuleName[]
+  toKeep?: (rule: [RuleName, RuleNode]) => boolean
 ): FoldingCtx {
   const refs: RefMaps = { parents: new Map(), childs: new Map() };
   const evaluatedRules: Map<RuleName, EvaluatedNode> = new Map();
@@ -70,7 +70,7 @@ function initFoldingCtx(
     parsedRules,
     refs,
     evaluatedRules,
-    targetRules: targets,
+    toKeep,
   };
 }
 
@@ -270,9 +270,10 @@ function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
 }
 
 function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
+  const ruleNode = ctx.parsedRules[dottedName];
   if (
-    !ctx.targetRules?.includes(dottedName) &&
-    isFoldable(ctx.parsedRules[dottedName])
+    (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
+    isFoldable(ruleNode)
   ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName);
     removeRuleFromRefs(ctx.refs.childs, dottedName);
@@ -409,10 +410,10 @@ function tryToFoldRule(
  */
 export function constantFolding(
   engine: Engine,
-  targets?: RuleName[]
+  toKeep?: (rule: [RuleName, RuleNode]) => boolean
 ): ParsedRules {
   const parsedRules: ParsedRules = engine.getParsedRules();
-  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, targets);
+  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep);
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
     if (isFoldable(ruleNode) && !isAlreadyFolded(ruleNode)) {
@@ -420,13 +421,13 @@ export function constantFolding(
     }
   });
 
-  if (targets) {
+  if (toKeep) {
     ctx.parsedRules = Object.fromEntries(
       Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
         const parents = ctx.refs.parents.get(ruleName);
         return (
           !isFoldable(ruleNode) ||
-          targets.includes(ruleName) ||
+          toKeep([ruleName, ruleNode]) ||
           parents?.length > 0
         );
       })

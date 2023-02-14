@@ -6,7 +6,11 @@ import { callWithEngine } from "./utils.test";
 
 function constantFoldingWith(rawRules: any, targets?: RuleName[]): RawRules {
   const res = callWithEngine(
-    (engine) => constantFolding(engine, targets),
+    (engine) =>
+      constantFolding(
+        engine,
+        targets ? ([ruleName, _]) => targets.includes(ruleName) : undefined
+      ),
     rawRules
   );
   return getRawNodes(res);
@@ -41,7 +45,7 @@ describe("Constant folding optim", () => {
         valeur: "10",
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["ruleA"])).toStrictEqual({
       ruleA: {
         titre: "Rule A",
         valeur: "30",
@@ -62,7 +66,7 @@ describe("Constant folding optim", () => {
         valeur: "3",
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["ruleA"])).toStrictEqual({
       ruleA: {
         titre: "Rule A",
         valeur: "30",
@@ -237,7 +241,7 @@ describe("Constant folding optim", () => {
         valeur: 7,
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["ruleA"])).toStrictEqual({
       ruleA: {
         formule: "ruleB",
       },
@@ -252,9 +256,6 @@ describe("Constant folding optim", () => {
       },
     });
   });
-  // it('should fold [formule > variations] mechanism', () => {
-  // 	fail('TODO')
-  // })
   it("should fold a mutiple [somme] deep dependencies", () => {
     const rawRules = {
       omr: {
@@ -336,7 +337,7 @@ describe("Constant folding optim", () => {
         question: "The user needs to provide a value.",
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["biogaz"])).toStrictEqual({
       biogaz: {
         formule: "20 * 10 + not foldable",
         "est compressée": true,
@@ -362,7 +363,7 @@ describe("Constant folding optim", () => {
         question: "The user needs to provide a value.",
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["biogaz"])).toStrictEqual({
       biogaz: {
         formule: "10 * 20 + not foldable",
         "est compressée": true,
@@ -384,7 +385,7 @@ describe("Constant folding optim", () => {
         "par défaut": 10,
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["boisson"])).toStrictEqual({
       boisson: {
         formule: "20 * nombre",
         "est compressée": true,
@@ -404,7 +405,7 @@ describe("Constant folding optim", () => {
         "par défaut": 10,
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["boisson"])).toStrictEqual({
       boisson: {
         formule: "20 * nombre",
         "est compressée": true,
@@ -424,7 +425,7 @@ describe("Constant folding optim", () => {
         "par défaut": 10,
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["boisson"])).toStrictEqual({
       boisson: {
         formule: "2% * nombre",
         "est compressée": true,
@@ -447,7 +448,7 @@ describe("Constant folding optim", () => {
         "par défaut": 0,
       },
     };
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ["chocolat chaud"])).toStrictEqual({
       "chocolat chaud": {
         formule: "20.3 * nombre",
         "est compressée": true,
