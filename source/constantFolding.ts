@@ -16,12 +16,18 @@ type RefMaps = {
 
 type PredicateOnRule = (rule: [RuleName, RuleNode]) => boolean;
 
+type FoldingParams = {
+  // The attribute name to use to mark a rule as folded, default to 'optimized'.
+  isFoldedAttr?: string;
+};
+
 type FoldingCtx = {
   engine: Engine;
   parsedRules: ParsedRules;
   refs: RefMaps;
   evaluatedRules: Map<RuleName, EvaluatedNode>;
   toKeep?: PredicateOnRule;
+  params: FoldingParams;
 };
 
 function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
@@ -35,7 +41,8 @@ function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
 function initFoldingCtx(
   engine: Engine,
   parsedRules: ParsedRules,
-  toKeep?: PredicateOnRule
+  toKeep?: PredicateOnRule,
+  foldingParams?: FoldingParams
 ): FoldingCtx {
   const refs: RefMaps = { parents: new Map(), childs: new Map() };
   const evaluatedRules: Map<RuleName, EvaluatedNode> = new Map();
@@ -73,6 +80,7 @@ function initFoldingCtx(
     refs,
     evaluatedRules,
     toKeep,
+    params: { isFoldedAttr: foldingParams?.isFoldedAttr ?? "optimized" },
   };
 }
 
@@ -201,7 +209,8 @@ function searchAndReplaceConstantValueInParentRefs(
         );
         if (newRule) {
           ctx.parsedRules[parentDottedName] = newRule;
-          ctx.parsedRules[parentDottedName].rawNode["est compressée"] = true;
+          ctx.parsedRules[parentDottedName].rawNode[ctx.params.isFoldedAttr] =
+            true;
           parentsToRemove.push(parentDottedName);
         }
       });
@@ -215,8 +224,8 @@ function searchAndReplaceConstantValueInParentRefs(
   return ctx;
 }
 
-function isAlreadyFolded(rule: RuleNode): boolean {
-  return "rawNode" in rule && "est compressée" in rule.rawNode;
+function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
+  return "rawNode" in rule && params.isFoldedAttr in rule.rawNode;
 }
 
 function isAConstant(rule: RuleNode) {
@@ -244,7 +253,7 @@ function replaceAllPossibleChildRefs(
           return;
         }
 
-        if (!isAlreadyFolded(childNode)) {
+        if (!isAlreadyFolded(ctx.params, childNode)) {
           ctx = tryToFoldRule(ctx, childDottedName, childNode);
         }
         if (isAConstant(childNode)) {
@@ -254,7 +263,8 @@ function replaceAllPossibleChildRefs(
           );
           if (newRule !== undefined) {
             ctx.parsedRules[parentRuleName] = newRule;
-            ctx.parsedRules[parentRuleName].rawNode["est compressée"] = true;
+            ctx.parsedRules[parentRuleName].rawNode[ctx.params.isFoldedAttr] =
+              true;
             ctx = updateRefCounting(ctx, parentRuleName, [childDottedName]);
           }
         }
@@ -322,7 +332,8 @@ function tryToFoldRule(
 ): FoldingCtx {
   if (
     rule !== undefined &&
-    (isAlreadyFolded(rule) || !isInParsedRules(ctx.parsedRules, ruleName))
+    (isAlreadyFolded(ctx.params, rule) ||
+      !isInParsedRules(ctx.parsedRules, ruleName))
   ) {
     // Already managed rule
     return ctx;
@@ -392,7 +403,7 @@ function tryToFoldRule(
       // it should always be removed.
       deleteRule(ctx, ruleName);
     } else {
-      ctx.parsedRules[ruleName].rawNode["est compressée"] = true;
+      ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = true;
     }
 
     return ctx;
@@ -412,18 +423,23 @@ function tryToFoldRule(
 /**
  * Applies a constant folding optimisation pass on parsed rules of [engine].
  *
- * If the [targets] are specified, at the end, only folded root nodes specified
- * in [targets] are kept. Otherwise, all root nodes are preserved.
+ * @param engine The engine instanciated with the rules to fold.
+ * @param toKeep A predicate that returns true if the rule should be kept, if not present,
+ * all folded rules will be kept.
+ * @param params The folding parameters.
+ *
+ * @returns The parsed rules with constant folded rules.
  */
 export function constantFolding(
   engine: Engine,
-  toKeep?: PredicateOnRule
+  toKeep?: PredicateOnRule,
+  params?: FoldingParams
 ): ParsedRules {
   const parsedRules: ParsedRules = engine.getParsedRules();
-  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep);
+  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params);
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
-    if (isFoldable(ruleNode) && !isAlreadyFolded(ruleNode)) {
+    if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
       ctx = tryToFoldRule(ctx, ruleName, ruleNode);
     }
   });
