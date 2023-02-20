@@ -334,9 +334,6 @@ function tryToFoldRule(
     (ruleParents === undefined || ruleParents?.length === 0)
   ) {
     // Empty rule with no parent
-    console.log(
-      `[WARN] - Empty rule '${ruleName}' with no parent, deleting it.`
-    );
     deleteRule(ctx, ruleName);
     return ctx;
   }
