@@ -3,9 +3,9 @@
 	<big>Publiopti</big>
   </h3>
   <p align="center">
-   <a href="https://github.com/EmileRolley/publiopti/issues">Report Bug</a>
+   <a href="https://github.com/datagir/publiopti/issues">Report Bug</a>
    •
-   <a href="https://github.com/EmileRolley/publiopti/blob/master/CONTRIBUTING.md">Contribute</a>
+   <a href="https://github.com/datagir/publiopti/blob/master/CONTRIBUTING.md">Contribute</a>
    •
    <a href="https://publi.codes">Publicodes</a>
   </p>
@@ -72,10 +72,6 @@ const optimizedRules = constantFolding(
   }
 )
 ```
-
-[ci-link]: https://github.com/EmileRolley/publiopti/actions/workflows/build.yml/badge.svg
-[npm-link]: https://img.shields.io/npm/v/publiopti
-
 ## Under the hood
 
 Currently, only one optimisation pass is available: the constant folding one.
@@ -84,3 +80,6 @@ Constant folding consists in calculating at compile time the value of an
 expression and replacing them in all its references. After this step, if a rule
 is no longer used by any other rules, it's deleted -- unless the `toKeep`
 attribute is provided.
+
+[ci-link]: https://github.com/datagir/publiopti/actions/workflows/build.yml/badge.svg
+[npm-link]: https://img.shields.io/npm/v/publiopti

@@ -16,15 +16,21 @@
   "files": [
     "dist"
   ],
-  "repository": "git@github.com:EmileRolley/publiopti.git",
+  "repository": "git@github.com:datagir/publiopti.git",
+  "bugs": "https://github.com/datagir/publiopti/issues",
+  "keywords": [
+    "publicodes",
+    "optimization",
+    "constant folding"
+  ],
+  "author": "<emile.rolley@tuta.io>",
+  "license": "MIT",
   "scripts": {
     "build": "tsup",
     "build:watch": "tsup --watch",
     "clean": "rm -rf dist",
     "test": "jest"
   },
-  "author": "<emile.rolley@tuta.io>",
-  "license": "MIT",
   "dependencies": {
     "@types/node": "^18.11.18"
   },
