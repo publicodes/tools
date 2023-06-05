@@ -459,21 +459,37 @@ describe("Constant folding optim", () => {
       },
     });
   });
-  it("shouldn't break somme", () => {
+  it("should optimise sum of constant * question", () => {
     const rawRules = {
       piscine: {
         icônes: "🏠🏊",
       },
       "piscine . empreinte": {
-        formule: { somme: ["équipement nautique * nombre"] },
+        formule: { somme: ["equipement * nombre"] },
       },
       "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
-      "piscine . équipement nautique": { formule: 45 },
+      "piscine . equipement": { formule: 45 },
     };
 
     expect(
       JSON.stringify(constantFoldingWith(rawRules, ["piscine . empreinte"]))
-    ).not.toContain("équipement nautique");
+    ).not.toContain("equipement");
+  });
+  it("should optimise sum of constant * question, even if constant starts with diacritic", () => {
+    const rawRules = {
+      piscine: {
+        icônes: "🏠🏊",
+      },
+      "piscine . empreinte": {
+        formule: { somme: ["équipement * nombre"] },
+      },
+      "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
+      "piscine . équipement": { formule: 45 },
+    };
+
+    expect(
+      JSON.stringify(constantFoldingWith(rawRules, ["piscine . empreinte"]))
+    ).not.toContain("équipement");
   });
 
   // TODO:
