@@ -459,6 +459,22 @@ describe("Constant folding optim", () => {
       },
     });
   });
+  it("shouldn't break somme", () => {
+    const rawRules = {
+      piscine: {
+        icônes: "🏠🏊",
+      },
+      "piscine . empreinte": {
+        formule: { somme: ["équipement nautique * nombre"] },
+      },
+      "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
+      "piscine . équipement nautique": { formule: 45 },
+    };
+
+    expect(
+      JSON.stringify(constantFoldingWith(rawRules, ["piscine . empreinte"]))
+    ).not.toContain("équipement nautique");
+  });
 
   // TODO:
   // it("replaceAllRefs bug #3", () => {
