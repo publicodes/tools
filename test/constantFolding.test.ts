@@ -459,6 +459,27 @@ describe("Constant folding optim", () => {
       },
     });
   });
+  it("should replace constant ref, even if it starts with diacritic", () => {
+    const rawRules = {
+      piscine: {
+        icônes: "🏠🏊",
+      },
+      "piscine . empreinte": {
+        formule: { somme: ["équipés * nombre * équipés * équipés"] },
+      },
+      "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
+      "piscine . équipés": { formule: 45 },
+    };
+    expect(
+      constantFoldingWith(rawRules, ["piscine . empreinte"])
+    ).toStrictEqual({
+      "piscine . empreinte": {
+        formule: { somme: ["45 * nombre * 45 * 45"] },
+        optimized: true,
+      },
+      "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
+    });
+  });
 
   // TODO:
   // it("replaceAllRefs bug #3", () => {
