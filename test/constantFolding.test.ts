@@ -459,37 +459,26 @@ describe("Constant folding optim", () => {
       },
     });
   });
-  it("should optimise sum of constant * question", () => {
+  it("should replace constant ref, even if it starts with diacritic", () => {
     const rawRules = {
       piscine: {
         icônes: "🏠🏊",
       },
       "piscine . empreinte": {
-        formule: { somme: ["equipement * nombre"] },
+        formule: { somme: ["équipés * nombre * équipés * équipés"] },
       },
       "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
-      "piscine . equipement": { formule: 45 },
+      "piscine . équipés": { formule: 45 },
     };
-
     expect(
-      JSON.stringify(constantFoldingWith(rawRules, ["piscine . empreinte"]))
-    ).not.toContain("equipement");
-  });
-  it("should optimise sum of constant * question, even if constant starts with diacritic", () => {
-    const rawRules = {
-      piscine: {
-        icônes: "🏠🏊",
-      },
+      constantFoldingWith(rawRules, ["piscine . empreinte"])
+    ).toStrictEqual({
       "piscine . empreinte": {
-        formule: { somme: ["équipement * nombre"] },
+        formule: { somme: ["45 * nombre * 45 * 45"] },
+        optimized: true,
       },
       "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
-      "piscine . équipement": { formule: 45 },
-    };
-
-    expect(
-      JSON.stringify(constantFoldingWith(rawRules, ["piscine . empreinte"]))
-    ).not.toContain("équipement");
+    });
   });
 
   // TODO:
