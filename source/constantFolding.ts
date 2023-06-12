@@ -137,7 +137,7 @@ function replaceAllRefs(
   // all unicode characters. But the lookbehind feature is not supported by all browsers.
   // A better solution would be to use the parseExpression function from publicodes,
   // see: https://github.com/betagouv/publicodes/pull/368
-  const re = new RegExp(`(?<=^|\\s)${refName}`, "g");
+  const re = new RegExp(`(?<=^|\\s|\\()${refName}`, "g");
   return str.replaceAll(re, constantValue);
 }
 

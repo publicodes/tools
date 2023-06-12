@@ -480,6 +480,35 @@ describe("Constant folding optim", () => {
       "piscine . nombre": { question: "Combien ?", "par défaut": 2 },
     });
   });
+  it("should work with parentheses inside [formule]", () => {
+    const rawRules = {
+      "divers . ameublement . meubles . armoire . empreinte amortie": {
+        titre: "Empreinte armoire amortie",
+        formule: "armoire . empreinte / (durée * coefficient préservation)",
+        unité: "kgCO2e",
+      },
+      "divers . ameublement . meubles . armoire . coefficient préservation": 45,
+      "divers . ameublement . meubles . armoire . durée": 10,
+      "divers . ameublement . meubles . armoire . empreinte": {
+        question: "Empreinte?",
+      },
+    };
+    expect(
+      constantFoldingWith(rawRules, [
+        "divers . ameublement . meubles . armoire . empreinte amortie",
+      ])
+    ).toStrictEqual({
+      "divers . ameublement . meubles . armoire . empreinte amortie": {
+        titre: "Empreinte armoire amortie",
+        formule: "armoire . empreinte / (10 * 45)",
+        unité: "kgCO2e",
+        optimized: true,
+      },
+      "divers . ameublement . meubles . armoire . empreinte": {
+        question: "Empreinte?",
+      },
+    });
+  });
 
   // TODO:
   // it("replaceAllRefs bug #3", () => {
