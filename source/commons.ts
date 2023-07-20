@@ -88,10 +88,7 @@ export function mapParsedExprAST(
   parsedExpr: ParsedExprAST,
   fn: (node: ParsedExprAST) => ParsedExprAST
 ): ParsedExprAST {
-  if ('variable' in parsedExpr) {
-    return fn(parsedExpr)
-  }
-  if ('constant' in parsedExpr) {
+  if ('variable' in parsedExpr || 'constant' in parsedExpr) {
     return fn(parsedExpr)
   }
   if (binaryOps.some((op) => op in parsedExpr)) {
