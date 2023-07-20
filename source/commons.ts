@@ -76,6 +76,14 @@ export type ParsedExprAST =
 
 const binaryOps = ['+', '-', '*', '/', '>', '<', '>=', '<=', '=', '!=']
 
+/**
+ * Map a parsed expression into another parsed expression.
+ *
+ * @param parsedExpr The parsed expression in a JSON format.
+ * @param fn The function to apply to each node of the parsed expression.
+ *
+ * @returns The parsed expression with the function applied to each node.
+ */
 export function mapParsedExprAST(
   parsedExpr: ParsedExprAST,
   fn: (node: ParsedExprAST) => ParsedExprAST
@@ -99,7 +107,30 @@ export function mapParsedExprAST(
   return parsedExpr
 }
 
-export function serializeParsedExprAST(parsedExpr: ParsedExprAST): string {
+/**
+ * Serialize a parsed expression into its string representation.
+ *
+ * @param parsedExpr The parsed expression in a JSON format.
+ * @param needsParens Whether the expression needs to be wrapped in parentheses.
+ *
+ * @returns The string representation of the parsed expression.
+ *
+ * @note Could be clever and remove unnecessary parentheses, for example:
+ * 		 `(A + B) + C` -> `A + B + C`
+ *
+ * @example
+ * ```
+ * serializeParsedExprAST(
+ *   { '+': [{ variable: "A" }, { constant: { type: "number", nodeValue: "10" } }] },
+ *   true
+ * )
+ * // "(A + 10)"
+ * ```
+ */
+export function serializeParsedExprAST(
+  parsedExpr: ParsedExprAST,
+  needsParens = false
+): string {
   if ('variable' in parsedExpr) {
     return parsedExpr.variable
   }
@@ -111,9 +142,14 @@ export function serializeParsedExprAST(parsedExpr: ParsedExprAST): string {
   }
   if (binaryOps.some((op) => op in parsedExpr)) {
     for (const key of Object.keys(parsedExpr)) {
-      return `(${serializeParsedExprAST(
-        parsedExpr[key][0]
-      )} ${key} ${serializeParsedExprAST(parsedExpr[key][1])})`
+      return (
+        (needsParens ? '(' : '') +
+        `${serializeParsedExprAST(
+          parsedExpr[key][0],
+          true
+        )} ${key} ${serializeParsedExprAST(parsedExpr[key][1], true)}` +
+        (needsParens ? ')' : '')
+      )
     }
   }
 }
@@ -129,6 +165,7 @@ export function serializeParsedExprAST(parsedExpr: ParsedExprAST): string {
  * the corresponding [ConstantNode].
  *
  * @example
+ * ```
  * substituteIn(
  *  { variable: "A" },
  *  "A",
@@ -136,6 +173,7 @@ export function serializeParsedExprAST(parsedExpr: ParsedExprAST): string {
  *  "ruleA"
  *  )
  *  // { constant: { type: "number", nodeValue: "10" } }
+ *  ```
  */
 export function substituteInParsedExpr(
   parsedExpr: ParsedExprAST,

@@ -29,6 +29,21 @@ describe('substituteInParsedExpr', () => {
       expected
     )
   })
+
+  it('should substitute the variable (with a complex dotted name) with the constant value in a binary operation', () => {
+    const parsedExpr: BinaryOp = {
+      '+': [{ variable: 'A . B . C . D' }, { variable: 'B' }],
+    }
+    const expected: BinaryOp = {
+      '+': [
+        { constant: { type: 'number', nodeValue: '10' } },
+        { variable: 'B' },
+      ],
+    }
+    expect(
+      substituteInParsedExpr(parsedExpr, 'A . B . C . D', '10')
+    ).toStrictEqual(expected)
+  })
 })
 
 describe('serializeParsedExprAST', () => {
@@ -45,7 +60,7 @@ describe('serializeParsedExprAST', () => {
   it('should serialize a simple binary operation', () => {
     expect(
       serializeParsedExprAST({ '+': [{ variable: 'A' }, { variable: 'B' }] })
-    ).toStrictEqual('(A + B)')
+    ).toStrictEqual('A + B')
   })
 
   it('should serialize a complex binary operation', () => {
@@ -58,7 +73,7 @@ describe('serializeParsedExprAST', () => {
           },
         ],
       })
-    ).toStrictEqual('(A + (B * C))')
+    ).toStrictEqual('A + (B * C)')
   })
 
   it('should serialize a complex binary operation with constants and units', () => {
@@ -82,6 +97,6 @@ describe('serializeParsedExprAST', () => {
           },
         ],
       })
-    ).toStrictEqual('(A + (10 * (C + 50.5km)))')
+    ).toStrictEqual('A + (10 * (C + 50.5km))')
   })
 })
