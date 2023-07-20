@@ -34,10 +34,10 @@ To know how to easily compile Publicodes model into a standalone JSON file, see
 [the dedicated
 readme](https://github.com/incubateur-ademe/publicodes-tools/blob/main/docs/compilation.md).
 
-## Optimization passes
+## Optimizations passes
 
 To know how to optimized a Publicodes model to computation, see the [dedicated
-readme](https://github.com/incubateur-ademe/publicodes-tools/blob/main/docs/optim.md).
+readme](https://github.com/incubateur-ademe/publicodes-tools/blob/main/source/optims/README.md).
 
 
 [ci-link]: https://github.com/datagir/publiopti/actions/workflows/build.yml/badge.svg
