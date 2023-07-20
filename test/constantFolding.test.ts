@@ -508,29 +508,28 @@ describe('Constant folding optim', () => {
     })
   })
 
-  // TODO:
-  // it("replaceAllRefs bug #3", () => {
-  //   const rawRules = {
-  //     boisson: {
-  //       formule: "tasse de café * café",
-  //     },
-  //     "boisson . café": {
-  //       valeur: 20,
-  //     },
-  //     "boisson . tasse de café": {
-  //       question: "?",
-  //     },
-  //   };
-  //   expect(constantFoldingWith(rawRules)).toStrictEqual({
-  //     boisson: {
-  //       formule: "tasse de café * 20",
-  //       optimized: true,
-  //     },
-  //     "boisson . tasse de café": {
-  //       question: "?",
-  //     },
-  //   });
-  // });
+  it('replaceAllRefs bug #3', () => {
+    const rawRules = {
+      boisson: {
+        formule: 'tasse de café * café',
+      },
+      'boisson . café': {
+        valeur: 20,
+      },
+      'boisson . tasse de café': {
+        question: '?',
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      boisson: {
+        formule: 'tasse de café * 20',
+        optimized: true,
+      },
+      'boisson . tasse de café': {
+        question: '?',
+      },
+    })
+  })
   //
   //
   // TODO: not supported yet
