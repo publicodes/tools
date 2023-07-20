@@ -74,3 +74,61 @@ export type ParsedExprAST =
   | ConstantNode<'number' | 'string' | 'boolean'>
   | VariableNode
 
+const binaryOps = ['+', '-', '*', '/', '>', '<', '>=', '<=', '=', '!=']
+
+export function mapParsedExprAST(
+  parsedExpr: ParsedExprAST,
+  fn: (node: ParsedExprAST) => ParsedExprAST
+): ParsedExprAST {
+  if ('variable' in parsedExpr) {
+    return fn(parsedExpr)
+  }
+  if ('constant' in parsedExpr) {
+    return fn(parsedExpr)
+  }
+  if (binaryOps.some((op) => op in parsedExpr)) {
+    for (const key of Object.keys(parsedExpr)) {
+      return fn({
+        [key]: [
+          mapParsedExprAST(parsedExpr[key][0], fn),
+          mapParsedExprAST(parsedExpr[key][1], fn),
+        ],
+      } as BinaryOp)
+    }
+  }
+  return parsedExpr
+}
+
+/**
+ * Replace all occurences [variableName] node with the corresponding [constValue] node.
+ *
+ * @param parsedExpr The parsed expression in a JSON format.
+ * @param variableName The name of the variable to replace.
+ * @param constValue The value to replace the variable with.
+ *
+ * @returns The parsed expression with all occurences of [VariableNode] with
+ * the corresponding [ConstantNode].
+ *
+ * @example
+ * substituteIn(
+ *  { variable: "A" },
+ *  "A",
+ *  "10",
+ *  "ruleA"
+ *  )
+ *  // { constant: { type: "number", nodeValue: "10" } }
+ */
+export function substituteInParsedExpr(
+  parsedExpr: ParsedExprAST,
+  variableName: RuleName,
+  constValue: string
+): ParsedExprAST {
+  const constType = isNaN(Number(constValue)) ? 'string' : 'number'
+
+  return mapParsedExprAST(parsedExpr, (node: ParsedExprAST) => {
+    if ('variable' in node && node?.variable === variableName) {
+      return { constant: { type: constType, nodeValue: constValue } }
+    }
+    return node
+  })
+}
