@@ -99,6 +99,25 @@ export function mapParsedExprAST(
   return parsedExpr
 }
 
+export function serializeParsedExprAST(parsedExpr: ParsedExprAST): string {
+  if ('variable' in parsedExpr) {
+    return parsedExpr.variable
+  }
+  if ('constant' in parsedExpr) {
+    return (
+      parsedExpr.constant.nodeValue +
+      ('unité' in parsedExpr ? parsedExpr.unité : '')
+    )
+  }
+  if (binaryOps.some((op) => op in parsedExpr)) {
+    for (const key of Object.keys(parsedExpr)) {
+      return `(${serializeParsedExprAST(
+        parsedExpr[key][0]
+      )} ${key} ${serializeParsedExprAST(parsedExpr[key][1])})`
+    }
+  }
+}
+
 /**
  * Replace all occurences [variableName] node with the corresponding [constValue] node.
  *
