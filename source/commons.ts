@@ -34,7 +34,7 @@ export function getRawNodes(parsedRules: ParsedRules<RuleName>): RawRules {
       acc.push([nom, rawNode]);
       return acc;
     }, [])
-  ) as RawRules;
+  ) as RawRules
 }
 
 function consumeMsg(_: string): void {}
@@ -43,4 +43,34 @@ export const disabledLogger: Logger = {
   log: consumeMsg,
   warn: consumeMsg,
   error: consumeMsg,
-};
+}
+
+export type ConstantNode<T extends string> = {
+  constant: {
+    type: T
+    nodeValue: string
+  }
+  unité?: string
+}
+
+export type VariableNode = {
+  variable: RuleName
+}
+
+export type BinaryOp =
+  | { '+': [ParsedExprAST, ParsedExprAST] }
+  | { '-': [ParsedExprAST, ParsedExprAST] }
+  | { '*': [ParsedExprAST, ParsedExprAST] }
+  | { '/': [ParsedExprAST, ParsedExprAST] }
+  | { '>': [ParsedExprAST, ParsedExprAST] }
+  | { '<': [ParsedExprAST, ParsedExprAST] }
+  | { '>=': [ParsedExprAST, ParsedExprAST] }
+  | { '<=': [ParsedExprAST, ParsedExprAST] }
+  | { '=': [ParsedExprAST, ParsedExprAST] }
+  | { '!=': [ParsedExprAST, ParsedExprAST] }
+
+export type ParsedExprAST =
+  | BinaryOp
+  | ConstantNode<'number' | 'string' | 'boolean'>
+  | VariableNode
+
