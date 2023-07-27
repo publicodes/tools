@@ -62,6 +62,7 @@ function getEngine(
   return enginesCache[packageName]
 }
 
+// FixMe acc should't contain duplicates
 function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
   const deps = Array.from(
     engine.baseContext.referencesMaps.referencesIn.get(rule.dottedName),
@@ -110,6 +111,22 @@ function getRuleToImportInfos(
   return [[ruleToImport, {}]]
 }
 
+// TODO: Change dynamically imported model source across `depuis` attribute
+function addSourceModelInfomation(importedRule: Rule) {
+  const linkToSourceModel =
+    '> Cette règle provient du modèle [Futureco-data](https://github.com/laem/futureco-data).'
+  return {
+    ...importedRule,
+    description: importedRule.description
+      ? `
+${linkToSourceModel}
+      
+
+${importedRule.description}`
+      : linkToSourceModel,
+  }
+}
+
 /**
  * @throws {Error} If the `nom` attribute is different from the `ruleNameToCheck`.
  */
@@ -156,7 +173,14 @@ function resolveImports(
               // Avoid to overwrite the updatedRawNode
               !acc.find(([accRuleName, _]) => accRuleName === ruleDepName),
           )
-          .map(([k, v]) => [k, removeRawNodeNom(v, k)])
+          .map(([k, v]) => {
+            const ruleWithoutName = removeRawNodeNom(v, k)
+            return [k, ruleWithoutName]
+          })
+          .map(([k, v]) => {
+            const ruleWithUpdatedDescription = addSourceModelInfomation(v)
+            return [k, ruleWithUpdatedDescription]
+          })
         acc.push(...ruleDeps)
       })
     } else {
