@@ -28,6 +28,14 @@ npm install --dev-dependency publicodes-tools
 yarn add -D publicodes-tools 
 ```
 
+## Usage in local
+
+When developing in local:
+
+1. you can link the local package with `yarn link`, 
+2. launch the compilation in watch mode with `yarn watch`,
+3. and use it in your project with `yarn link publicodes-tools`.
+
 ## Compilation
 
 To know how to easily compile Publicodes model into a standalone JSON file, see
