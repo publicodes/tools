@@ -7,7 +7,7 @@
     "watch": "tsup --watch",
     "clean": "rm -rf dist docs",
     "test": "jest",
-    "docs": "typedoc source/**/* --theme markdown --out docs --excludeExternals --excludePrivate"
+    "docs": "typedoc source/**/*"
   },
   "exports": {
     ".": {
