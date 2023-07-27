@@ -1,4 +1,4 @@
-import type { Rule, ParsedRules, Logger } from "publicodes";
+import type { Rule, ParsedRules, Logger, ExprAST } from 'publicodes'
 
 /**
  * @packageDocumentation
@@ -13,12 +13,12 @@ import type { Rule, ParsedRules, Logger } from "publicodes";
 /**
  * Represents a rule name, i.e. 'rule . A. B'
  */
-export type RuleName = string;
+export type RuleName = string
 
 /**
  * Represents a non-parsed NGC model.
  */
-export type RawRules = Record<RuleName, Omit<Rule, "nom">>;
+export type RawRules = Record<RuleName, Omit<Rule, 'nom'>>
 
 /**
  * Returns the raw nodes of a parsed rules object.
@@ -30,9 +30,9 @@ export type RawRules = Record<RuleName, Omit<Rule, "nom">>;
 export function getRawNodes(parsedRules: ParsedRules<RuleName>): RawRules {
   return Object.fromEntries(
     Object.values(parsedRules).reduce((acc, rule) => {
-      const { nom, ...rawNode } = rule.rawNode;
-      acc.push([nom, rawNode]);
-      return acc;
+      const { nom, ...rawNode } = rule.rawNode
+      acc.push([nom, rawNode])
+      return acc
     }, [])
   ) as RawRules
 }
@@ -45,35 +45,6 @@ export const disabledLogger: Logger = {
   error: consumeMsg,
 }
 
-export type ConstantNode<T extends string> = {
-  constant: {
-    type: T
-    nodeValue: string
-  }
-  unité?: string
-}
-
-export type VariableNode = {
-  variable: RuleName
-}
-
-export type BinaryOp =
-  | { '+': [ParsedExprAST, ParsedExprAST] }
-  | { '-': [ParsedExprAST, ParsedExprAST] }
-  | { '*': [ParsedExprAST, ParsedExprAST] }
-  | { '/': [ParsedExprAST, ParsedExprAST] }
-  | { '>': [ParsedExprAST, ParsedExprAST] }
-  | { '<': [ParsedExprAST, ParsedExprAST] }
-  | { '>=': [ParsedExprAST, ParsedExprAST] }
-  | { '<=': [ParsedExprAST, ParsedExprAST] }
-  | { '=': [ParsedExprAST, ParsedExprAST] }
-  | { '!=': [ParsedExprAST, ParsedExprAST] }
-
-export type ParsedExprAST =
-  | BinaryOp
-  | ConstantNode<'number' | 'string' | 'boolean'>
-  | VariableNode
-
 const binaryOps = ['+', '-', '*', '/', '>', '<', '>=', '<=', '=', '!=']
 
 /**
@@ -85,20 +56,22 @@ const binaryOps = ['+', '-', '*', '/', '>', '<', '>=', '<=', '=', '!=']
  * @returns The parsed expression with the function applied to each node.
  */
 export function mapParsedExprAST(
-  parsedExpr: ParsedExprAST,
-  fn: (node: ParsedExprAST) => ParsedExprAST
-): ParsedExprAST {
+  parsedExpr: ExprAST,
+  fn: (node: ExprAST) => ExprAST
+): ExprAST {
   if ('variable' in parsedExpr || 'constant' in parsedExpr) {
     return fn(parsedExpr)
   }
   if (binaryOps.some((op) => op in parsedExpr)) {
     for (const key of Object.keys(parsedExpr)) {
+      // @ts-ignore
+      // FIXME: needs to export BinaryOp from publicodes
       return fn({
         [key]: [
           mapParsedExprAST(parsedExpr[key][0], fn),
           mapParsedExprAST(parsedExpr[key][1], fn),
         ],
-      } as BinaryOp)
+      })
     }
   }
   return parsedExpr
@@ -125,7 +98,7 @@ export function mapParsedExprAST(
  * ```
  */
 export function serializeParsedExprAST(
-  parsedExpr: ParsedExprAST,
+  parsedExpr: ExprAST,
   needsParens = false
 ): string {
   if ('variable' in parsedExpr) {
@@ -173,15 +146,19 @@ export function serializeParsedExprAST(
  *  ```
  */
 export function substituteInParsedExpr(
-  parsedExpr: ParsedExprAST,
+  parsedExpr: ExprAST,
   variableName: RuleName,
   constValue: string
-): ParsedExprAST {
-  const constType = isNaN(Number(constValue)) ? 'string' : 'number'
+): ExprAST {
+  const { type, nodeValue } = !isNaN(Number(constValue))
+    ? { type: 'number', nodeValue: Number.parseFloat(constValue) }
+    : { type: 'string', nodeValue: constValue }
 
-  return mapParsedExprAST(parsedExpr, (node: ParsedExprAST) => {
+  // @ts-ignore
+  // FIXME: I don't know why this is not working
+  return mapParsedExprAST(parsedExpr, (node: ExprAST) => {
     if ('variable' in node && node?.variable === variableName) {
-      return { constant: { type: constType, nodeValue: constValue } }
+      return { constant: { type, nodeValue } }
     }
     return node
   })

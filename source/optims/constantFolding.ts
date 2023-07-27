@@ -1,6 +1,10 @@
-import Engine, { reduceAST, ParsedRules } from "publicodes";
-import type { EvaluatedNode, RuleNode, ASTNode, Unit } from "publicodes";
-import type { RuleName } from "../commons";
+import Engine, { reduceAST, ParsedRules, parseExpression } from 'publicodes'
+import type { EvaluatedNode, RuleNode, ASTNode, Unit } from 'publicodes'
+import {
+  RuleName,
+  serializeParsedExprAST,
+  substituteInParsedExpr,
+} from '../commons'
 
 type RefMap = Map<
   RuleName,
@@ -13,7 +17,7 @@ type RefMaps = {
   childs: RefMap
 }
 
-export type PredicateOnRule = (rule: [RuleName, RuleNode]) => boolean;
+export type PredicateOnRule = (rule: [RuleName, RuleNode]) => boolean
 
 export type FoldingParams = {
   // The attribute name to use to mark a rule as folded, default to 'optimized'.
@@ -21,13 +25,13 @@ export type FoldingParams = {
 }
 
 type FoldingCtx = {
-  engine: Engine;
-  parsedRules: ParsedRules<RuleName>;
-  refs: RefMaps;
-  evaluatedRules: Map<RuleName, EvaluatedNode>;
-  toKeep?: PredicateOnRule;
-  params: FoldingParams;
-};
+  engine: Engine
+  parsedRules: ParsedRules<RuleName>
+  refs: RefMaps
+  evaluatedRules: Map<RuleName, EvaluatedNode>
+  toKeep?: PredicateOnRule
+  params: FoldingParams
+}
 
 function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
   let vals = map.get(key)
@@ -102,7 +106,7 @@ function isInParsedRules(
   parsedRules: ParsedRules<RuleName>,
   rule: RuleName
 ): boolean {
-  return Object.keys(parsedRules).includes(rule);
+  return Object.keys(parsedRules).includes(rule)
 }
 
 function isEmptyRule(rule: RuleNode): boolean {
@@ -136,10 +140,7 @@ function replaceAllRefs(
   constantValue: any,
   currentRuleName: string
 ): string {
-  const parsedExpression = parseExpression(
-    str,
-    currentRuleName
-  ) as ParsedExprAST
+  const parsedExpression = parseExpression(str, currentRuleName)
   const newParsedExpression = substituteInParsedExpr(
     parsedExpression,
     refName,
@@ -449,8 +450,8 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams
 ): ParsedRules<RuleName> {
-  const parsedRules: ParsedRules<RuleName> = engine.getParsedRules();
-  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params);
+  const parsedRules: ParsedRules<RuleName> = engine.getParsedRules()
+  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
     if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {

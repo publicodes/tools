@@ -42,7 +42,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/node": "^18.11.18",
-    "publicodes": "^1.0.0-beta.70"
+    "publicodes": "^1.0.0-beta.71"
   },
   "devDependencies": {
     "@types/jest": "^29.2.5",
