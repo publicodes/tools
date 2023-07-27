@@ -1,7 +1,5 @@
 import { getRawNodes, RuleName, RawRules } from "../source/commons";
-
-import { constantFolding } from "../source/constantFolding";
-
+import { constantFolding } from "../source/optims/";
 import { callWithEngine } from "./utils.test";
 
 function constantFoldingWith(rawRules: any, targets?: RuleName[]): RawRules {

@@ -1,7 +1,7 @@
 import Engine, { reduceAST } from "publicodes";
 
 import type { EvaluatedNode, RuleNode, ASTNode, Unit } from "publicodes";
-import type { RuleName, ParsedRules } from "./commons";
+import type { RuleName, ParsedRules } from "../commons";
 
 type RefMap = Map<
   RuleName,
@@ -427,7 +427,7 @@ function tryToFoldRule(
 /**
  * Applies a constant folding optimisation pass on parsed rules of [engine].
  *
- * @param engine The engine instanciated with the rules to fold.
+ * @param engine The engine instantiated with the rules to fold.
  * @param toKeep A predicate that returns true if the rule should be kept, if not present,
  * all folded rules will be kept.
  * @param params The folding parameters.
