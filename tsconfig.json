@@ -9,6 +9,7 @@
 		"rootDir": "source",
 		"types": ["node", "jest"],
 		"esModuleInterop": true,
+		"allowJs": true,
 		"lib": [
 			"es2021"
 		],

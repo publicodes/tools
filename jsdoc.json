@@ -1,0 +1,29 @@
+{
+	"source": {
+		"includePattern": ".+\\.js?$",
+		"exclude": ["node_modules", "docs"]
+	},
+	"recurse": true,
+   "opts": {
+        "template": "node_modules/docdash",
+		"readme": "./README.md",
+        "encoding": "utf8",
+        "destination": "docs/",
+        "recurse": true,
+        "verbose": true
+    },
+	"plugins": ["plugins/markdown"],
+	"docdash": {
+		"static": true,
+		"sort": true,
+		"meta": {
+			"title": "@publicodes/tools API Documentation",
+			"description": "Documentation for the @publicodes/tools library",
+			"keyword": "publicodes, documentation, API, tools, library"
+		},
+		"search": true,
+		"collapse": true,
+		"typedefs": true
+	}
+}
+

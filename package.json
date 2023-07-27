@@ -1,5 +1,5 @@
 {
-  "name": "@publicodes/tools",
+  "name": "publicodes-tools",
   "version": "0.1.28",
   "description": "A set of utility functions to build tools around Publicodes models",
   "type": "module",
@@ -16,6 +16,11 @@
       "import": "./dist/optims/index.js",
       "require": "./dist/optims/index.cjs",
       "types": "./dist/optims/index.d.ts"
+    },
+    "./compilation": {
+      "import": "./dist/compilation/index.js",
+      "require": "./dist/compilation/index.cjs",
+      "types": "./dist/compilation/index.d.ts"
     }
   },
   "files": [
@@ -36,7 +41,8 @@
     "build": "tsup",
     "watch": "tsup --watch",
     "clean": "rm -rf dist",
-    "test": "jest"
+    "test": "jest",
+    "doc": "jsdoc -c jsdoc.json source/**/*"
   },
   "dependencies": {
     "@types/node": "^18.11.18",
@@ -44,7 +50,9 @@
   },
   "devDependencies": {
     "@types/jest": "^29.2.5",
+    "docdash": "^2.0.1",
     "jest": "^29.4.1",
+    "jsdoc": "^4.0.2",
     "ts-jest": "^29.0.4",
     "ts-node": "^10.9.1",
     "tsup": "^6.5.0",
@@ -53,12 +61,14 @@
   "tsup": {
     "entry": [
       "source/index.ts",
-      "source/optims/index.ts"
+      "source/optims/index.ts",
+      "source/compilation/index.js"
     ],
     "format": [
       "cjs",
       "esm"
     ],
+    "allowJs": true,
     "sourceMap": true,
     "dts": true,
     "clean": true
