@@ -73,3 +73,4 @@ const optimizedRules = constantFolding(
  */
 
 export { constantFolding } from "./constantFolding";
+export type { FoldingParams, PredicateOnRule } from "./constantFolding";

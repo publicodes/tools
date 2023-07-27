@@ -1,13 +1,35 @@
-import type { RuleNode } from "publicodes";
-import RawPublicodes from "publicodes";
+import type { Rule, ParsedRules, Logger } from "publicodes";
 
+/**
+ * @packageDocumentation
+ *
+ * This file contains all the common types and functions used by
+ * the publicodes tools.
+ *
+ *
+ * @requires publicodes
+ */
+
+/**
+ * Represents a rule name, i.e. 'rule . A. B'
+ */
 export type RuleName = string;
-export type ParsedRules = Record<RuleName, RuleNode<RuleName>>;
-export type RawRules = RawPublicodes<RuleName>;
 
-export function getRawNodes(parsedRules: ParsedRules): RawRules {
+/**
+ * Represents a non-parsed NGC model.
+ */
+export type RawRules = Record<RuleName, Omit<Rule, "nom">>;
+
+/**
+ * Returns the raw nodes of a parsed rules object.
+ *
+ * @param parsedRules - The parsed rules object.
+ *
+ * @returns The raw nodes of the parsed rules object.
+ */
+export function getRawNodes(parsedRules: ParsedRules<RuleName>): RawRules {
   return Object.fromEntries(
-    Object.values(parsedRules).reduce((acc: any, rule) => {
+    Object.values(parsedRules).reduce((acc, rule) => {
       const { nom, ...rawNode } = rule.rawNode;
       acc.push([nom, rawNode]);
       return acc;
@@ -17,7 +39,7 @@ export function getRawNodes(parsedRules: ParsedRules): RawRules {
 
 function consumeMsg(_: string): void {}
 
-export const disabledLogger = {
+export const disabledLogger: Logger = {
   log: consumeMsg,
   warn: consumeMsg,
   error: consumeMsg,

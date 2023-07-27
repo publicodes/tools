@@ -2,11 +2,11 @@ import glob from "glob";
 import yaml from "yaml";
 import { readFileSync } from "fs";
 import Engine, { Rule, RuleNode } from "publicodes";
+import { RawRules } from "../commons";
 
 /**
  * @fileOverview Functions to aggregate all .publicodes files into a single standalone JSON object where
  * all imports are resolved.
- * @module compilation/getModelFromSource
  * @requires publicodes
  */
 
@@ -14,7 +14,7 @@ const IMPORT_KEYWORD = "importer!";
 const FROM_KEYWORD = "depuis";
 const RULES_KEYWORD = "les règles";
 
-type GetModelFromSourceOptions = {
+export type GetModelFromSourceOptions = {
   verbose?: boolean;
 };
 
@@ -181,7 +181,7 @@ export function getModelFromSource(
   sourceFile: string,
   ignore: string | string[] | undefined,
   opts: GetModelFromSourceOptions
-): object {
+): RawRules {
   const res = glob
     .sync(sourceFile, { ignore })
     .reduce((jsonModel: object, filePath: string) => {
