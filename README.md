@@ -5,6 +5,8 @@
   <p align="center">
    <a href="https://github.com/incubateur-ademe/publicodes-tools/issues">Report Bug</a>
    •
+   <a href="https://incubateur-ademe.github.io/publicodes-tools/">API docs</a>
+   •
    <a href="https://github.com/incubateur-ademe/publicodes-tools/blob/master/CONTRIBUTING.md">Contribute</a>
    •
    <a href="https://publi.codes">Publicodes</a>
