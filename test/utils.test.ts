@@ -1,5 +1,6 @@
-import { disabledLogger, ParsedRules } from "../source/commons";
+import { RuleName, disabledLogger } from "../source/commons";
 import Engine from "publicodes";
+import type { ParsedRules } from "publicodes";
 
 export function callWithEngine<R>(fn: (engine: Engine) => R, rawRules: any): R {
   const engine = new Engine(rawRules, { logger: disabledLogger });
@@ -7,7 +8,7 @@ export function callWithEngine<R>(fn: (engine: Engine) => R, rawRules: any): R {
 }
 
 export function callWithParsedRules<R>(
-  fn: (rules: ParsedRules) => R,
+  fn: (rules: ParsedRules<RuleName>) => R,
   rawRules: any
 ): R {
   const engine = new Engine(rawRules);
