@@ -1,6 +1,6 @@
 <div align="center">
   <h3 align="center">
-	<big>@publicodes/tools</big>
+	<big>publicodes-tools</big>
   </h3>
   <p align="center">
    <a href="https://github.com/incubateur-ademe/publicodes-tools/issues">Report Bug</a>
@@ -12,7 +12,7 @@
 
 ![CI][ci-link] ![NPM][npm-link]
 
- `@publicodes/tools` is a set of utility functions that could be used to easily write 
+ `publicodes-tools` is a set of utility functions that could be used to easily write 
     tooling around [Publicodes](https://publi.codes) models.
 
  :warning: <i>The project is currently in under experimentation and maintained
@@ -23,9 +23,9 @@
 ## Installation
 
 ```
-npm install --dev-dependency @publicodes/tools
+npm install --dev-dependency publicodes-tools
 
-yarn add -D @publicodes/tools
+yarn add -D publicodes-tools 
 ```
 
 ## Compilation
