@@ -9,7 +9,7 @@ expression and replacing them in all its references. After this step, if a rule
 is no longer used by any other rules, it's deleted -- unless the `toKeep`
 attribute is provided.
 
-### Why
+### Why?
 
 Publicodes based projects are built [_by
 design_](https://publi.codes/docs/pourquoi-publicodes/standard-modeles-ouverts#document%C3%A9s-sourc%C3%A9s)

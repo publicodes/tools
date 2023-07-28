@@ -41,13 +41,13 @@ When developing in local:
 ## Compilation
 
 To know how to easily compile Publicodes model into a standalone JSON file, see
-[the dedicated
-readme](https://github.com/incubateur-ademe/publicodes-tools/blob/main/docs/compilation.md).
+the [dedicated doc
+page](https://incubateur-ademe.github.io/publicodes-tools/modules/compilation.html).
 
 ## Optimizations passes
 
 To know how to optimized a Publicodes model to computation, see the [dedicated
-readme](https://github.com/incubateur-ademe/publicodes-tools/blob/main/source/optims/README.md).
+doc page](https://incubateur-ademe.github.io/publicodes-tools/modules/optims.html).
 
 
 [ci-link]: https://github.com/datagir/publiopti/actions/workflows/build.yml/badge.svg
