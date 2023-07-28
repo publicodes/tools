@@ -13,7 +13,7 @@ see {@link https://incubateur-ademe.github.io/publicodes-tools/modules/compilati
 ### Usage
 
 ```typescript
-import { getModelFromSource } from 'publicodes-tools/compilation'
+import { getModelFromSource } from '@incubateur-ademe/publicodes-tools/compilation'
 
 const model = getModelFromSource(
 	'data\/**\/*.publicodes',

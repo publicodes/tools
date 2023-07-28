@@ -1,6 +1,6 @@
 {
-  "name": "publicodes-tools",
-  "version": "0.1.28",
+  "name": "@incubateur-ademe/publicodes-tools",
+  "version": "0.1.29",
   "description": "A set of utility functions to build tools around Publicodes models",
   "scripts": {
     "build": "tsup",
