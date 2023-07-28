@@ -1,4 +1,4 @@
-name: Build and test
+name: Build, test and check format
 
 on: push
 
@@ -12,9 +12,12 @@ jobs:
           node-version: 16
           cache: yarn
       - run: yarn install --immutable
-        
+
       - name: Build package
         run: yarn build
-        
+
       - name: Test the package
         run: yarn test
+
+      - name: Check file formatting
+        run: yarn format:check

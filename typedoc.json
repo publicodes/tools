@@ -1,10 +1,10 @@
 {
-    "$schema": "https://typedoc.org/schema.json",
-    "name": "publicodes-tools API",
-    "entryPoints": ["./source", "./source/optims/", "./source/compilation/"],
-    "navigationLinks": {
-        "GitHub": "https://github.com/incubateur-ademe/publicodes-tools",
-    },
-	"plugin": ["typedoc-plugin-export-functions"],
-	"commentStyle": "all",
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "publicodes-tools API",
+  "entryPoints": ["./source", "./source/optims/", "./source/compilation/"],
+  "navigationLinks": {
+    "GitHub": "https://github.com/incubateur-ademe/publicodes-tools"
+  },
+  "plugin": ["typedoc-plugin-export-functions"],
+  "commentStyle": "all"
 }

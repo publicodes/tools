@@ -7,7 +7,9 @@
     "watch": "tsup --watch",
     "clean": "rm -rf dist docs",
     "test": "jest",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "exports": {
     ".": {
@@ -70,5 +72,8 @@
     "sourceMap": true,
     "dts": true,
     "clean": true
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

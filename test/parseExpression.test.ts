@@ -11,7 +11,7 @@ describe('substituteInParsedExpr', () => {
     // @ts-ignore
     // FIXME: should export all sub types of ExprAST
     expect(substituteInParsedExpr(parsedExpr, 'A', '10')).toStrictEqual(
-      parsedExpr
+      parsedExpr,
     )
   })
 
@@ -25,7 +25,7 @@ describe('substituteInParsedExpr', () => {
     // @ts-ignore
     // FIXME: should export all sub types of ExprAST
     expect(substituteInParsedExpr(parsedExpr, 'A', '10')).toStrictEqual(
-      expected
+      expected,
     )
   })
 
@@ -39,7 +39,7 @@ describe('substituteInParsedExpr', () => {
     expect(
       // @ts-ignore
       // FIXME: should export all sub types of ExprAST
-      substituteInParsedExpr(parsedExpr, 'A . B . C . D', '10')
+      substituteInParsedExpr(parsedExpr, 'A . B . C . D', '10'),
     ).toStrictEqual(expected)
   })
 })
@@ -47,7 +47,7 @@ describe('substituteInParsedExpr', () => {
 describe('serializeParsedExprAST', () => {
   it('should serialize a simple constant node', () => {
     expect(
-      serializeParsedExprAST({ constant: { type: 'number', nodeValue: 10 } })
+      serializeParsedExprAST({ constant: { type: 'number', nodeValue: 10 } }),
     ).toStrictEqual('10')
   })
 
@@ -57,7 +57,7 @@ describe('serializeParsedExprAST', () => {
 
   it('should serialize a simple binary operation', () => {
     expect(
-      serializeParsedExprAST({ '+': [{ variable: 'A' }, { variable: 'B' }] })
+      serializeParsedExprAST({ '+': [{ variable: 'A' }, { variable: 'B' }] }),
     ).toStrictEqual('A + B')
   })
 
@@ -70,7 +70,7 @@ describe('serializeParsedExprAST', () => {
             '*': [{ variable: 'B' }, { variable: 'C' }],
           },
         ],
-      })
+      }),
     ).toStrictEqual('A + (B * C)')
   })
 
@@ -94,7 +94,7 @@ describe('serializeParsedExprAST', () => {
             ],
           },
         ],
-      })
+      }),
     ).toStrictEqual('A + (10 * (C + 50.5km))')
   })
 })
