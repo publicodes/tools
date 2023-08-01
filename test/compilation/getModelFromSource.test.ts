@@ -1,7 +1,7 @@
-import { getModelFromSource } from '../source/compilation/getModelFromSource'
+import { getModelFromSource } from '../../source/compilation/getModelFromSource'
 import { join, resolve } from 'path'
 
-const testDataDir = resolve('./test/data/')
+const testDataDir = resolve('./test/compilation/data/')
 
 describe('getModelFromSource › rules import', () => {
   it('should import a rule from a package', () => {
