@@ -20,11 +20,11 @@ const IMPORT_KEYWORD = 'importer!'
  * ```yaml
  * importer!:
  *  depuis:
- *    nom: 'mif-macro'
- *    source: 'mif-macro.model.yaml'
+ *    nom: 'my-external-package'
+ *    source: 'my-external-package.model.yaml'
  *  les règles:
- *    - mif-macro . règle 1
- *    - mif-macro . règle 2:
+ *    - règle 1
+ *    - règle 2:
  *      question: 'Quelle est la valeur de la règle 2 ?'
  */
 export type ImportMacro = {
