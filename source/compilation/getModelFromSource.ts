@@ -156,7 +156,6 @@ function getRuleToImportInfos(ruleToImport: string | object): {
   attrs: object
 } {
   if (typeof ruleToImport == 'object') {
-    console.log('ruleToImport', ruleToImport)
     const entries = Object.entries(ruleToImport)
     const ruleName = entries[0][0]
     return { ruleName, attrs: Object.fromEntries(entries.slice(1)) }

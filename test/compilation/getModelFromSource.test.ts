@@ -55,7 +55,7 @@ describe('getModelFromSource › rules import', () => {
     })
   })
 
-  it('should import a rule from a package with all updated attributs', () => {
+  it('should import a rule from a package with all updated attributes', () => {
     expect(
       getModelFromSource(join(testDataDir, 'updated-attrs-import.publicodes')),
     ).toEqual({
@@ -75,6 +75,46 @@ Ajout d'une description`,
       'root 2': {
         formule: 20,
         résumé: "Modification d'un résumé",
+        description: updatedDescription,
+      },
+    })
+  })
+
+  it('should import a rule from a package with all dependencies from a complex formula', () => {
+    expect(
+      getModelFromSource(join(testDataDir, 'complex-deps-import.publicodes')),
+    ).toEqual({
+      complex: {
+        formule: {
+          somme: ['d', 'root'],
+        },
+        description: updatedDescription,
+      },
+      root: {
+        formule: 'a * b',
+        description: updatedDescription,
+      },
+      'root . a': {
+        formule: 10,
+        description: updatedDescription,
+      },
+      'root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'root . c': {
+        formule: 20,
+        description: updatedDescription,
+      },
+      'root 2': {
+        formule: 20,
+        résumé: 'Résumé root 2',
+        description: updatedDescription,
+      },
+      d: {
+        formule: {
+          variations: [{ si: 'root 2 > 10', alors: 10 }, { sinon: 'root 2' }],
+        },
         description: updatedDescription,
       },
     })

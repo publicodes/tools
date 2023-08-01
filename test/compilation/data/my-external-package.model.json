@@ -13,6 +13,19 @@
   },
   "root 2": {
     "formule": 20,
-	"résumé": "Résumé root 2"
+    "résumé": "Résumé root 2"
+  },
+  "complex": {
+    "formule": {
+      "somme": ["d", "root"]
+    }
+  },
+  "d": {
+    "formule": {
+      "variations": [
+        { "si": "root 2 > 10", "alors": 10 },
+        { "sinon": "root 2" }
+      ]
+    }
   }
 }
