@@ -64,6 +64,8 @@ const enginesCache = {}
  *
  * @param filePath - The path to the file containing the rules in a JSON format.
  * @param opts - Options.
+ *
+ * @throws {Error} If the package name is missing in the macro.
  */
 function getEngine(
   filePath: string,
@@ -73,6 +75,13 @@ function getEngine(
   const packageName = depuis.nom
   const fileDirPath = dirname(filePath)
 
+  if (packageName === undefined) {
+    throw new Error(
+      `Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${filePath}`,
+    )
+  }
+
+  console.log('packageModelPath', packageModelPath(packageName))
   if (!enginesCache[packageName]) {
     if (opts?.verbose) {
       console.debug(` 📦 '${packageName}' loading`)
@@ -275,6 +284,7 @@ function resolveImports(
  *
  * @returns The model with resolved imports in a single JSON object.
  *
+ * @throws {Error} If the package name is missing in the macro.
  * @throws {Error} If the rule to import does not exist.
  * @throws {Error} If there is double definition of a rule.
  */
@@ -285,6 +295,7 @@ export function getModelFromSource(
   const res = glob
     .sync(sourceFile, { ignore: opts?.ignore })
     .reduce((jsonModel: object, filePath: string) => {
+      console.log('filePath2:', filePath)
       const rules = yaml.parse(readFileSync(filePath, 'utf-8'))
       const completeRules = resolveImports(filePath, rules, opts)
       return { ...jsonModel, ...completeRules }

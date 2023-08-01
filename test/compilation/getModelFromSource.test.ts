@@ -135,4 +135,13 @@ Ajout d'une description`,
       "La règle 'root . a' est définie deux fois dans my-external-package",
     )
   })
+
+  it('should contains the package name', () => {
+    const path = join(testDataDir, 'no-name-import.publicodes')
+    expect(() => {
+      getModelFromSource(path)
+    }).toThrow(
+      `Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${path}`,
+    )
+  })
 })
