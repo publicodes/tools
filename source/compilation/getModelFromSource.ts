@@ -2,8 +2,8 @@ import glob from 'glob'
 import yaml from 'yaml'
 import { readFileSync } from 'fs'
 import Engine, { Rule, RuleNode } from 'publicodes'
-import { getAllRefsInNode, RawRule, RawRules, RuleName } from '../commons'
-import { dirname, join, resolve } from 'path'
+import { getAllRefsInNode, RawRules, RuleName } from '../commons'
+import { dirname, join } from 'path'
 
 /**
  * @fileOverview Functions to aggregate all .publicodes files into a single standalone JSON object where
@@ -37,7 +37,10 @@ export type ImportMacro = {
     // The URL of the package, used for the documentation.
     url?: string
   }
-  'les règles': string[]
+  // List of rules to import from the package.
+  // They could be specified by their name, or by the name and the list of
+  // properties to override or add.
+  'les règles': [string | object][]
 }
 
 export type GetModelFromSourceOptions = {
@@ -143,17 +146,23 @@ function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
  * ```
  *
  * We have:
- * - getRuleToImportInfos('ruleA') -> [['ruleA', {}]]
- * - getRuleToImportInfos({'ruleB': {attr1: value1}) -> [['ruleA', {attr1: value1}]]
+ * - getRuleToImportInfos('ruleA')
+ *   -> { ruleName: 'ruleA', attrs: {} }
+ * - getRuleToImportInfos({'ruleB': null, attr1: value1})
+ *   -> { ruleName: 'ruleB', attrs: {attr1: value1} }
  */
-function getRuleToImportInfos(
-  ruleToImport: string | object,
-): [string, object][] {
+function getRuleToImportInfos(ruleToImport: string | object): {
+  ruleName: string
+  attrs: object
+} {
   if (typeof ruleToImport == 'object') {
+    console.log('ruleToImport', ruleToImport)
     const entries = Object.entries(ruleToImport)
-    return entries
+    const ruleName = entries[0][0]
+    return { ruleName, attrs: Object.fromEntries(entries.slice(1)) }
   }
-  return [[ruleToImport, {}]]
+
+  return { ruleName: ruleToImport, attrs: {} }
 }
 
 function addSourceModelInfomation(
@@ -170,7 +179,7 @@ function addSourceModelInfomation(
     description: importedRule.description
       ? `
 ${linkToSourceModel}
-      
+
 
 ${importedRule.description}`
       : linkToSourceModel,
@@ -208,7 +217,7 @@ function resolveImports(
       const rulesToImport = importMacro['les règles']
 
       rulesToImport?.forEach((ruleToImport: string | object) => {
-        const [[ruleName, attrs]] = getRuleToImportInfos(ruleToImport)
+        const { ruleName, attrs } = getRuleToImportInfos(ruleToImport)
         const rule = engine.getRule(ruleName)
         if (!rule) {
           throw new Error(
@@ -227,12 +236,11 @@ function resolveImports(
           ]
         }
 
-        acc.push(
-          getUpdatedRule(ruleName, {
-            ...rule.rawNode,
-            ...attrs,
-          }),
-        )
+        const ruleWithOverridenAttributes = { ...rule.rawNode, ...attrs }
+
+        console.log(ruleName, ruleWithOverridenAttributes)
+
+        acc.push(getUpdatedRule(ruleName, ruleWithOverridenAttributes))
         const ruleDeps = getDependencies(engine, rule)
           .filter(([ruleDepName, _]) => {
             // Avoid to overwrite the updatedRawNode

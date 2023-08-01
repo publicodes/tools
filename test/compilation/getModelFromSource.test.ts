@@ -59,20 +59,22 @@ describe('getModelFromSource › rules import', () => {
     expect(
       getModelFromSource(join(testDataDir, 'updated-attrs-import.publicodes')),
     ).toEqual({
-      root: {
-        formule: 'a * b',
-        description: updatedDescription,
-      },
       'root . a': {
         formule: 10,
-        description: updatedDescription,
-      },
-      'root . b': {
-        formule: 'root . c * 2',
+        titre: "Ajout d'un titre",
         description: updatedDescription,
       },
       'root . c': {
         formule: 20,
+        description: `
+${updatedDescription}
+
+
+Ajout d'une description`,
+      },
+      'root 2': {
+        formule: 20,
+        résumé: "Modification d'un résumé",
         description: updatedDescription,
       },
     })
