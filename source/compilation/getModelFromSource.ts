@@ -203,6 +203,7 @@ function removeRawNodeNom(
 
 /**
  * @throws {Error} If the rule to import does not exist.
+ * @throws {Error} If there is double definition of a rule.
  * @throws {Error} If the imported rule's publicode raw node "nom" attribute is different from the resolveImport script ruleName.
  */
 function resolveImports(
@@ -218,8 +219,16 @@ function resolveImports(
 
       rulesToImport?.forEach((ruleToImport: string | object) => {
         const { ruleName, attrs } = getRuleToImportInfos(ruleToImport)
-        const rule = engine.getRule(ruleName)
-        if (!rule) {
+        if (acc.find(([accRuleName, _]) => accRuleName === ruleName)) {
+          throw new Error(
+            `La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}`,
+          )
+        }
+
+        let rule
+        try {
+          rule = engine.getRule(ruleName)
+        } catch (e) {
           throw new Error(
             `La règle '${ruleName}' n'existe pas dans ${importMacro.depuis.nom}`,
           )
@@ -237,8 +246,6 @@ function resolveImports(
         }
 
         const ruleWithOverridenAttributes = { ...rule.rawNode, ...attrs }
-
-        console.log(ruleName, ruleWithOverridenAttributes)
 
         acc.push(getUpdatedRule(ruleName, ruleWithOverridenAttributes))
         const ruleDeps = getDependencies(engine, rule)
@@ -268,6 +275,9 @@ function resolveImports(
  * @param opts - Options.
  *
  * @returns The model with resolved imports in a single JSON object.
+ *
+ * @throws {Error} If the rule to import does not exist.
+ * @throws {Error} If there is double definition of a rule.
  */
 export function getModelFromSource(
   sourceFile: string,
@@ -276,14 +286,9 @@ export function getModelFromSource(
   const res = glob
     .sync(sourceFile, { ignore: opts?.ignore })
     .reduce((jsonModel: object, filePath: string) => {
-      try {
-        const rules = yaml.parse(readFileSync(filePath, 'utf-8'))
-        const completeRules = resolveImports(filePath, rules, opts)
-        return { ...jsonModel, ...completeRules }
-      } catch (e) {
-        console.error(`Error parsing '${filePath}':`, e)
-        return jsonModel
-      }
+      const rules = yaml.parse(readFileSync(filePath, 'utf-8'))
+      const completeRules = resolveImports(filePath, rules, opts)
+      return { ...jsonModel, ...completeRules }
     }, {})
   return res
 }

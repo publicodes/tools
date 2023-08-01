@@ -79,4 +79,20 @@ Ajout d'une description`,
       },
     })
   })
+
+  it('should not import an unknown rule', () => {
+    expect(() => {
+      getModelFromSource(join(testDataDir, 'unknown-import.publicodes'))
+    }).toThrow(
+      "La règle 'root . unknown' n'existe pas dans my-external-package",
+    )
+  })
+
+  it('should not import doublon rules', () => {
+    expect(() => {
+      getModelFromSource(join(testDataDir, 'doublon-import.publicodes'))
+    }).toThrow(
+      "La règle 'root . a' est définie deux fois dans my-external-package",
+    )
+  })
 })
