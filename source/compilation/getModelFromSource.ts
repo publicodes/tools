@@ -3,7 +3,7 @@ import yaml from 'yaml'
 import { readFileSync } from 'fs'
 import Engine, { Rule, RuleNode } from 'publicodes'
 import { getAllRefsInNode, RawRules, RuleName } from '../commons'
-import { dirname, join } from 'path'
+import { dirname, join, resolve } from 'path'
 
 /**
  * @fileOverview Functions to aggregate all .publicodes files into a single standalone JSON object where
@@ -54,7 +54,7 @@ export type GetModelFromSourceOptions = {
  * @returns {string} The path to the package model in the node_modules folder.
  */
 const packageModelPath = (packageName: string): string =>
-  `node_modules/${packageName}/${packageName}.model.json`
+  `./node_modules/${packageName}/${packageName}.model.json`
 
 // Stores engines initialized with the rules from package
 const enginesCache = {}
@@ -81,32 +81,33 @@ function getEngine(
     )
   }
 
-  console.log('packageModelPath', packageModelPath(packageName))
   if (!enginesCache[packageName]) {
     if (opts?.verbose) {
       console.debug(` 📦 '${packageName}' loading`)
     }
     try {
-      const engine = new Engine(
-        JSON.parse(
-          readFileSync(
-            join(fileDirPath, depuis.source) ?? packageModelPath(packageName),
-            'utf-8',
-          ),
-        ),
-        {
-          logger: {
-            log: (_) => {},
-            warn: (_) => {},
-            error: (s) => console.error(s),
-          },
+      const modelPath =
+        depuis.source !== undefined
+          ? join(fileDirPath, depuis.source)
+          : packageModelPath(packageName)
+      const model = JSON.parse(readFileSync(modelPath, 'utf-8'))
+      const engine = new Engine(model, {
+        logger: {
+          log: (_) => {},
+          warn: (_) => {},
+          error: (s) => console.error(s),
         },
-      )
+      })
+
+      if (opts?.verbose) {
+        console.debug(` 📦 '${packageName}' loaded from ${modelPath}`)
+      }
       enginesCache[packageName] = engine
     } catch (e) {
       console.error(`Error when loading '${packageName}': ${e}`)
     }
   }
+
   return enginesCache[packageName]
 }
 
@@ -136,6 +137,11 @@ function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
   return acc
 }
 
+type RuleToImport = {
+  ruleName: RuleName
+  attrs: object
+}
+
 /**
  * Returns the rule name and its attributes.
  *
@@ -160,10 +166,7 @@ function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
  * - getRuleToImportInfos({'ruleB': null, attr1: value1})
  *   -> { ruleName: 'ruleB', attrs: {attr1: value1} }
  */
-function getRuleToImportInfos(ruleToImport: string | object): {
-  ruleName: string
-  attrs: object
-} {
+function getRuleToImportInfos(ruleToImport: string | object): RuleToImport {
   if (typeof ruleToImport == 'object') {
     const entries = Object.entries(ruleToImport)
     const ruleName = entries[0][0]
@@ -179,8 +182,8 @@ function addSourceModelInfomation(
 ) {
   const { nom, url } = importInfos.depuis
   const linkToSourceModel = url
-    ? `> Cette règle provient du modèle [${nom}](${url}).`
-    : `> Cette règle provient du modèle **${nom}**.`
+    ? `> ℹ️ Cette règle provient du modèle [${nom}](${url}).`
+    : `> ℹ️ Cette règle provient du modèle **${nom}**.`
 
   return {
     ...importedRule,
@@ -209,6 +212,15 @@ function removeRawNodeNom(
   return rest
 }
 
+function appearsMoreThanOnce(
+  rulesToImport: RuleToImport[],
+  ruleName: RuleName,
+): boolean {
+  return (
+    rulesToImport.filter(({ ruleName: name }) => name === ruleName).length > 1
+  )
+}
+
 /**
  * @throws {Error} If the rule to import does not exist.
  * @throws {Error} If there is double definition of a rule.
@@ -223,14 +235,17 @@ function resolveImports(
     if (name === IMPORT_KEYWORD) {
       const importMacro: ImportMacro = value
       const engine = getEngine(filePath, importMacro, opts)
-      const rulesToImport = importMacro['les règles']
+      const rulesToImport: RuleToImport[] =
+        importMacro['les règles']?.map(getRuleToImportInfos)
 
-      rulesToImport?.forEach((ruleToImport: string | object) => {
-        const { ruleName, attrs } = getRuleToImportInfos(ruleToImport)
-        if (acc.find(([accRuleName, _]) => accRuleName === ruleName)) {
+      rulesToImport?.forEach(({ ruleName, attrs }) => {
+        if (appearsMoreThanOnce(rulesToImport, ruleName)) {
           throw new Error(
             `La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}`,
           )
+        }
+        if (acc.find(([accRuleName, _]) => accRuleName === ruleName)) {
+          return acc
         }
 
         let rule
@@ -295,7 +310,6 @@ export function getModelFromSource(
   const res = glob
     .sync(sourceFile, { ignore: opts?.ignore })
     .reduce((jsonModel: object, filePath: string) => {
-      console.log('filePath2:', filePath)
       const rules = yaml.parse(readFileSync(filePath, 'utf-8'))
       const completeRules = resolveImports(filePath, rules, opts)
       return { ...jsonModel, ...completeRules }
