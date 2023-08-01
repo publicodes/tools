@@ -1,0 +1,11 @@
+{
+	"root": {
+		"formule": "a * b"
+	},
+	"root . a": {
+		"formule": 10
+	},
+	"root . b": {
+		"formule": 20
+	}
+}
