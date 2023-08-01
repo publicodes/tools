@@ -153,6 +153,8 @@ function lexicalSubstitutionOfRefValue(
   parent: RuleNode,
   constant: RuleNode,
 ): RuleNode | undefined {
+  // Retrieves the name form used in the rule. For exemple, the rule 'root . a
+  // . b' could have the name 'b', 'a . b' or 'root . a . b'.
   const refName = reduceAST<string>(
     (_, node: ASTNode) => {
       if (

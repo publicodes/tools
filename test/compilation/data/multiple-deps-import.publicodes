@@ -3,4 +3,4 @@
     nom: 'my-external-package'
     source: './my-external-package.model.json'
   les règles:
-    - root . a
+    - root

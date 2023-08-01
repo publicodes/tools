@@ -1,11 +1,14 @@
 {
-	"root": {
-		"formule": "a * b"
-	},
-	"root . a": {
-		"formule": 10
-	},
-	"root . b": {
-		"formule": 20
-	}
+  "root": {
+    "formule": "a * b"
+  },
+  "root . a": {
+    "formule": 10
+  },
+  "root . b": {
+    "formule": "root . c * 2"
+  },
+  "root . c": {
+    "formule": 20
+  }
 }

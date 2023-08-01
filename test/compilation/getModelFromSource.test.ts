@@ -3,27 +3,77 @@ import { join, resolve } from 'path'
 
 const testDataDir = resolve('./test/compilation/data/')
 
+const updatedDescription = `> Cette règle provient du modèle **my-external-package**.`
+
 describe('getModelFromSource › rules import', () => {
   it('should import a rule from a package', () => {
     expect(
-      getModelFromSource(join(testDataDir, 'simple-import.publicodes'), {
-        verbose: true,
-      })
+      getModelFromSource(join(testDataDir, 'simple-import.publicodes')),
     ).toEqual({
       'root . a': {
         formule: 10,
+        description: updatedDescription,
+      },
+    })
+  })
+
+  it('should import a rule from a package with its needed dependency', () => {
+    expect(
+      getModelFromSource(join(testDataDir, 'deps-import.publicodes')),
+    ).toEqual({
+      'root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'root . c': {
+        formule: 20,
+        description: updatedDescription,
       },
     })
   })
 
   it('should import a rule from a package with all its needed dependencies', () => {
     expect(
-      getModelFromSource(join(testDataDir, 'simple-import.publicodes'), {
-        verbose: true,
-      })
+      getModelFromSource(join(testDataDir, 'multiple-deps-import.publicodes')),
     ).toEqual({
+      root: {
+        formule: 'a * b',
+        description: updatedDescription,
+      },
       'root . a': {
         formule: 10,
+        description: updatedDescription,
+      },
+      'root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'root . c': {
+        formule: 20,
+        description: updatedDescription,
+      },
+    })
+  })
+
+  it('should import a rule from a package with all updated attributs', () => {
+    expect(
+      getModelFromSource(join(testDataDir, 'updated-attrs-import.publicodes')),
+    ).toEqual({
+      root: {
+        formule: 'a * b',
+        description: updatedDescription,
+      },
+      'root . a': {
+        formule: 10,
+        description: updatedDescription,
+      },
+      'root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'root . c': {
+        formule: 20,
+        description: updatedDescription,
       },
     })
   })

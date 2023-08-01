@@ -24,9 +24,14 @@ import {
 export type RuleName = string
 
 /**
+ * Represents a non-parsed NGC rule.
+ */
+export type RawRule = Omit<Rule, 'nom'>
+
+/**
  * Represents a non-parsed NGC model.
  */
-export type RawRules = Record<RuleName, Omit<Rule, 'nom'>>
+export type RawRules = Record<RuleName, RawRule>
 
 /**
  * Returns the raw nodes of a parsed rules object.
@@ -41,7 +46,7 @@ export function getRawNodes(parsedRules: ParsedRules<RuleName>): RawRules {
       const { nom, ...rawNode } = rule.rawNode
       acc.push([nom, rawNode])
       return acc
-    }, [])
+    }, []),
   ) as RawRules
 }
 
@@ -66,12 +71,12 @@ export function getAllRefsInNode(node: RuleNode): RuleName[] {
       if (node === undefined) {
         return refs
       }
-      if (node.nodeKind === 'reference') {
-        refs.push(node.name)
+      if (node.nodeKind === 'reference' && !refs.includes(node.dottedName)) {
+        refs.push(node.dottedName)
       }
     },
     [],
-    node
+    node,
   )
 }
 
@@ -87,7 +92,7 @@ const binaryOps = ['+', '-', '*', '/', '>', '<', '>=', '<=', '=', '!=']
  */
 export function mapParsedExprAST(
   parsedExpr: ExprAST,
-  fn: (node: ExprAST) => ExprAST
+  fn: (node: ExprAST) => ExprAST,
 ): ExprAST {
   if ('variable' in parsedExpr || 'constant' in parsedExpr) {
     return fn(parsedExpr)
@@ -129,7 +134,7 @@ export function mapParsedExprAST(
  */
 export function serializeParsedExprAST(
   parsedExpr: ExprAST,
-  needsParens = false
+  needsParens = false,
 ): string {
   if ('variable' in parsedExpr) {
     return parsedExpr.variable
@@ -146,7 +151,7 @@ export function serializeParsedExprAST(
         (needsParens ? '(' : '') +
         `${serializeParsedExprAST(
           parsedExpr[key][0],
-          true
+          true,
         )} ${key} ${serializeParsedExprAST(parsedExpr[key][1], true)}` +
         (needsParens ? ')' : '')
       )
@@ -178,7 +183,7 @@ export function serializeParsedExprAST(
 export function substituteInParsedExpr(
   parsedExpr: ExprAST,
   variableName: RuleName,
-  constValue: string
+  constValue: string,
 ): ExprAST {
   const { type, nodeValue } = !isNaN(Number(constValue))
     ? { type: 'number', nodeValue: Number.parseFloat(constValue) }

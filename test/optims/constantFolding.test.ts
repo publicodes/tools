@@ -7,9 +7,9 @@ function constantFoldingWith(rawRules: any, targets?: RuleName[]): RawRules {
     (engine) =>
       constantFolding(
         engine,
-        targets ? ([ruleName, _]) => targets.includes(ruleName) : undefined
+        targets ? ([ruleName, _]) => targets.includes(ruleName) : undefined,
       ),
-    rawRules
+    rawRules,
   )
   return getRawNodes(res)
 }
@@ -25,7 +25,7 @@ describe('Constant folding optim', () => {
         ruleB: {
           formule: '10 * 10',
         },
-      })
+      }),
     ).toStrictEqual({
       ruleB: {
         valeur: '100',
@@ -469,7 +469,7 @@ describe('Constant folding optim', () => {
       'piscine . équipés': { formule: 45 },
     }
     expect(
-      constantFoldingWith(rawRules, ['piscine . empreinte'])
+      constantFoldingWith(rawRules, ['piscine . empreinte']),
     ).toStrictEqual({
       'piscine . empreinte': {
         formule: { somme: ['((45 * nombre) * 45) * 45'] },
@@ -494,7 +494,7 @@ describe('Constant folding optim', () => {
     expect(
       constantFoldingWith(rawRules, [
         'divers . ameublement . meubles . armoire . empreinte amortie',
-      ])
+      ]),
     ).toStrictEqual({
       'divers . ameublement . meubles . armoire . empreinte amortie': {
         titre: 'Empreinte armoire amortie',
