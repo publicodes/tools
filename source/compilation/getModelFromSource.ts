@@ -20,12 +20,13 @@ const IMPORT_KEYWORD = 'importer!'
  * ```yaml
  * importer!:
  *  depuis:
- *    nom: 'my-external-package'
- *    source: 'my-external-package.model.yaml'
+ *    nom: my-external-package
+ *    source: my-external-package.model.yaml
+ *  dans: root
  *  les règles:
  *    - règle 1
  *    - règle 2:
- *      question: 'Quelle est la valeur de la règle 2 ?'
+ *      question: Quelle est la valeur de la règle 2 ?
  */
 export type ImportMacro = {
   depuis: {
@@ -37,6 +38,8 @@ export type ImportMacro = {
     // The URL of the package, used for the documentation.
     url?: string
   }
+  // The namespace where to import the rules.
+  dans?: string
   // List of rules to import from the package.
   // They could be specified by their name, or by the name and the list of
   // properties to override or add.
@@ -221,8 +224,8 @@ function appearsMoreThanOnce(
   )
 }
 
-function accIncludes(acc: [string, Rule][], ruleName: RuleName): boolean {
-  return acc.find(([accRuleName, _]) => accRuleName === ruleName) !== undefined
+function accFind(acc: [string, Rule][], ruleName: RuleName): [string, Rule] {
+  return acc.find(([accRuleName, _]) => accRuleName === ruleName)
 }
 
 /**
@@ -248,7 +251,7 @@ function resolveImports(
             `La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}`,
           )
         }
-        if (accIncludes(acc, ruleName)) {
+        if (accFind(acc, ruleName)) {
           return acc
         }
 
@@ -267,7 +270,7 @@ function resolveImports(
             rule,
           )
           return [
-            ruleName,
+            importMacro.dans ? `${importMacro.dans} . ${ruleName}` : ruleName,
             removeRawNodeNom(ruleWithUpdatedDescription, ruleName),
           ]
         }
@@ -278,7 +281,7 @@ function resolveImports(
         const ruleDeps = getDependencies(engine, rule)
           .filter(([ruleDepName, _]) => {
             // Avoid to overwrite the updatedRawNode
-            return !accIncludes(acc, ruleDepName)
+            return !accFind(acc, ruleDepName)
           })
           .map(([ruleName, ruleNode]) => {
             return getUpdatedRule(ruleName, ruleNode)
@@ -286,9 +289,18 @@ function resolveImports(
         acc.push(...ruleDeps)
       })
     } else {
-      if (accIncludes(acc, name)) {
+      let doubleDefinition = accFind(acc, name)
+      if (doubleDefinition) {
         throw new Error(
-          `[${basename(filePath)}] La règle '${name}' est déjà définie`,
+          `[${basename(filePath)}] La règle '${name}' est déjà définie
+
+Essaie de remplacer :
+
+${yaml.stringify(doubleDefinition[1], { indent: 2 })}
+
+Avec :
+
+${yaml.stringify(value, { indent: 2 })}`,
         )
       }
       acc.push([name, value])

@@ -34,6 +34,7 @@ importer!:
   	nom: <npm_package_name>
 	source: <path_to_the_model_file> (optional)
 	url: <url_to_the_package_documentation> (optional)
+  dans: <namespace> (optional)
   les règles:
     - <rule_name_from_the_npm_package>
     - <rule_name_from_the_npm_package>:
