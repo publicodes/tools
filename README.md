@@ -23,6 +23,12 @@ by the nosgestesclimat.fr team.</i> :warning:
 
 </div>
 
+## Features
+
+* 🏗️ Compiles your set of Publicodes files into a standalone JSON file - [[doc](https://incubateur-ademe.github.io/publicodes-tools/modules/compilation.html#md:compile-a-model-from-a-source)]
+* 📦 Resolves import from external Publicodes models, from source and from published [NPM packages](https://www.npmjs.com/package/futureco-data) - [[doc](https://incubateur-ademe.github.io/publicodes-tools/modules/compilation.html#md:import-rules-from-a-npm-package)]
+* 🪶 Pre-computes you model at compile time and reduces [the number of rules by ~65%](https://github.com/incubateur-ademe/nosgestesclimat/pull/1697) - [[doc](https://incubateur-ademe.github.io/publicodes-tools/modules/optims.html)]
+
 ## Installation
 
 ```
@@ -39,16 +45,5 @@ When developing in local:
 2. launch the compilation in watch mode with `yarn watch`,
 3. and use it in your project with `yarn link @incubateur-ademe/publicodes-tools`.
 
-## Compilation
-
-To know how to easily compile Publicodes model into a standalone JSON file, see
-the [dedicated doc
-page](https://incubateur-ademe.github.io/publicodes-tools/modules/compilation.html).
-
-## Optimizations passes
-
-To know how to optimized a Publicodes model to computation, see the [dedicated
-doc page](https://incubateur-ademe.github.io/publicodes-tools/modules/optims.html).
-
-[ci-link]: https://github.com/datagir/publiopti/actions/workflows/build.yml/badge.svg
-[npm-link]: https://img.shields.io/npm/v/publiopti
+[ci-link]: https://img.shields.io/github/actions/workflow/status/incubateur-ademe/publicodes-tools/build.yml?logo=github&logoColor=white&label=build%20%26%20test
+[npm-link]: https://img.shields.io/npm/v/%40incubateur-ademe%2Fpublicodes-tools?logo=npm&logoColor=white&color=salmon
