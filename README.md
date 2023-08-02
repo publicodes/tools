@@ -14,9 +14,7 @@
 
 ![CI][ci-link] ![NPM][npm-link]
 
-`@incubateur-ademe/publicodes-tools` is a set of utility functions that could
-be used to easily write tooling around [Publicodes](https://publi.codes)
-models.
+Set of utility functions that could be used to easily write tooling around [Publicodes](https://publi.codes) models.
 
 :warning: <i>The project is currently in under experimentation and maintained
 by the nosgestesclimat.fr team.</i> :warning:
