@@ -59,3 +59,4 @@ in the NPM package root folder.
 
 */
 export * from './getModelFromSource'
+export * from './resolveImports'
