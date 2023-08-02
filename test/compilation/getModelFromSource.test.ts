@@ -193,4 +193,11 @@ Ajout d'une description`,
       },
     })
   })
+
+  it('should throw an error if there is conflict between an imported rule and a base rule with a custom namespace', () => {
+    const baseName = 'rules-doublon-with-namespace.publicodes'
+    expect(() => {
+      getModelFromSource(join(testDataDir, baseName))
+    }).toThrow(`[${baseName}] La règle 'pkg . root . c' est déjà définie`)
+  })
 })
