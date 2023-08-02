@@ -120,7 +120,7 @@ Ajout d'une description`,
     })
   })
 
-  it('should not import an unknown rule', () => {
+  it('should throw an error when trying to import an unknown rule', () => {
     expect(() => {
       getModelFromSource(join(testDataDir, 'unknown-import.publicodes'))
     }).toThrow(
@@ -128,7 +128,16 @@ Ajout d'une description`,
     )
   })
 
-  it('should not import doublon rules', () => {
+  it('should throw an error if there is no package name specified', () => {
+    const path = join(testDataDir, 'no-name-import.publicodes')
+    expect(() => {
+      getModelFromSource(path)
+    }).toThrow(
+      `Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${path}`,
+    )
+  })
+
+  it('should throw an error if there is a conflict between to imported rules', () => {
     expect(() => {
       getModelFromSource(join(testDataDir, 'doublon-import.publicodes'))
     }).toThrow(
@@ -136,12 +145,10 @@ Ajout d'une description`,
     )
   })
 
-  it('should contains the package name', () => {
-    const path = join(testDataDir, 'no-name-import.publicodes')
+  it('should throw an error if there is conflict between an imported rule and a base rule', () => {
+    const baseName = 'rules-doublon.publicodes'
     expect(() => {
-      getModelFromSource(path)
-    }).toThrow(
-      `Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${path}`,
-    )
+      getModelFromSource(join(testDataDir, baseName))
+    }).toThrow(`[${baseName}] La règle 'root . c' est déjà définie`)
   })
 })

@@ -3,7 +3,7 @@ import yaml from 'yaml'
 import { readFileSync } from 'fs'
 import Engine, { Rule, RuleNode } from 'publicodes'
 import { getAllRefsInNode, RawRules, RuleName } from '../commons'
-import { dirname, join, resolve } from 'path'
+import { basename, dirname, join, resolve } from 'path'
 
 /**
  * @fileOverview Functions to aggregate all .publicodes files into a single standalone JSON object where
@@ -221,6 +221,10 @@ function appearsMoreThanOnce(
   )
 }
 
+function accIncludes(acc: [string, Rule][], ruleName: RuleName): boolean {
+  return acc.find(([accRuleName, _]) => accRuleName === ruleName) !== undefined
+}
+
 /**
  * @throws {Error} If the rule to import does not exist.
  * @throws {Error} If there is double definition of a rule.
@@ -244,7 +248,7 @@ function resolveImports(
             `La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}`,
           )
         }
-        if (acc.find(([accRuleName, _]) => accRuleName === ruleName)) {
+        if (accIncludes(acc, ruleName)) {
           return acc
         }
 
@@ -274,7 +278,7 @@ function resolveImports(
         const ruleDeps = getDependencies(engine, rule)
           .filter(([ruleDepName, _]) => {
             // Avoid to overwrite the updatedRawNode
-            return !acc.find(([accRuleName, _]) => accRuleName === ruleDepName)
+            return !accIncludes(acc, ruleDepName)
           })
           .map(([ruleName, ruleNode]) => {
             return getUpdatedRule(ruleName, ruleNode)
@@ -282,6 +286,11 @@ function resolveImports(
         acc.push(...ruleDeps)
       })
     } else {
+      if (accIncludes(acc, name)) {
+        throw new Error(
+          `[${basename(filePath)}] La règle '${name}' est déjà définie`,
+        )
+      }
       acc.push([name, value])
     }
     return acc
