@@ -3,7 +3,7 @@ import yaml from 'yaml'
 import { readFileSync } from 'fs'
 import Engine, { Rule, RuleNode } from 'publicodes'
 import { getAllRefsInNode, RawRules, RuleName } from '../commons'
-import { basename, dirname, join, resolve } from 'path'
+import { basename, dirname, join } from 'path'
 
 /**
  * @fileOverview Functions to aggregate all .publicodes files into a single standalone JSON object where
@@ -12,6 +12,10 @@ import { basename, dirname, join, resolve } from 'path'
  */
 
 const IMPORT_KEYWORD = 'importer!'
+
+type RuleImportWithOverridenAttrs = {
+  [key: string]: object
+}
 
 /**
  * Represents a macro that allows to import rules from another package.
@@ -43,7 +47,7 @@ export type ImportMacro = {
   // List of rules to import from the package.
   // They could be specified by their name, or by the name and the list of
   // properties to override or add.
-  'les règles': [string | object][]
+  'les règles': (RuleName | RuleImportWithOverridenAttrs)[]
 }
 
 export type GetModelFromSourceOptions = {
@@ -169,13 +173,13 @@ type RuleToImport = {
  * - getRuleToImportInfos({'ruleB': null, attr1: value1})
  *   -> { ruleName: 'ruleB', attrs: {attr1: value1} }
  */
-function getRuleToImportInfos(ruleToImport: string | object): RuleToImport {
+function getRuleToImportInfos(
+  ruleToImport: RuleName | RuleImportWithOverridenAttrs,
+): RuleToImport {
   if (typeof ruleToImport == 'object') {
-    const entries = Object.entries(ruleToImport)
-    const ruleName = entries[0][0]
-    return { ruleName, attrs: Object.fromEntries(entries.slice(1)) }
+    const ruleName = Object.keys(ruleToImport)[0]
+    return { ruleName, attrs: ruleToImport[ruleName] }
   }
-
   return { ruleName: ruleToImport, attrs: {} }
 }
 
