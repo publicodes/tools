@@ -7,10 +7,10 @@ changelog:
   categories:
     - title: New features ✨
       labels:
-        - :sparkles: enhancement
+        - ":sparkles: enhancement"
     - title: Fixes ✅
       labels:
-        - :bug: bug
+        - ":bug: bug"
     - title: Other Changes
       labels:
         - '*'
