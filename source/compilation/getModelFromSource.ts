@@ -20,12 +20,13 @@ const IMPORT_KEYWORD = 'importer!'
  * ```yaml
  * importer!:
  *  depuis:
- *    nom: 'my-external-package'
- *    source: 'my-external-package.model.yaml'
+ *    nom: my-external-package
+ *    source: my-external-package.model.yaml
+ *  dans: root
  *  les règles:
  *    - règle 1
  *    - règle 2:
- *      question: 'Quelle est la valeur de la règle 2 ?'
+ *      question: Quelle est la valeur de la règle 2 ?
  */
 export type ImportMacro = {
   depuis: {
@@ -37,6 +38,8 @@ export type ImportMacro = {
     // The URL of the package, used for the documentation.
     url?: string
   }
+  // The namespace where to import the rules.
+  dans?: string
   // List of rules to import from the package.
   // They could be specified by their name, or by the name and the list of
   // properties to override or add.
@@ -267,7 +270,7 @@ function resolveImports(
             rule,
           )
           return [
-            ruleName,
+            importMacro.dans ? `${importMacro.dans} . ${ruleName}` : ruleName,
             removeRawNodeNom(ruleWithUpdatedDescription, ruleName),
           ]
         }

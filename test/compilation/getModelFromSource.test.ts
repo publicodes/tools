@@ -151,4 +151,46 @@ Ajout d'une description`,
       getModelFromSource(join(testDataDir, baseName))
     }).toThrow(`[${baseName}] La règle 'root . c' est déjà définie`)
   })
+
+  it('should import a rule from a package with all dependencies from a complex formula in a custom namespace', () => {
+    expect(
+      getModelFromSource(
+        join(testDataDir, 'complex-deps-with-namespace-import.publicodes'),
+      ),
+    ).toEqual({
+      'pkg . complex': {
+        formule: {
+          somme: ['d', 'root'],
+        },
+        description: updatedDescription,
+      },
+      'pkg . root': {
+        formule: 'a * b',
+        description: updatedDescription,
+      },
+      'pkg . root . a': {
+        formule: 10,
+        description: updatedDescription,
+      },
+      'pkg . root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'pkg . root . c': {
+        formule: 20,
+        description: updatedDescription,
+      },
+      'pkg . root 2': {
+        formule: 20,
+        résumé: 'Résumé root 2',
+        description: updatedDescription,
+      },
+      'pkg . d': {
+        formule: {
+          variations: [{ si: 'root 2 > 10', alors: 10 }, { sinon: 'root 2' }],
+        },
+        description: updatedDescription,
+      },
+    })
+  })
 })
