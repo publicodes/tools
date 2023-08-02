@@ -2,7 +2,8 @@ import glob from 'glob'
 import yaml from 'yaml'
 import { readFileSync } from 'fs'
 import Engine, { Rule, RuleNode } from 'publicodes'
-import { RawRules } from '../commons'
+import { getAllRefsInNode, RawRules, RuleName } from '../commons'
+import { basename, dirname, join, resolve } from 'path'
 
 /**
  * @fileOverview Functions to aggregate all .publicodes files into a single standalone JSON object where
@@ -11,10 +12,39 @@ import { RawRules } from '../commons'
  */
 
 const IMPORT_KEYWORD = 'importer!'
-const FROM_KEYWORD = 'depuis'
-const RULES_KEYWORD = 'les règles'
+
+/**
+ * Represents a macro that allows to import rules from another package.
+ *
+ * @example
+ * ```yaml
+ * importer!:
+ *  depuis:
+ *    nom: 'my-external-package'
+ *    source: 'my-external-package.model.yaml'
+ *  les règles:
+ *    - règle 1
+ *    - règle 2:
+ *      question: 'Quelle est la valeur de la règle 2 ?'
+ */
+export type ImportMacro = {
+  depuis: {
+    // The name of the package to import the rules from.
+    nom: string
+    // The path to the file containing the rules to import. If omitted try to
+    // found the file in the `node_modules` folders.
+    source?: string
+    // The URL of the package, used for the documentation.
+    url?: string
+  }
+  // List of rules to import from the package.
+  // They could be specified by their name, or by the name and the list of
+  // properties to override or add.
+  'les règles': [string | object][]
+}
 
 export type GetModelFromSourceOptions = {
+  ignore?: string | string[]
   verbose?: boolean
 }
 
@@ -24,59 +54,92 @@ export type GetModelFromSourceOptions = {
  * @returns {string} The path to the package model in the node_modules folder.
  */
 const packageModelPath = (packageName: string): string =>
-  `node_modules/${packageName}/${packageName}.model.json`
+  `./node_modules/${packageName}/${packageName}.model.json`
 
 // Stores engines initialized with the rules from package
 const enginesCache = {}
 
 /**
- * @param {string} packageName - The package name.
- * @param {GetModelFromSourceOptions} opts - Options.
+ * Returns an instance of the publicodes engine initialized with the rules from the given file.
  *
- * @returns {Engine} The instanciated engine.
+ * @param filePath - The path to the file containing the rules in a JSON format.
+ * @param opts - Options.
+ *
+ * @throws {Error} If the package name is missing in the macro.
  */
 function getEngine(
-  packageName: string,
+  filePath: string,
+  { depuis }: ImportMacro,
   opts: GetModelFromSourceOptions,
 ): Engine {
+  const packageName = depuis.nom
+  const fileDirPath = dirname(filePath)
+
+  if (packageName === undefined) {
+    throw new Error(
+      `Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${filePath}`,
+    )
+  }
+
   if (!enginesCache[packageName]) {
     if (opts?.verbose) {
       console.debug(` 📦 '${packageName}' loading`)
     }
     try {
-      const engine = new Engine(
-        JSON.parse(readFileSync(packageModelPath(packageName), 'utf-8')),
-        {
-          logger: {
-            log: (_) => {},
-            warn: (_) => {},
-            error: (s) => console.error(s),
-          },
+      const modelPath =
+        depuis.source !== undefined
+          ? join(fileDirPath, depuis.source)
+          : packageModelPath(packageName)
+      const model = JSON.parse(readFileSync(modelPath, 'utf-8'))
+      const engine = new Engine(model, {
+        logger: {
+          log: (_) => {},
+          warn: (_) => {},
+          error: (s) => console.error(s),
         },
-      )
+      })
+
+      if (opts?.verbose) {
+        console.debug(` 📦 '${packageName}' loaded from ${modelPath}`)
+      }
       enginesCache[packageName] = engine
     } catch (e) {
       console.error(`Error when loading '${packageName}': ${e}`)
     }
   }
+
   return enginesCache[packageName]
 }
 
 function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
-  const deps = Array.from(
-    engine.baseContext.referencesMaps.referencesIn.get(rule.dottedName),
-  ).filter(
-    (depRuleName) =>
+  const refsIn = getAllRefsInNode({
+    ...rule,
+    // Remove the parents as it is not needed to get the dependencies of.
+    explanation: { ...rule.explanation, parents: [] },
+  })
+
+  let deps = Array.from(refsIn ?? []).filter((depRuleName) => {
+    return (
       !depRuleName.endsWith('$SITUATION') &&
-      !acc.find(([accRuleName, _]) => accRuleName === depRuleName),
-  )
+      !acc.find(([accRuleName, _]) => accRuleName === depRuleName)
+    )
+  })
+
   if (deps.length === 0) {
     return acc
   }
-  acc.push(...deps.map((dep) => [dep, engine.getRule(dep).rawNode]))
-  return deps.flatMap((varName) => {
-    return getDependencies(engine, engine.getRule(varName), acc)
+
+  acc.push(...deps.map((depName) => [depName, engine.getRule(depName).rawNode]))
+  deps.forEach((depName) => {
+    acc = getDependencies(engine, engine.getRule(depName), acc)
   })
+
+  return acc
+}
+
+type RuleToImport = {
+  ruleName: RuleName
+  attrs: object
 }
 
 /**
@@ -89,7 +152,8 @@ function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
  *
  * ```
  * importer!:
- *	 depuis: 'package-name'
+ *	 depuis:
+ *	 	nom: 'package-name'
  *	 les règles:
  *			- ruleA
  *			- ruleB:
@@ -97,17 +161,40 @@ function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
  * ```
  *
  * We have:
- * - getRuleToImportInfos('ruleA') -> [['ruleA', {}]]
- * - getRuleToImportInfos({'ruleB': {attr1: value1}) -> [['ruleA', {attr1: value1}]]
+ * - getRuleToImportInfos('ruleA')
+ *   -> { ruleName: 'ruleA', attrs: {} }
+ * - getRuleToImportInfos({'ruleB': null, attr1: value1})
+ *   -> { ruleName: 'ruleB', attrs: {attr1: value1} }
  */
-function getRuleToImportInfos(
-  ruleToImport: string | object,
-): [string, object][] {
+function getRuleToImportInfos(ruleToImport: string | object): RuleToImport {
   if (typeof ruleToImport == 'object') {
     const entries = Object.entries(ruleToImport)
-    return entries
+    const ruleName = entries[0][0]
+    return { ruleName, attrs: Object.fromEntries(entries.slice(1)) }
   }
-  return [[ruleToImport, {}]]
+
+  return { ruleName: ruleToImport, attrs: {} }
+}
+
+function addSourceModelInfomation(
+  importInfos: ImportMacro,
+  importedRule: Rule,
+) {
+  const { nom, url } = importInfos.depuis
+  const linkToSourceModel = url
+    ? `> ℹ️ Cette règle provient du modèle [${nom}](${url}).`
+    : `> ℹ️ Cette règle provient du modèle **${nom}**.`
+
+  return {
+    ...importedRule,
+    description: importedRule.description
+      ? `
+${linkToSourceModel}
+
+
+${importedRule.description}`
+      : linkToSourceModel,
+  }
 }
 
 /**
@@ -125,41 +212,85 @@ function removeRawNodeNom(
   return rest
 }
 
+function appearsMoreThanOnce(
+  rulesToImport: RuleToImport[],
+  ruleName: RuleName,
+): boolean {
+  return (
+    rulesToImport.filter(({ ruleName: name }) => name === ruleName).length > 1
+  )
+}
+
+function accIncludes(acc: [string, Rule][], ruleName: RuleName): boolean {
+  return acc.find(([accRuleName, _]) => accRuleName === ruleName) !== undefined
+}
+
 /**
  * @throws {Error} If the rule to import does not exist.
+ * @throws {Error} If there is double definition of a rule.
  * @throws {Error} If the imported rule's publicode raw node "nom" attribute is different from the resolveImport script ruleName.
  */
 function resolveImports(
+  filePath: string,
   rules: object,
   opts: GetModelFromSourceOptions,
 ): object {
   const resolvedRules = Object.entries(rules).reduce((acc, [name, value]) => {
     if (name === IMPORT_KEYWORD) {
-      const engine = getEngine(value[FROM_KEYWORD], opts)
-      const rulesToImport = value[RULES_KEYWORD]
+      const importMacro: ImportMacro = value
+      const engine = getEngine(filePath, importMacro, opts)
+      const rulesToImport: RuleToImport[] =
+        importMacro['les règles']?.map(getRuleToImportInfos)
 
-      rulesToImport?.forEach((ruleToImport: string | object) => {
-        const [[ruleName, attrs]] = getRuleToImportInfos(ruleToImport)
-        const rule = engine.getRule(ruleName)
-        if (!rule) {
+      rulesToImport?.forEach(({ ruleName, attrs }) => {
+        if (appearsMoreThanOnce(rulesToImport, ruleName)) {
           throw new Error(
-            `La règle '${ruleName}' n'existe pas dans ${value[FROM_KEYWORD]}`,
+            `La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}`,
           )
         }
-        const updatedRawNode = { ...rule.rawNode, ...attrs }
-        // The name "nom" will already be there as the key, also called dottedName or ruleName
-        // Keeping it is a repetition and can lead to misleading translations (rule names should not be translated in the current state of translation, they're the ids)
-        acc.push([ruleName, removeRawNodeNom(updatedRawNode, ruleName)])
-        const ruleDeps = getDependencies(engine, rule)
-          .filter(
-            ([ruleDepName, _]) =>
-              // Avoid to overwrite the updatedRawNode
-              !acc.find(([accRuleName, _]) => accRuleName === ruleDepName),
+        if (accIncludes(acc, ruleName)) {
+          return acc
+        }
+
+        let rule
+        try {
+          rule = engine.getRule(ruleName)
+        } catch (e) {
+          throw new Error(
+            `La règle '${ruleName}' n'existe pas dans ${importMacro.depuis.nom}`,
           )
-          .map(([k, v]) => [k, removeRawNodeNom(v, k)])
+        }
+
+        const getUpdatedRule = (ruleName: RuleName, rule: Rule) => {
+          const ruleWithUpdatedDescription = addSourceModelInfomation(
+            importMacro,
+            rule,
+          )
+          return [
+            ruleName,
+            removeRawNodeNom(ruleWithUpdatedDescription, ruleName),
+          ]
+        }
+
+        const ruleWithOverridenAttributes = { ...rule.rawNode, ...attrs }
+
+        acc.push(getUpdatedRule(ruleName, ruleWithOverridenAttributes))
+        const ruleDeps = getDependencies(engine, rule)
+          .filter(([ruleDepName, _]) => {
+            // Avoid to overwrite the updatedRawNode
+            return !accIncludes(acc, ruleDepName)
+          })
+          .map(([ruleName, ruleNode]) => {
+            return getUpdatedRule(ruleName, ruleNode)
+          })
         acc.push(...ruleDeps)
       })
     } else {
+      if (accIncludes(acc, name)) {
+        throw new Error(
+          `[${basename(filePath)}] La règle '${name}' est déjà définie`,
+        )
+      }
       acc.push([name, value])
     }
     return acc
@@ -176,23 +307,21 @@ function resolveImports(
  * @param opts - Options.
  *
  * @returns The model with resolved imports in a single JSON object.
+ *
+ * @throws {Error} If the package name is missing in the macro.
+ * @throws {Error} If the rule to import does not exist.
+ * @throws {Error} If there is double definition of a rule.
  */
 export function getModelFromSource(
   sourceFile: string,
-  ignore: string | string[] | undefined,
-  opts: GetModelFromSourceOptions,
+  opts?: GetModelFromSourceOptions,
 ): RawRules {
   const res = glob
-    .sync(sourceFile, { ignore })
+    .sync(sourceFile, { ignore: opts?.ignore })
     .reduce((jsonModel: object, filePath: string) => {
-      try {
-        const rules = yaml.parse(readFileSync(filePath, 'utf-8'))
-        const completeRules = resolveImports(rules, opts)
-        return { ...jsonModel, ...completeRules }
-      } catch (e) {
-        console.error(`Error parsing '${filePath}':`, e)
-        return jsonModel
-      }
+      const rules = yaml.parse(readFileSync(filePath, 'utf-8'))
+      const completeRules = resolveImports(filePath, rules, opts)
+      return { ...jsonModel, ...completeRules }
     }, {})
   return res
 }

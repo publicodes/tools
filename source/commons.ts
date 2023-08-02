@@ -1,4 +1,12 @@
-import type { Rule, ParsedRules, Logger, ExprAST } from 'publicodes'
+import {
+  Rule,
+  ParsedRules,
+  Logger,
+  ExprAST,
+  RuleNode,
+  reduceAST,
+  ASTNode,
+} from 'publicodes'
 
 /**
  * @packageDocumentation
@@ -16,9 +24,14 @@ import type { Rule, ParsedRules, Logger, ExprAST } from 'publicodes'
 export type RuleName = string
 
 /**
+ * Represents a non-parsed NGC rule.
+ */
+export type RawRule = Omit<Rule, 'nom'>
+
+/**
  * Represents a non-parsed NGC model.
  */
-export type RawRules = Record<RuleName, Omit<Rule, 'nom'>>
+export type RawRules = Record<RuleName, RawRule>
 
 /**
  * Returns the raw nodes of a parsed rules object.
@@ -43,6 +56,28 @@ export const disabledLogger: Logger = {
   log: consumeMsg,
   warn: consumeMsg,
   error: consumeMsg,
+}
+
+/**
+ * Returns the list of all the references in a rule node.
+ *
+ * @param node - The rule node to explore.
+ *
+ * @returns The references.
+ */
+export function getAllRefsInNode(node: RuleNode): RuleName[] {
+  return reduceAST<RuleName[]>(
+    (refs: RuleName[], node: ASTNode) => {
+      if (node === undefined) {
+        return refs
+      }
+      if (node.nodeKind === 'reference' && !refs.includes(node.dottedName)) {
+        refs.push(node.dottedName)
+      }
+    },
+    [],
+    node,
+  )
 }
 
 const binaryOps = ['+', '-', '*', '/', '>', '<', '>=', '<=', '=', '!=']

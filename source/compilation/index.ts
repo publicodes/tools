@@ -17,8 +17,10 @@ import { getModelFromSource } from '@incubateur-ademe/publicodes-tools/compilati
 
 const model = getModelFromSource(
 	'data\/**\/*.publicodes',
-	['data/test/**'],
-	{ verbose: true },
+	{
+		ignore: ['data/test/**'],
+		verbose: true
+	},
 )
 ```
 
@@ -28,7 +30,10 @@ To import rules from a _packaged_ Publicodes model, you need to specify the foll
 
 ```yaml
 importer!:
-  depuis: <npm_package_name>
+  depuis:
+  	nom: <npm_package_name>
+	source: <path_to_the_model_file> (optional)
+	url: <url_to_the_package_documentation> (optional)
   les règles:
     - <rule_name_from_the_npm_package>
     - <rule_name_from_the_npm_package>:
@@ -37,11 +42,19 @@ importer!:
     ...
 ```
 
+
 When compiling , each YAML entry `importer!` will be replaced by all imported rules and
 their dependencies by {@link getModelFromSource | `getModelFromSource`}.
 
-> NOTE: to be used in the `importer!` meta-mechanism, the NPM package need to expose the
-compiled {@link index.RawRules | `RawRules`} into `<package_name>.model.json`.
+@see
+
+{@link compilation.ImportMacro | `ImportMacro`} for more details.
+
+@note
+
+By default if no `source` is specified, the model is assumed to be
+compiled {@link index.RawRules | `RawRules`} into `<package_name>.model.json`
+in the NPM package root folder.
 
 */
 export * from './getModelFromSource'
