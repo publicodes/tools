@@ -27,5 +27,9 @@
         { "sinon": "root 2" }
       ]
     }
+  },
+  "e": {
+    "question": "Question ?",
+    "formule": 10
   }
 }

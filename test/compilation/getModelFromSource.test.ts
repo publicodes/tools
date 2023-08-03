@@ -77,6 +77,30 @@ Ajout d'une description`,
         résumé: "Modification d'un résumé",
         description: updatedDescription,
       },
+      e: {
+        formule: 10,
+        question: null,
+        description: updatedDescription,
+        résumé: 'Lorem ipsum',
+      },
+    })
+  })
+
+  it('should import a rule from a package with all updated attributes even in imported rule deps', () => {
+    expect(
+      getModelFromSource(
+        join(testDataDir, 'updated-attrs-from-deps-import.publicodes'),
+      ),
+    ).toEqual({
+      'root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'root . c': {
+        formule: 20,
+        titre: "Ajout d'un titre",
+        description: updatedDescription,
+      },
     })
   })
 
