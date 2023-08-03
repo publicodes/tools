@@ -281,7 +281,16 @@ export function resolveImports(
         const ruleDeps = getDependencies(engine, rule)
           .filter(([ruleDepName, _]) => {
             // Avoid to overwrite the updatedRawNode
-            return !accFind(acc, ruleDepName)
+            return (
+              !accFind(acc, ruleDepName) &&
+              // The dependency is part of the rule to import so we don't want to handle it now
+              !rulesToImport.find(({ ruleName: ruleToImportName }) => {
+                const theDepIsARuleToImport =
+                  ruleName !== ruleToImportName &&
+                  ruleToImportName === ruleDepName
+                return theDepIsARuleToImport
+              })
+            )
           })
           .map(([ruleName, ruleNode]) => {
             return getUpdatedRule(ruleName, ruleNode)
