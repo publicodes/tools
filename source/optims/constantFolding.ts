@@ -140,6 +140,9 @@ function replaceAllRefs(
   constantValue: any,
   currentRuleName: string,
 ): string {
+  console.log(
+    `[${currentRuleName} replace ${refName} by ${constantValue} in ${str}`,
+  )
   const parsedExpression = parseExpression(str, currentRuleName)
   const newParsedExpression = substituteInParsedExpr(
     parsedExpression,
@@ -453,26 +456,28 @@ export function constantFolding(
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
   const parsedRules: ParsedRules<RuleName> = engine.getParsedRules()
+  console.time('> initFoldingCtx')
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
+  console.timeEnd('> initFoldingCtx')
 
-  Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
-    if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
-      ctx = tryToFoldRule(ctx, ruleName, ruleNode)
-    }
-  })
-
-  if (toKeep) {
-    ctx.parsedRules = Object.fromEntries(
-      Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
-        const parents = ctx.refs.parents.get(ruleName)
-        return (
-          !isFoldable(ruleNode) ||
-          toKeep([ruleName, ruleNode]) ||
-          parents?.length > 0
-        )
-      }),
-    )
-  }
+  // Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
+  //   if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
+  //     ctx = tryToFoldRule(ctx, ruleName, ruleNode)
+  //   }
+  // })
+  //
+  // if (toKeep) {
+  //   ctx.parsedRules = Object.fromEntries(
+  //     Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
+  //       const parents = ctx.refs.parents.get(ruleName)
+  //       return (
+  //         !isFoldable(ruleNode) ||
+  //         toKeep([ruleName, ruleNode]) ||
+  //         parents?.length > 0
+  //       )
+  //     }),
+  //   )
+  // }
 
   return ctx.parsedRules
 }
