@@ -48,7 +48,6 @@ function initFoldingCtx(
 ): FoldingCtx {
   const refs: RefMaps = { parents: new Map(), childs: new Map() }
 
-  console.time(`> > initFoldingCtx.forEach`)
   Object.entries(parsedRules).forEach(([ruleName, ruleNode]) => {
     const reducedAST =
       reduceAST(
@@ -64,7 +63,9 @@ function initFoldingCtx(
         new Set(),
         ruleNode.explanation.valeur,
       ) ?? new Set()
-    const traversedVariables: RuleName[] = Array.from(reducedAST)
+    const traversedVariables: RuleName[] = Array.from(reducedAST).filter(
+      (name) => !name.endsWith(' . $SITUATION'),
+    )
 
     if (traversedVariables.length > 0) {
       addMapEntry(refs.childs, ruleName, traversedVariables)
@@ -270,6 +271,7 @@ export function removeInMap<K, V>(
     (map.get(key) ?? []).filter((v) => v !== val),
   )
 }
+
 function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
   ref.forEach((_, rule) => {
     removeInMap(ref, rule, ruleName)
@@ -417,9 +419,7 @@ export function constantFolding(
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
   const parsedRules: ParsedRules<RuleName> = engine.getParsedRules()
-  console.time('> initFoldingCtx')
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
-  console.timeEnd('> initFoldingCtx')
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
     if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
