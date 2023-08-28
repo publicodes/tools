@@ -53,7 +53,7 @@ function initFoldingCtx(
   Object.entries(parsedRules).forEach(([ruleName, ruleNode]) => {
     const evaluatedRule = engine.evaluate(ruleName)
     evaluatedRules.set(ruleName, evaluatedRule)
-    const traversedVariables: RuleName[] = Array.from(
+    const reducedAST =
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
           if (
@@ -66,8 +66,8 @@ function initFoldingCtx(
         },
         new Set(),
         ruleNode.explanation.valeur,
-      ) ?? new Set(),
-    )
+      ) ?? new Set()
+    const traversedVariables: RuleName[] = Array.from(reducedAST)
 
     if (traversedVariables.length > 0) {
       addMapEntry(refs.childs, ruleName, traversedVariables)
@@ -205,37 +205,27 @@ function lexicalSubstitutionOfRefValue(
   }
 }
 
-// Replaces all references in [refs] (could be childs or parents) of [ruleName]
-// by its [rule.valeur].
+/** Replaces all references in parent refs of [ruleName] by its [rule.valeur] */
 function searchAndReplaceConstantValueInParentRefs(
   ctx: FoldingCtx,
   ruleName: RuleName,
   rule: RuleNode,
 ): FoldingCtx {
   const refs = ctx.refs.parents.get(ruleName)
-  const parentsToRemove: RuleName[] = []
 
   if (refs) {
     refs
       .map((dottedName) => ctx.parsedRules[dottedName])
       .filter(isFoldable)
-      .forEach(({ dottedName: parentDottedName }) => {
-        const newRule = lexicalSubstitutionOfRefValue(
-          ctx.parsedRules[parentDottedName],
-          rule,
-        )
-        if (newRule) {
-          ctx.parsedRules[parentDottedName] = newRule
-          ctx.parsedRules[parentDottedName].rawNode[ctx.params.isFoldedAttr] =
-            true
-          parentsToRemove.push(parentDottedName)
+      .forEach((parentRule) => {
+        const parentName = parentRule.dottedName
+        const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
+        if (newRule !== undefined) {
+          parentRule = newRule
+          parentRule.rawNode[ctx.params.isFoldedAttr] = true
+          removeInMap(ctx.refs.parents, ruleName, parentName)
         }
       })
-
-    ctx.refs.parents.set(
-      ruleName,
-      refs.filter((name) => !parentsToRemove.includes(name)),
-    )
   }
 
   return ctx
@@ -245,17 +235,13 @@ function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
   return 'rawNode' in rule && params.isFoldedAttr in rule.rawNode
 }
 
-function isAConstant(rule: RuleNode) {
-  return 'valeur' in rule.rawNode && !('formule' in rule.rawNode)
-}
-
-// Subsitutes [parentRuleNode.formule] ref constant from [refs].
-//
-// NOTE: It folds child rules in [refs] if possible.
+/**
+ * Subsitutes [parentRuleNode.formule] ref constant from [refs].
+ *
+ * @note It folds child rules in [refs] if possible.
+ */
 function replaceAllPossibleChildRefs(
   ctx: FoldingCtx,
-  parentRuleName: RuleName,
-  parentRuleNode: RuleNode,
   refs: RuleName[],
 ): FoldingCtx {
   if (refs) {
@@ -273,32 +259,24 @@ function replaceAllPossibleChildRefs(
         if (!isAlreadyFolded(ctx.params, childNode)) {
           ctx = tryToFoldRule(ctx, childDottedName, childNode)
         }
-        if (isAConstant(childNode)) {
-          const newRule = lexicalSubstitutionOfRefValue(
-            parentRuleNode,
-            childNode,
-          )
-          if (newRule !== undefined) {
-            ctx.parsedRules[parentRuleName] = newRule
-            ctx.parsedRules[parentRuleName].rawNode[ctx.params.isFoldedAttr] =
-              true
-            ctx = updateRefCounting(ctx, parentRuleName, [childDottedName])
-          }
-        }
       })
   }
   return ctx
 }
 
+export function removeInMap<K, V>(
+  map: Map<K, V[]>,
+  key: K,
+  val: V,
+): Map<K, V[]> {
+  return map.set(
+    key,
+    (map.get(key) ?? []).filter((v) => v !== val),
+  )
+}
 function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
-  Array.from(ref.keys()).forEach((rule: RuleName) => {
-    const refs = ref.get(rule)
-    if (refs !== undefined) {
-      ref.set(
-        rule,
-        refs.filter((r) => r !== ruleName),
-      )
-    }
+  ref.forEach((_, rule) => {
+    removeInMap(ref, rule, ruleName)
   })
 }
 
@@ -318,25 +296,16 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
   return ctx
 }
 
-// Removes the [parentRuleName] as a parent dependency of each [childRuleNamesToUpdate].
+/** Removes the [parentRuleName] as a parent dependency of each [childRuleNamesToUpdate]. */
 function updateRefCounting(
   ctx: FoldingCtx,
   parentRuleName: RuleName,
-  childRuleNamesToUpdate: RuleName[],
+  ruleNamesToUpdate: RuleName[],
 ): FoldingCtx {
-  childRuleNamesToUpdate.forEach((childRuleDottedName: RuleName) => {
-    ctx.refs.parents.set(
-      childRuleDottedName,
-      ctx.refs.parents
-        .get(childRuleDottedName)
-        ?.filter(
-          (dottedName) =>
-            isInParsedRules(ctx.parsedRules, dottedName) &&
-            dottedName !== parentRuleName,
-        ),
-    )
-    if (ctx.refs.parents.get(childRuleDottedName)?.length === 0) {
-      ctx = deleteRule(ctx, childRuleDottedName)
+  ruleNamesToUpdate.forEach((ruleNameToUpdate) => {
+    removeInMap(ctx.refs.parents, ruleNameToUpdate, parentRuleName)
+    if (ctx.refs.parents.get(ruleNameToUpdate)?.length === 0) {
+      ctx = deleteRule(ctx, ruleNameToUpdate)
     }
   })
   return ctx
@@ -395,6 +364,9 @@ function tryToFoldRule(
     }
 
     ctx = searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
+    if (ctx.parsedRules[ruleName] === undefined) {
+      return ctx
+    }
 
     if ('formule' in rule.rawNode) {
       // The rule do not depends on any other rule anymore, so we need to remove
@@ -414,7 +386,7 @@ function tryToFoldRule(
       delete ctx.parsedRules[ruleName].rawNode.formule
     }
 
-    if (ruleParents?.length === 0) {
+    if (ctx.refs.parents.get(ruleName)?.length === 0) {
       // NOTE(@EmileRolley): temporary work around until all mechanisms are supported.
       // Indeed, when replacing a leaf ref by its value in all its parents,
       // it should always be removed.
@@ -424,14 +396,11 @@ function tryToFoldRule(
     }
 
     return ctx
-  }
-
-  // Try to replace internal refs if possible.
-  if ('formule' in rule.rawNode) {
+  } else if ('formule' in rule.rawNode) {
+    // Try to replace internal refs if possible.
     const childs = ctx.refs.childs.get(ruleName)
-
     if (childs?.length > 0) {
-      replaceAllPossibleChildRefs(ctx, ruleName, rule, childs)
+      replaceAllPossibleChildRefs(ctx, childs)
     }
   }
   return ctx
@@ -453,7 +422,9 @@ export function constantFolding(
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
   const parsedRules: ParsedRules<RuleName> = engine.getParsedRules()
+  console.time('> initFoldingCtx')
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
+  console.timeEnd('> initFoldingCtx')
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
     if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
