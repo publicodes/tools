@@ -1,5 +1,5 @@
 import Engine, { reduceAST, ParsedRules, parseExpression } from 'publicodes'
-import type { EvaluatedNode, RuleNode, ASTNode, Unit } from 'publicodes'
+import type { RuleNode, ASTNode, Unit } from 'publicodes'
 import {
   RuleName,
   serializeParsedExprAST,
@@ -28,7 +28,6 @@ type FoldingCtx = {
   engine: Engine
   parsedRules: ParsedRules<RuleName>
   refs: RefMaps
-  evaluatedRules: Map<RuleName, EvaluatedNode>
   toKeep?: PredicateOnRule
   params: FoldingParams
 }
@@ -48,11 +47,9 @@ function initFoldingCtx(
   foldingParams?: FoldingParams,
 ): FoldingCtx {
   const refs: RefMaps = { parents: new Map(), childs: new Map() }
-  const evaluatedRules: Map<RuleName, EvaluatedNode> = new Map()
 
+  console.time(`> > initFoldingCtx.forEach`)
   Object.entries(parsedRules).forEach(([ruleName, ruleNode]) => {
-    const evaluatedRule = engine.evaluate(ruleName)
-    evaluatedRules.set(ruleName, evaluatedRule)
     const reducedAST =
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
@@ -81,7 +78,6 @@ function initFoldingCtx(
     engine,
     parsedRules,
     refs,
-    evaluatedRules,
     toKeep,
     params: { isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized' },
   }
@@ -289,7 +285,6 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
     removeRuleFromRefs(ctx.refs.parents, dottedName)
     removeRuleFromRefs(ctx.refs.childs, dottedName)
     delete ctx.parsedRules[dottedName]
-    delete ctx.evaluatedRules[dottedName]
     ctx.refs.parents.delete(dottedName)
     ctx.refs.childs.delete(dottedName)
   }
@@ -336,7 +331,7 @@ function tryToFoldRule(
   }
 
   const { nodeValue, missingVariables, traversedVariables, unit } =
-    ctx.evaluatedRules.get(ruleName) ?? ctx.engine.evaluateNode(rule)
+    ctx.engine.evaluateNode(rule)
 
   const traversedVariablesWithoutSelf = traversedVariables.filter(
     (dottedName) => dottedName !== ruleName,
