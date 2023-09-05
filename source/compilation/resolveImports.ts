@@ -48,8 +48,13 @@ export type ImportMacro = {
  *
  * @returns {string} The path to the package model in the node_modules folder.
  */
-const packageModelPath = (packageName: string): string =>
-  `./node_modules/${packageName}/${packageName}.model.json`
+const packageModelPath = (packageName: string): string => {
+  if (packageName.startsWith('@')) {
+    const [scope, name] = packageName.split('/')
+    return `./node_modules/${scope}/${name}/${name}.model.json`
+  }
+  return `./node_modules/${packageName}/${packageName}.model.json`
+}
 
 // Stores engines initialized with the rules from package
 const enginesCache = {}
@@ -177,8 +182,8 @@ function addSourceModelInfomation(
 ) {
   const { nom, url } = importInfos.depuis
   const linkToSourceModel = url
-    ? `> ℹ️ Cette règle provient du modèle [${nom}](${url}).`
-    : `> ℹ️ Cette règle provient du modèle **${nom}**.`
+    ? `> ℹ️ Cette règle provient du modèle [\`${nom}\`](${url}).`
+    : `> ℹ️ Cette règle provient du modèle \`${nom}**.\``
 
   return {
     ...importedRule,
