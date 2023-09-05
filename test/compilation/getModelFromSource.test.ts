@@ -3,7 +3,7 @@ import { join, resolve } from 'path'
 
 const testDataDir = resolve('./test/compilation/data/')
 
-const updatedDescription = `> ℹ️ Cette règle provient du modèle **my-external-package**.`
+const updatedDescription = `> ℹ️ Cette règle provient du modèle \`my-external-package\`.`
 
 describe('getModelFromSource › rules import', () => {
   it('should import a rule from a package', () => {

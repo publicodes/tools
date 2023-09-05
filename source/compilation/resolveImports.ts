@@ -183,7 +183,7 @@ function addSourceModelInfomation(
   const { nom, url } = importInfos.depuis
   const linkToSourceModel = url
     ? `> ℹ️ Cette règle provient du modèle [\`${nom}\`](${url}).`
-    : `> ℹ️ Cette règle provient du modèle \`${nom}**.\``
+    : `> ℹ️ Cette règle provient du modèle \`${nom}\`.`
 
   return {
     ...importedRule,
