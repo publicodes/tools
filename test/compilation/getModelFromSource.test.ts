@@ -229,6 +229,6 @@ Ajout d'une description`,
     const baseName = 'rules-doublon-with-namespace.publicodes'
     expect(() => {
       getModelFromSource(join(testDataDir, baseName))
-    }).toThrow(`[${baseName}] La règle 'pkg . root . c' est déjà définie`)
+    }).toThrow(`[${baseName}] La règle 'pkg' est déjà définie`)
   })
 })
