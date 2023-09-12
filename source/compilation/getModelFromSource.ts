@@ -31,6 +31,10 @@ export function getModelFromSource(
     .sync(sourceFile, { ignore: opts?.ignore })
     .reduce((jsonModel: object, filePath: string) => {
       const rules = yaml.parse(readFileSync(filePath, 'utf-8'))
+      if (rules == null) {
+        console.warn(`⚠️ ${filePath} is empty, skipping...`)
+        return jsonModel
+      }
       const completeRules = resolveImports(filePath, rules, opts?.verbose)
       return { ...jsonModel, ...completeRules }
     }, {})
