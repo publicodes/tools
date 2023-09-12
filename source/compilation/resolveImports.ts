@@ -82,9 +82,6 @@ function getEngine(
   }
 
   if (!enginesCache[packageName]) {
-    if (verbose) {
-      console.debug(` 📦 '${packageName}' loading`)
-    }
     try {
       const modelPath =
         depuis.source !== undefined
@@ -100,7 +97,7 @@ function getEngine(
       })
 
       if (verbose) {
-        console.debug(` 📦 '${packageName}' loaded from ${modelPath}`)
+        console.debug(`📦 ${packageName} loaded`)
       }
       enginesCache[packageName] = engine
     } catch (e) {
@@ -225,6 +222,13 @@ function accFind(acc: [string, Rule][], ruleName: RuleName): [string, Rule] {
   return acc.find(([accRuleName, _]) => accRuleName === ruleName)
 }
 
+function getNamespace({ dans, depuis: { nom } }: ImportMacro): string {
+  if (dans) {
+    return dans
+  }
+  return nom.startsWith('@') ? nom.split('/')[1] : nom
+}
+
 /**
  * Resolves the `importer!` macro inside a publicode file if any.
  *
@@ -249,7 +253,9 @@ export function resolveImports(
       const engine = getEngine(filePath, importMacro, verbose)
       const rulesToImport: RuleToImport[] =
         importMacro['les règles']?.map(getRuleToImportInfos)
+      const namespace = getNamespace(importMacro)
 
+      acc.push([namespace, null])
       rulesToImport?.forEach(({ ruleName, attrs }) => {
         if (appearsMoreThanOnce(rulesToImport, ruleName)) {
           throw new Error(
@@ -275,7 +281,7 @@ export function resolveImports(
             rule,
           )
           return [
-            importMacro.dans ? `${importMacro.dans} . ${ruleName}` : ruleName,
+            `${namespace} . ${ruleName}`,
             removeRawNodeNom(ruleWithUpdatedDescription, ruleName),
           ]
         }

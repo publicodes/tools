@@ -10,7 +10,8 @@ describe('getModelFromSource › rules import', () => {
     expect(
       getModelFromSource(join(testDataDir, 'simple-import.publicodes')),
     ).toEqual({
-      'root . a': {
+      'my-external-package': null,
+      'my-external-package . root . a': {
         formule: 10,
         description: updatedDescription,
       },
@@ -21,11 +22,12 @@ describe('getModelFromSource › rules import', () => {
     expect(
       getModelFromSource(join(testDataDir, 'deps-import.publicodes')),
     ).toEqual({
-      'root . b': {
+      'my-external-package': null,
+      'my-external-package . root . b': {
         formule: 'root . c * 2',
         description: updatedDescription,
       },
-      'root . c': {
+      'my-external-package . root . c': {
         formule: 20,
         description: updatedDescription,
       },
@@ -36,19 +38,20 @@ describe('getModelFromSource › rules import', () => {
     expect(
       getModelFromSource(join(testDataDir, 'multiple-deps-import.publicodes')),
     ).toEqual({
-      root: {
+      'my-external-package': null,
+      'my-external-package . root': {
         formule: 'a * b',
         description: updatedDescription,
       },
-      'root . a': {
+      'my-external-package . root . a': {
         formule: 10,
         description: updatedDescription,
       },
-      'root . b': {
+      'my-external-package . root . b': {
         formule: 'root . c * 2',
         description: updatedDescription,
       },
-      'root . c': {
+      'my-external-package . root . c': {
         formule: 20,
         description: updatedDescription,
       },
@@ -59,12 +62,13 @@ describe('getModelFromSource › rules import', () => {
     expect(
       getModelFromSource(join(testDataDir, 'updated-attrs-import.publicodes')),
     ).toEqual({
-      'root . a': {
+      'my-external-package': null,
+      'my-external-package . root . a': {
         formule: 10,
         titre: "Ajout d'un titre",
         description: updatedDescription,
       },
-      'root . c': {
+      'my-external-package . root . c': {
         formule: 20,
         description: `
 ${updatedDescription}
@@ -72,12 +76,12 @@ ${updatedDescription}
 
 Ajout d'une description`,
       },
-      'root 2': {
+      'my-external-package . root 2': {
         formule: 20,
         résumé: "Modification d'un résumé",
         description: updatedDescription,
       },
-      e: {
+      'my-external-package . e': {
         formule: 10,
         question: null,
         description: updatedDescription,
@@ -92,11 +96,12 @@ Ajout d'une description`,
         join(testDataDir, 'updated-attrs-from-deps-import.publicodes'),
       ),
     ).toEqual({
-      'root . b': {
+      'my-external-package': null,
+      'my-external-package . root . b': {
         formule: 'root . c * 2',
         description: updatedDescription,
       },
-      'root . c': {
+      'my-external-package . root . c': {
         formule: 20,
         titre: "Ajout d'un titre",
         description: updatedDescription,
@@ -108,34 +113,35 @@ Ajout d'une description`,
     expect(
       getModelFromSource(join(testDataDir, 'complex-deps-import.publicodes')),
     ).toEqual({
-      complex: {
+      'my-external-package': null,
+      'my-external-package . complex': {
         formule: {
           somme: ['d', 'root'],
         },
         description: updatedDescription,
       },
-      root: {
+      'my-external-package . root': {
         formule: 'a * b',
         description: updatedDescription,
       },
-      'root . a': {
+      'my-external-package . root . a': {
         formule: 10,
         description: updatedDescription,
       },
-      'root . b': {
+      'my-external-package . root . b': {
         formule: 'root . c * 2',
         description: updatedDescription,
       },
-      'root . c': {
+      'my-external-package . root . c': {
         formule: 20,
         description: updatedDescription,
       },
-      'root 2': {
+      'my-external-package . root 2': {
         formule: 20,
         résumé: 'Résumé root 2',
         description: updatedDescription,
       },
-      d: {
+      'my-external-package . d': {
         formule: {
           variations: [{ si: 'root 2 > 10', alors: 10 }, { sinon: 'root 2' }],
         },
@@ -173,7 +179,7 @@ Ajout d'une description`,
     const baseName = 'rules-doublon.publicodes'
     expect(() => {
       getModelFromSource(join(testDataDir, baseName))
-    }).toThrow(`[${baseName}] La règle 'root . c' est déjà définie`)
+    }).toThrow(`[${baseName}] La règle 'pkg . root . c' est déjà définie`)
   })
 
   it('should import a rule from a package with all dependencies from a complex formula in a custom namespace', () => {
@@ -182,6 +188,7 @@ Ajout d'une description`,
         join(testDataDir, 'complex-deps-with-namespace-import.publicodes'),
       ),
     ).toEqual({
+      pkg: null,
       'pkg . complex': {
         formule: {
           somme: ['d', 'root'],
