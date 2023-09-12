@@ -6,6 +6,6 @@ importer!:
   les règles:
     - root . b
 
-pkg . root:
+pkg:
 pkg . root . c:
   titre: Conflicting rule with dependency of 'root . b' in my-external-package imported in 'pkg'

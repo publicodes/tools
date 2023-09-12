@@ -57,6 +57,9 @@ By default if no `source` is specified, the model is assumed to be
 compiled {@link index.RawRules | `RawRules`} into `<package_name>.model.json`
 in the NPM package root folder.
 
+If no `dans` is specified, the rules will be imported in a namespace corresponding
+to the package name (`nom`).
+
 */
 export * from './getModelFromSource'
 export * from './resolveImports'
