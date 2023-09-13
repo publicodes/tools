@@ -259,4 +259,28 @@ Ajout d'une description`,
       },
     })
   })
+
+  it('should parse with glob pattern', () => {
+    expect(
+      getModelFromSource(
+        join(testDataDir, 'namespace-conflicts/**/*.publicodes'),
+      ),
+    ).toEqual({
+      pkg: {
+        titre: 'Already existing namespace',
+      },
+      'pkg . root': null,
+      'pkg . root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'pkg . root . c': {
+        formule: 20,
+        description: updatedDescription,
+      },
+      rule: {
+        formule: 'pkg . root . b * 2',
+      },
+    })
+  })
 })

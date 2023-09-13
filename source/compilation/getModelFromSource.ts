@@ -40,9 +40,11 @@ export function getModelFromSource(
   sourcePath: string,
   opts?: GetModelFromSourceOptions,
 ): RawRules {
-  if (statSync(sourcePath).isDirectory()) {
-    sourcePath = sourcePath + '/**/*.publicodes'
-  }
+  try {
+    if (statSync(sourcePath).isDirectory()) {
+      sourcePath = sourcePath + '/**/*.publicodes'
+    }
+  } catch (e) {}
   const { jsonModel, namespaces } = glob
     .sync(sourcePath, { ignore: opts?.ignore })
     .reduce(
