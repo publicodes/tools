@@ -183,6 +183,15 @@ Ajout d'une description`,
     const baseName = 'rules-doublon.publicodes'
     expect(() => {
       getModelFromSource(join(testDataDir, baseName))
+    }).toThrow(
+      `[${baseName}] La règle 'my-external-package . root . c' est déjà définie`,
+    )
+  })
+
+  it('should throw an error if there is conflict between an imported rule and a base rule with a custom namespace', () => {
+    const baseName = 'rules-doublon-with-namespace.publicodes'
+    expect(() => {
+      getModelFromSource(join(testDataDir, baseName))
     }).toThrow(`[${baseName}] La règle 'pkg . root . c' est déjà définie`)
   })
 
@@ -227,13 +236,6 @@ Ajout d'une description`,
         description: updatedDescription,
       },
     })
-  })
-
-  it('should throw an error if there is conflict between an imported rule and a base rule with a custom namespace', () => {
-    const baseName = 'rules-doublon-with-namespace.publicodes'
-    expect(() => {
-      getModelFromSource(join(testDataDir, baseName))
-    }).toThrow(`[${baseName}] La règle 'pkg . root . c' est déjà définie`)
   })
 
   it('should not add namespace if it is already present in the model', () => {

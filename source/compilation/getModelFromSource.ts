@@ -34,6 +34,7 @@ function throwErrorIfDuplicatedRules(
  * @throws {Error} If the package name is missing in the macro.
  * @throws {Error} If the rule to import does not exist.
  * @throws {Error} If there is double definition of a rule.
+ * @throws {Error} If there is a conflict between an imported rule and a base rule.
  */
 export function getModelFromSource(
   sourceFile: string,

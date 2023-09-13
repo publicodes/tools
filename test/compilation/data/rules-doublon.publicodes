@@ -2,9 +2,8 @@ importer!:
   depuis:
     nom: 'my-external-package'
     source: './my-external-package.model.json'
-  dans: pkg
   les règles:
     - root . b
 
-pkg . root . c:
+my-external-package . root . c:
   titre: Conflicting rule with dependency of 'root . b' in my-external-package
