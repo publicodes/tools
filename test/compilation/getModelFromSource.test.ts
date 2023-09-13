@@ -240,9 +240,7 @@ Ajout d'une description`,
 
   it('should not add namespace if it is already present in the model', () => {
     expect(
-      getModelFromSource(
-        join(testDataDir, 'namespace-conflicts/**.publicodes'),
-      ),
+      getModelFromSource(join(testDataDir, 'namespace-conflicts')),
     ).toEqual({
       pkg: {
         titre: 'Already existing namespace',

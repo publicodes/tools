@@ -16,7 +16,7 @@ see {@link https://incubateur-ademe.github.io/publicodes-tools/modules/compilati
 import { getModelFromSource } from '@incubateur-ademe/publicodes-tools/compilation'
 
 const model = getModelFromSource(
-	'data\/**\/*.publicodes',
+	'data\/**\/*.publicodes', // could simply be 'data'
 	{
 		ignore: ['data/test/**'],
 		verbose: true

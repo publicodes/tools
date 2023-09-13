@@ -1,6 +1,6 @@
 import glob from 'glob'
 import yaml from 'yaml'
-import { readFileSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 import { getDoubleDefError, RawRules } from '../commons'
 import { resolveImports } from './resolveImports'
 
@@ -25,7 +25,7 @@ function throwErrorIfDuplicatedRules(
  * Aggregates all rules from the rules folder into a single json object (the model)
  * with the resolved dependencies.
  *
- * @param sourceFile - Pattern to match the source files to be included in the model.
+ * @param sourcePath - Path to the source files, can be a glob pattern.
  * @param ignore - Pattern to match the source files to be ignored in the model.
  * @param opts - Options.
  *
@@ -37,11 +37,14 @@ function throwErrorIfDuplicatedRules(
  * @throws {Error} If there is a conflict between an imported rule and a base rule.
  */
 export function getModelFromSource(
-  sourceFile: string,
+  sourcePath: string,
   opts?: GetModelFromSourceOptions,
 ): RawRules {
+  if (statSync(sourcePath).isDirectory()) {
+    sourcePath = sourcePath + '/**/*.publicodes'
+  }
   const { jsonModel, namespaces } = glob
-    .sync(sourceFile, { ignore: opts?.ignore })
+    .sync(sourcePath, { ignore: opts?.ignore })
     .reduce(
       ({ jsonModel, namespaces }, filePath: string) => {
         const rules: RawRules = yaml.parse(readFileSync(filePath, 'utf-8'))
