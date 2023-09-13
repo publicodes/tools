@@ -44,4 +44,4 @@ When developing in local:
 3. and use it in your project with `yarn link @incubateur-ademe/publicodes-tools`.
 
 [ci-link]: https://img.shields.io/github/actions/workflow/status/incubateur-ademe/publicodes-tools/build.yml?logo=github&logoColor=white&label=build%20%26%20test
-[npm-link]: https://img.shields.io/npm/v/%40incubateur-ademe%2Fpublicodes-tools?logo=npm&logoColor=white&color=salmon
+[npm-link]: https://img.shields.io/npm/v/%40incubateur-ademe%2Fpublicodes-tools?logo=npm&logoColor=white&color=%23185dae
