@@ -11,6 +11,7 @@ describe('getModelFromSource › rules import', () => {
       getModelFromSource(join(testDataDir, 'simple-import.publicodes')),
     ).toEqual({
       'my-external-package': null,
+      'my-external-package . root': null,
       'my-external-package . root . a': {
         formule: 10,
         description: updatedDescription,
@@ -23,6 +24,7 @@ describe('getModelFromSource › rules import', () => {
       getModelFromSource(join(testDataDir, 'deps-import.publicodes')),
     ).toEqual({
       'my-external-package': null,
+      'my-external-package . root': null,
       'my-external-package . root . b': {
         formule: 'root . c * 2',
         description: updatedDescription,
@@ -63,6 +65,7 @@ describe('getModelFromSource › rules import', () => {
       getModelFromSource(join(testDataDir, 'updated-attrs-import.publicodes')),
     ).toEqual({
       'my-external-package': null,
+      'my-external-package . root': null,
       'my-external-package . root . a': {
         formule: 10,
         titre: "Ajout d'un titre",
@@ -97,6 +100,7 @@ Ajout d'une description`,
       ),
     ).toEqual({
       'my-external-package': null,
+      'my-external-package . root': null,
       'my-external-package . root . b': {
         formule: 'root . c * 2',
         description: updatedDescription,
@@ -179,6 +183,15 @@ Ajout d'une description`,
     const baseName = 'rules-doublon.publicodes'
     expect(() => {
       getModelFromSource(join(testDataDir, baseName))
+    }).toThrow(
+      `[${baseName}] La règle 'my-external-package . root . c' est déjà définie`,
+    )
+  })
+
+  it('should throw an error if there is conflict between an imported rule and a base rule with a custom namespace', () => {
+    const baseName = 'rules-doublon-with-namespace.publicodes'
+    expect(() => {
+      getModelFromSource(join(testDataDir, baseName))
     }).toThrow(`[${baseName}] La règle 'pkg . root . c' est déjà définie`)
   })
 
@@ -225,10 +238,27 @@ Ajout d'une description`,
     })
   })
 
-  it('should throw an error if there is conflict between an imported rule and a base rule with a custom namespace', () => {
-    const baseName = 'rules-doublon-with-namespace.publicodes'
-    expect(() => {
-      getModelFromSource(join(testDataDir, baseName))
-    }).toThrow(`[${baseName}] La règle 'pkg' est déjà définie`)
+  it('should not add namespace if it is already present in the model', () => {
+    expect(
+      getModelFromSource(
+        join(testDataDir, 'namespace-conflicts/**.publicodes'),
+      ),
+    ).toEqual({
+      pkg: {
+        titre: 'Already existing namespace',
+      },
+      'pkg . root': null,
+      'pkg . root . b': {
+        formule: 'root . c * 2',
+        description: updatedDescription,
+      },
+      'pkg . root . c': {
+        formule: 20,
+        description: updatedDescription,
+      },
+      rule: {
+        formule: 'pkg . root . b * 2',
+      },
+    })
   })
 })

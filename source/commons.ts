@@ -1,3 +1,4 @@
+import { basename } from 'path'
 import {
   Rule,
   ParsedRules,
@@ -7,6 +8,7 @@ import {
   reduceAST,
   ASTNode,
 } from 'publicodes'
+import yaml from 'yaml'
 
 /**
  * @packageDocumentation
@@ -23,10 +25,49 @@ import {
  */
 export type RuleName = string
 
+export const IMPORT_KEYWORD = 'importer!'
+
+export type RuleImportWithOverridenAttrs = {
+  [key: string]: object
+}
+
+/**
+ * Represents a macro that allows to import rules from another package.
+ *
+ * @example
+ * ```yaml
+ * importer!:
+ *  depuis:
+ *    nom: my-external-package
+ *    source: my-external-package.model.yaml
+ *  dans: root
+ *  les règles:
+ *    - règle 1
+ *    - règle 2:
+ *      question: Quelle est la valeur de la règle 2 ?
+ */
+export type ImportMacro = {
+  depuis: {
+    // The name of the package to import the rules from.
+    nom: string
+    // The path to the file containing the rules to import. If omitted try to
+    // found the file in the `node_modules` folders.
+    source?: string
+    // The URL of the package, used for the documentation.
+    url?: string
+  }
+  // The namespace where to import the rules.
+  dans?: string
+  // List of rules to import from the package.
+  // They could be specified by their name, or by the name and the list of
+  // properties to override or add.
+  'les règles': (RuleName | RuleImportWithOverridenAttrs)[]
+}
+
 /**
  * Represents a non-parsed NGC rule.
  */
-export type RawRule = Omit<Rule, 'nom'>
+export type RawRule = Omit<Rule, 'nom'> & ImportMacro
 
 /**
  * Represents a non-parsed NGC model.
@@ -197,4 +238,23 @@ export function substituteInParsedExpr(
     }
     return node
   })
+}
+
+export function getDoubleDefError(
+  filePath: string,
+  name: string,
+  firstDef: object,
+  secondDef: object,
+): Error {
+  return new Error(
+    `[${basename(filePath)}] La règle '${name}' est déjà définie
+
+Essaie de remplacer :
+
+${yaml.stringify(firstDef, { indent: 2 })}
+
+Avec :
+
+${yaml.stringify(secondDef, { indent: 2 })}`,
+  )
 }

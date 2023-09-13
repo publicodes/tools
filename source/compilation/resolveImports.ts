@@ -1,47 +1,15 @@
-import yaml from 'yaml'
-import Engine, { Rule, RuleNode } from 'publicodes'
-import { RuleName, getAllRefsInNode } from '../commons'
-import { basename, dirname, join } from 'path'
+import Engine, { Rule, RuleNode, utils } from 'publicodes'
+import {
+  RuleName,
+  getAllRefsInNode,
+  RawRules,
+  ImportMacro,
+  RuleImportWithOverridenAttrs,
+  IMPORT_KEYWORD,
+  getDoubleDefError,
+} from '../commons'
 import { readFileSync } from 'fs'
-
-const IMPORT_KEYWORD = 'importer!'
-
-type RuleImportWithOverridenAttrs = {
-  [key: string]: object
-}
-
-/**
- * Represents a macro that allows to import rules from another package.
- *
- * @example
- * ```yaml
- * importer!:
- *  depuis:
- *    nom: my-external-package
- *    source: my-external-package.model.yaml
- *  dans: root
- *  les règles:
- *    - règle 1
- *    - règle 2:
- *      question: Quelle est la valeur de la règle 2 ?
- */
-export type ImportMacro = {
-  depuis: {
-    // The name of the package to import the rules from.
-    nom: string
-    // The path to the file containing the rules to import. If omitted try to
-    // found the file in the `node_modules` folders.
-    source?: string
-    // The URL of the package, used for the documentation.
-    url?: string
-  }
-  // The namespace where to import the rules.
-  dans?: string
-  // List of rules to import from the package.
-  // They could be specified by their name, or by the name and the list of
-  // properties to override or add.
-  'les règles': (RuleName | RuleImportWithOverridenAttrs)[]
-}
+import { dirname, join } from 'path'
 
 /**
  * @param {string} packageName - The package name.
@@ -244,9 +212,10 @@ function getNamespace({ dans, depuis: { nom } }: ImportMacro): string {
  */
 export function resolveImports(
   filePath: string,
-  rules: object,
+  rules: RawRules,
   verbose = false,
-): object {
+): { completeRules: RawRules; neededNamespaces: Set<string> } {
+  let neededNamespaces = new Set<string>()
   const resolvedRules = Object.entries(rules).reduce((acc, [name, value]) => {
     if (name === IMPORT_KEYWORD) {
       const importMacro: ImportMacro = value
@@ -255,7 +224,7 @@ export function resolveImports(
         importMacro['les règles']?.map(getRuleToImportInfos)
       const namespace = getNamespace(importMacro)
 
-      acc.push([namespace, null])
+      neededNamespaces.add(namespace)
       rulesToImport?.forEach(({ ruleName, attrs }) => {
         if (appearsMoreThanOnce(rulesToImport, ruleName)) {
           throw new Error(
@@ -280,6 +249,9 @@ export function resolveImports(
             importMacro,
             rule,
           )
+          utils
+            .ruleParents(ruleName)
+            .forEach((rule) => neededNamespaces.add(`${namespace} . ${rule}`))
           return [
             `${namespace} . ${ruleName}`,
             removeRawNodeNom(ruleWithUpdatedDescription, ruleName),
@@ -311,21 +283,11 @@ export function resolveImports(
     } else {
       let doubleDefinition = accFind(acc, name)
       if (doubleDefinition) {
-        throw new Error(
-          `[${basename(filePath)}] La règle '${name}' est déjà définie
-
-Essaie de remplacer :
-
-${yaml.stringify(doubleDefinition[1], { indent: 2 })}
-
-Avec :
-
-${yaml.stringify(value, { indent: 2 })}`,
-        )
+        throw getDoubleDefError(filePath, name, doubleDefinition[1], value)
       }
       acc.push([name, value])
     }
     return acc
   }, [])
-  return Object.fromEntries(resolvedRules)
+  return { completeRules: Object.fromEntries(resolvedRules), neededNamespaces }
 }
