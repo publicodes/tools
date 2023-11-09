@@ -1,5 +1,5 @@
 {
-  "name": "@incubateur-ademe/publicodes-tools",
+  "name": "@publicodes/tools",
   "version": "0.4.2",
   "description": "A set of utility functions to build tools around Publicodes models",
   "scripts": {
@@ -31,16 +31,16 @@
   "files": [
     "dist"
   ],
-  "repository": "git@github.com:incubateur-ademe/publicodes-tools.git",
-  "bugs": "https://github.com/incubateur-ademe/publicodes-tools/issues",
+  "repository": "git@github.com:publicodes/tools.git",
+  "bugs": "https://github.com/publicodes/tools/issues",
   "keywords": [
+    "compilation",
     "optimization",
     "publicodes",
-    "tooling",
     "scripting",
-    "constant folding"
+    "tooling"
   ],
-  "author": "<emile.rolley@tuta.io>",
+  "author": "Emile Rolley <emile.rolley@tuta.io>",
   "license": "MIT",
   "dependencies": {
     "@types/node": "^18.11.18",

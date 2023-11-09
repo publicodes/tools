@@ -8,12 +8,12 @@ files into a {@link index.RawRules | `RawRules`} that can be used by the Publico
 
 Note that it supports the `importer!` syntax to import other Publicodes rules from
 NPM packages --
-see {@link https://incubateur-ademe.github.io/publicodes-tools/modules/compilation.html#md:import-rules-from-a-npm-package | Imports rules from a NPM package}.
+see {@link https://publicodes.github.io/tools/modules/compilation.html#md:import-rules-from-a-npm-package | Imports rules from a NPM package}.
 
 ### Usage
 
 ```typescript
-import { getModelFromSource } from '@incubateur-ademe/publicodes-tools/compilation'
+import { getModelFromSource } from '@publicodes/tools/compilation'
 
 const model = getModelFromSource(
 	'data\/**\/*.publicodes', // could simply be 'data'
