@@ -31,7 +31,10 @@
   "files": [
     "dist"
   ],
-  "repository": "git@github.com:publicodes/tools.git",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/publicodes/tools.git"
+  },
   "bugs": "https://github.com/publicodes/tools/issues",
   "keywords": [
     "compilation",
