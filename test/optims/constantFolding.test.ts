@@ -1,4 +1,10 @@
-import { getRawNodes, RuleName, RawRules } from '../../source/commons'
+import Engine from 'publicodes'
+import {
+  getRawNodes,
+  RuleName,
+  RawRules,
+  disabledLogger,
+} from '../../source/commons'
 import { constantFolding } from '../../source/optims/'
 import { callWithEngine } from '../utils.test'
 
