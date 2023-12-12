@@ -2153,6 +2153,11 @@ minimatch@^9.0.0:
   dependencies:
     brace-expansion "^2.0.1"
 
+mitata@^0.1.6:
+  version "0.1.6"
+  resolved "https://registry.yarnpkg.com/mitata/-/mitata-0.1.6.tgz#0d25f0dd105d6c50ec8d9047ee21bed1552fbffd"
+  integrity sha512-VKQ0r3jriTOU9E2Z+mwbZrUmbg4Li4QyFfi7kfHKl6reZhGzL0AYlu3wE0VPXzIwA5xnFzmEQoBwCcNT8stUkA==
+
 ms@2.1.2:
   version "2.1.2"
   resolved "https://registry.npmjs.org/ms/-/ms-2.1.2.tgz"
@@ -2326,10 +2331,10 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-publicodes@^1.0.0-beta.71:
-  version "1.0.0-beta.71"
-  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.0.0-beta.71.tgz#662478db6460bf1348183c2e012c7b35b19a55c9"
-  integrity sha512-m4JIdP3J1wncTmIAPFytZn2sv9y1vGL0BSJJdmsga8Un5q1GmRRZEo/BQGt8WKw2Mm8O14LuobdEV+g15h9Dcg==
+publicodes@^1.0.0-beta.77:
+  version "1.0.0-beta.77"
+  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.0.0-beta.77.tgz#45e3c4d2a46bfadcc932e1405ea037e659c28134"
+  integrity sha512-F8U3WGUWMo3/rxhWYS1gWIiG20g1Yy/+PpXdHM99d6ZHKWnnyh/4txVEuyVE75glgDs+mTjwZPnmoKWsTMXluA==
 
 punycode@^2.1.0:
   version "2.3.0"

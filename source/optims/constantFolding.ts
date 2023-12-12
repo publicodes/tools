@@ -418,7 +418,10 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
-  const parsedRules: ParsedRules<RuleName> = engine.getParsedRules()
+  const parsedRules: ParsedRules<RuleName> =
+    // PERF: could it be avoided?
+    JSON.parse(JSON.stringify(engine.getParsedRules()))
+
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {

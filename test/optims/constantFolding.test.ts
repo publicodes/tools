@@ -1,4 +1,10 @@
-import { getRawNodes, RuleName, RawRules } from '../../source/commons'
+import Engine from 'publicodes'
+import {
+  getRawNodes,
+  RuleName,
+  RawRules,
+  disabledLogger,
+} from '../../source/commons'
 import { constantFolding } from '../../source/optims/'
 import { callWithEngine } from '../utils.test'
 
@@ -14,7 +20,32 @@ function constantFoldingWith(rawRules: any, targets?: RuleName[]): RawRules {
   return getRawNodes(res)
 }
 
-describe('Constant folding optim', () => {
+describe('Constant folding [meta]', () => {
+  it('should not modify the original rules', () => {
+    const rawRules = {
+      ruleA: {
+        titre: 'Rule A',
+        formule: 'B . C * D',
+      },
+      'ruleA . B . C': {
+        valeur: '10',
+      },
+      'ruleA . D': {
+        valeur: '3',
+      },
+    }
+    const engine = new Engine(rawRules, { logger: disabledLogger })
+    const untouchedParsedRules = getRawNodes(engine.getParsedRules())
+
+    constantFolding(engine, ([ruleName, _]) => ruleName === 'ruleA')
+
+    expect(getRawNodes(engine.getParsedRules())).toStrictEqual(
+      untouchedParsedRules,
+    )
+  })
+})
+
+describe('Constant folding [base]', () => {
   it('∅ -> ∅', () => {
     expect(constantFoldingWith({})).toStrictEqual({})
   })
