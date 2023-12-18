@@ -13,7 +13,7 @@ describe('getRawRules', () => {
   })
   it('Single null rule', () => {
     expect(getRawNodesWith({ test1: null })).toStrictEqual({
-      test1: {},
+      test1: null,
     })
   })
   it('Simple single rule', () => {
@@ -41,5 +41,29 @@ describe('getRawRules', () => {
       },
     }
     expect(getRawNodesWith(rawRules)).toStrictEqual(rawRules)
+  })
+  it('Mechansim [avec] should not create empty objects', () => {
+    const rawRules = {
+      ruleA: {
+        avec: {
+          bus: null,
+        },
+        titre: 'Rule A',
+        formule: 'B . C * 3',
+      },
+      'ruleA . B . C': {
+        valeur: '10',
+      },
+    }
+    expect(getRawNodesWith(rawRules)).toStrictEqual({
+      ruleA: {
+        titre: 'Rule A',
+        formule: 'B . C * 3',
+      },
+      'ruleA . B . C': {
+        valeur: '10',
+      },
+      'ruleA . bus': null,
+    })
   })
 })
