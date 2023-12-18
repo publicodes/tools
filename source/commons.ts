@@ -85,7 +85,16 @@ export function getRawNodes(parsedRules: ParsedRules<RuleName>): RawRules {
   return Object.fromEntries(
     Object.values(parsedRules).reduce((acc, rule) => {
       const { nom, ...rawNode } = rule.rawNode
-      acc.push([nom, rawNode])
+      // We don't want to keep the `avec` attribute in the raw node
+      // as they are already resolved in the [parsedRules] object.
+      delete rawNode['avec']
+
+      acc.push([
+        rule.dottedName,
+        // If the rule only contained the 'nom' attribute, we don't want to
+        // keep an empty object in the raw node.
+        Object.keys(rawNode).length === 0 ? null : rawNode,
+      ])
       return acc
     }, []),
   ) as RawRules
