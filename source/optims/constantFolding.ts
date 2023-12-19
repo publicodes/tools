@@ -76,6 +76,10 @@ function initFoldingCtx(
   }
   const impactedByContexteRules = new Set<RuleName>()
 
+  // NOTE: we need to traverse the AST to find all the references of a rule.
+  // We can't use the [referencesMap] from the engine's context because it
+  // contains references to rules that are beyond the scope of the current
+  // rule.
   Object.entries(parsedRules).forEach(([ruleName, ruleNode]) => {
     const reducedAST =
       reduceAST(
