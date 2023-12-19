@@ -324,21 +324,19 @@ function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]): void {
   }
 }
 
-export function removeInMap<K, V>(
-  map: Map<K, V[]>,
-  key: K,
-  val: V,
-): Map<K, V[]> {
-  return map.set(
-    key,
-    (map.get(key) ?? []).filter((v) => v !== val),
-  )
+function removeInMap<K, V>(map: Map<K, V[]>, key: K, val: V) {
+  if (map.has(key)) {
+    map.set(
+      key,
+      map.get(key).filter((v) => v !== val),
+    )
+  }
 }
 
 function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
-  ref.forEach((_, rule) => {
+  for (const rule of ref.keys()) {
     removeInMap(ref, rule, ruleName)
-  })
+  }
 }
 
 function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
@@ -463,11 +461,15 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
+  console.time('copy')
   const parsedRules: ParsedRules<RuleName> =
     // PERF: could it be avoided?
     JSON.parse(JSON.stringify(engine.getParsedRules()))
+  console.timeEnd('copy')
 
+  console.time('initFoldingCtx')
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
+  console.timeEnd('initFoldingCtx')
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
     if (
