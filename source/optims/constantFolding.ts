@@ -1,4 +1,9 @@
-import Engine, { reduceAST, ParsedRules, parseExpression } from 'publicodes'
+import Engine, {
+  reduceAST,
+  ParsedRules,
+  parseExpression,
+  serializeEvaluation,
+} from 'publicodes'
 import type { RuleNode, ASTNode, Unit } from 'publicodes'
 import {
   getAllRefsInNode,
@@ -172,8 +177,8 @@ function isFoldable(
   return !(
     contextRules.has(rule.dottedName) ||
     'question' in rawNode ||
-    // NOTE(@EmileRolley): I assume that a rule can have a [par défaut] attribute without a [question] one.
-    // The behavior could be specified.
+    // NOTE(@EmileRolley): I assume that a rule can have a [par défaut]
+    // attribute without a [question] one. The behavior could be specified.
     'par défaut' in rawNode ||
     'applicable si' in rawNode ||
     'non applicable si' in rawNode
@@ -182,26 +187,6 @@ function isFoldable(
 
 function isEmptyRule(rule: RuleNode): boolean {
   return Object.keys(rule.rawNode).length === 0
-}
-
-function formatPublicodesUnit(unit?: Unit): string {
-  if (
-    unit !== undefined &&
-    unit.numerators.length === 1 &&
-    unit.numerators[0] === '%'
-  ) {
-    return '%'
-  }
-  return ''
-}
-
-// Replaces boolean values by their string representation in French.
-function formatToPulicodesValue(value: any, unit?: Unit) {
-  if (typeof value === 'boolean') {
-    return value ? 'oui' : 'non'
-  }
-
-  return value + formatPublicodesUnit(unit)
 }
 
 function replaceAllRefs(
@@ -225,6 +210,10 @@ function lexicalSubstitutionOfRefValue(
 ): RuleNode | undefined {
   // Retrieves the name form used in the rule. For exemple, the rule 'root . a
   // . b' could have the name 'b', 'a . b' or 'root . a . b'.
+  // const substituteAST = transformAST((node, transform) => {
+  //   // if
+  // })
+
   const refName = reduceAST<string>(
     (_, node: ASTNode) => {
       if (
@@ -238,8 +227,15 @@ function lexicalSubstitutionOfRefValue(
     parent,
   )
 
-  const constValue = formatToPulicodesValue(constant.rawNode.valeur)
+  const constValue = constant.rawNode.valeur
 
+  // NOTE: here we directly replace the [rawNode] as it's what we get back with [getRawNodes]
+  // at the end.
+  // Instead, we could transform the complete parsed rule and serialize it at the end.
+  //
+  // If I continue to transform directly the [rawNode] then I can use directly the
+  // rules given to the engine and no need to make a deep copy therefore. We simply
+  // need to add the dottedName info in the rawRule.
   if ('formule' in parent.rawNode) {
     if (typeof parent.rawNode.formule === 'string') {
       const newFormule = replaceAllRefs(
@@ -399,19 +395,12 @@ function tryToFoldRule(
     delete rule.rawNode.valeur
   }
 
-  const missingVariablesNames = Object.keys(missingVariables)
+  const missingVariablesNames = Object.keys(evaluatedNode.missingVariables)
 
   // Constant leaf -> search and replace the constant in all its parents.
-  if (
-    'valeur' in rule.rawNode ||
-    ('formule' in rule.rawNode && missingVariablesNames.length === 0)
-  ) {
-    if ('formule' in rule.rawNode) {
-      ctx.parsedRules[ruleName].rawNode.valeur = formatToPulicodesValue(
-        nodeValue,
-        unit,
-      )
-    }
+  if (missingVariablesNames.length === 0) {
+    ctx.parsedRules[ruleName].rawNode.valeur =
+      serializeEvaluation(evaluatedNode)
 
     searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
     if (ctx.parsedRules[ruleName] === undefined) {

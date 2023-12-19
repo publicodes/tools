@@ -30,6 +30,8 @@ describe('getRawRules', () => {
       test3: { valeur: '10' },
     }) // will be reparsed by the website client, so not a problem?
   })
+
+  // FIXME: doesn't pass with bun but passes with jest. The values seem to be equal.
   it('Referenced rules', () => {
     const rawRules = {
       ruleA: {

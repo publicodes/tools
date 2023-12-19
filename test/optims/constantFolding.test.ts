@@ -353,7 +353,7 @@ describe('Constant folding [base]', () => {
     }
     expect(constantFoldingWith(rawRules, ['omr'])).toStrictEqual({
       omr: {
-        valeur: '0.69068',
+        valeur: '0.69068kgCO2e',
         optimized: true,
       },
     })
