@@ -308,7 +308,7 @@ function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
  *
  * @note It folds child rules in [refs] if possible.
  */
-function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]): void {
+function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]) {
   if (refs) {
     for (const childName of refs) {
       const childNode = ctx.parsedRules[childName]
@@ -358,8 +358,8 @@ function updateRefCounting(
   ctx: FoldingCtx,
   parentRuleName: RuleName,
   ruleNamesToUpdate: RuleName[],
-): void {
-  ruleNamesToUpdate.forEach((ruleNameToUpdate) => {
+) {
+  for (const ruleNameToUpdate of ruleNamesToUpdate) {
     removeInMap(ctx.refs.parents, ruleNameToUpdate, parentRuleName)
     if (ctx.refs.parents.get(ruleNameToUpdate)?.length === 0) {
       deleteRule(ctx, ruleNameToUpdate)
@@ -468,17 +468,20 @@ export function constantFolding(
   console.timeEnd('copy')
 
   console.time('initFoldingCtx')
-  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
+  let ctx: FoldingCtx = {
+    engine,
+    parsedRules,
+    toKeep,
+    refs: getRefs(parsedRules),
+    params: params?.isFoldedAttr ? params : { isFoldedAttr: 'optimized' },
+  }
   console.timeEnd('initFoldingCtx')
 
-  Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
-    if (
-      isFoldable(ruleNode, ctx.impactedByContexteRules) &&
-      !isAlreadyFolded(ctx.params, ruleNode)
-    ) {
+  for (const [ruleName, ruleNode] of Object.entries(ctx.parsedRules)) {
+    if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
       tryToFoldRule(ctx, ruleName, ruleNode)
     }
-  })
+  }
 
   if (toKeep) {
     ctx.parsedRules = Object.fromEntries(
