@@ -132,13 +132,6 @@ function isFoldable(
   )
 }
 
-function isInParsedRules(
-  parsedRules: ParsedRules<RuleName>,
-  rule: RuleName,
-): boolean {
-  return Object.keys(parsedRules).includes(rule)
-}
-
 function isEmptyRule(rule: RuleNode): boolean {
   // There is always a 'nom' attribute.
   return Object.keys(rule.rawNode).length <= 1
@@ -240,42 +233,38 @@ function searchAndReplaceConstantValueInParentRefs(
   ctx: FoldingCtx,
   ruleName: RuleName,
   rule: RuleNode,
-): FoldingCtx {
+): void {
   const refs = ctx.refs.parents.get(ruleName)
 
   if (refs) {
-    // console.time('<<<<<<<<<< searchAndReplaceConstantValueInParentRefs')
-    // for (const parentName of refs) {
-    //   let parentRule = ctx.parsedRules[parentName]
-    //
-    //   if (isFoldable(parentRule, ctx.recalculRules)) {
-    //     const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
-    //
-    //     if (newRule !== undefined) {
-    //       parentRule = newRule
-    //       parentRule.rawNode[ctx.params.isFoldedAttr] = true
-    //       removeInMap(ctx.refs.parents, ruleName, parentName)
-    //     }
-    //   }
-    // }
-    refs
-      .map((dottedName) => ctx.parsedRules[dottedName])
-      .filter((rule) => {
-        return isFoldable(rule, ctx.recalculRules)
-      })
-      .forEach((parentRule) => {
-        const parentName = parentRule.dottedName
+    for (const parentName of refs) {
+      let parentRule = ctx.parsedRules[parentName]
+
+      if (isFoldable(parentRule, ctx.recalculRules)) {
         const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
         if (newRule !== undefined) {
           parentRule = newRule
           parentRule.rawNode[ctx.params.isFoldedAttr] = true
           removeInMap(ctx.refs.parents, ruleName, parentName)
         }
-      })
-    // console.timeEnd('<<<<<<<<<< searchAndReplaceConstantValueInParentRefs')
-  }
+      }
+    }
 
-  return ctx
+    // refs
+    //   .map((dottedName) => ctx.parsedRules[dottedName])
+    //   .filter((rule) => {
+    //     return isFoldable(rule, ctx.recalculRules)
+    //   })
+    //   .forEach((parentRule) => {
+    //     const parentName = parentRule.dottedName
+    //     const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
+    //     if (newRule !== undefined) {
+    //       parentRule = newRule
+    //       parentRule.rawNode[ctx.params.isFoldedAttr] = true
+    //       removeInMap(ctx.refs.parents, ruleName, parentName)
+    //     }
+    //   })
+  }
 }
 
 function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
@@ -287,7 +276,7 @@ function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
  *
  * @note It folds child rules in [refs] if possible.
  */
-function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]) {
+function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]): void {
   if (refs) {
     for (const childName of refs) {
       const childNode = ctx.parsedRules[childName]
@@ -320,7 +309,7 @@ function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
   })
 }
 
-function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
+function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
   const ruleNode = ctx.parsedRules[dottedName]
   if (
     (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
@@ -332,7 +321,6 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
     ctx.refs.parents.delete(dottedName)
     ctx.refs.childs.delete(dottedName)
   }
-  return ctx
 }
 
 /** Removes the [parentRuleName] as a parent dependency of each [childRuleNamesToUpdate]. */
@@ -340,29 +328,28 @@ function updateRefCounting(
   ctx: FoldingCtx,
   parentRuleName: RuleName,
   ruleNamesToUpdate: RuleName[],
-): FoldingCtx {
+): void {
   ruleNamesToUpdate.forEach((ruleNameToUpdate) => {
     removeInMap(ctx.refs.parents, ruleNameToUpdate, parentRuleName)
     if (ctx.refs.parents.get(ruleNameToUpdate)?.length === 0) {
-      ctx = deleteRule(ctx, ruleNameToUpdate)
+      deleteRule(ctx, ruleNameToUpdate)
     }
   })
-  return ctx
 }
 
 function tryToFoldRule(
   ctx: FoldingCtx,
   ruleName: RuleName,
   rule: RuleNode,
-): FoldingCtx {
+): void {
   if (
     rule !== undefined &&
     (!isFoldable(rule, ctx.recalculRules) ||
       isAlreadyFolded(ctx.params, rule) ||
-      !isInParsedRules(ctx.parsedRules, ruleName))
+      !(ruleName in ctx.parsedRules))
   ) {
     // Already managed rule
-    return ctx
+    return
   }
 
   const ruleParents = ctx.refs.parents.get(ruleName)
@@ -372,7 +359,7 @@ function tryToFoldRule(
   ) {
     // Empty rule with no parent
     deleteRule(ctx, ruleName)
-    return ctx
+    return
   }
 
   const { nodeValue, missingVariables, traversedVariables, unit } =
@@ -403,9 +390,9 @@ function tryToFoldRule(
       )
     }
 
-    ctx = searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
+    searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
     if (ctx.parsedRules[ruleName] === undefined) {
-      return ctx
+      return
     }
 
     if ('formule' in rule.rawNode) {
@@ -413,7 +400,7 @@ function tryToFoldRule(
       // it from the [refs].
       const childs = ctx.refs.childs.get(ruleName) ?? []
 
-      ctx = updateRefCounting(
+      updateRefCounting(
         ctx,
         ruleName,
         // NOTE(@EmileRolley): for some reason, the [traversedVariables] are not always
@@ -435,7 +422,7 @@ function tryToFoldRule(
       ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = true
     }
 
-    return ctx
+    return
   } else if ('formule' in rule.rawNode) {
     // Try to replace internal refs if possible.
     const childs = ctx.refs.childs.get(ruleName)
@@ -443,7 +430,6 @@ function tryToFoldRule(
       replaceAllPossibleChildRefs(ctx, childs)
     }
   }
-  return ctx
 }
 
 /**
@@ -472,7 +458,7 @@ export function constantFolding(
       isFoldable(ruleNode, ctx.recalculRules) &&
       !isAlreadyFolded(ctx.params, ruleNode)
     ) {
-      ctx = tryToFoldRule(ctx, ruleName, ruleNode)
+      tryToFoldRule(ctx, ruleName, ruleNode)
     }
   })
 
