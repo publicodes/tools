@@ -30,6 +30,23 @@ type FoldingCtx = {
   refs: RefMaps
   toKeep?: PredicateOnRule
   params: FoldingParams
+  /**
+   * The rules that are evaluated with a modified situation (in a [recalcul] mechanism)
+   * and we don't want to be folded.
+   *
+   * @example
+   * ```
+   * rule:
+   *   recalcul:
+   *	    règle: rule2
+   *	    avec:
+   *	      rule3: 10
+   *	      rule4: 20
+   * ...
+   * ```
+   * In this case, [rule2] should not be folded.
+   */
+  recalculRules: Set<RuleName>
 }
 
 function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
@@ -46,12 +63,22 @@ function initFoldingCtx(
   toKeep?: PredicateOnRule,
   foldingParams?: FoldingParams,
 ): FoldingCtx {
-  const refs: RefMaps = { parents: new Map(), childs: new Map() }
+  const refs: RefMaps = {
+    parents: new Map(),
+    childs: new Map(),
+  }
+  const recalculRules = new Set<RuleName>()
 
   Object.entries(parsedRules).forEach(([ruleName, ruleNode]) => {
     const reducedAST =
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
+          if (
+            node.nodeKind === 'recalcul' &&
+            'dottedName' in node.explanation.recalculNode
+          ) {
+            recalculRules.add(node.explanation.recalculNode.dottedName)
+          }
           if (
             node.nodeKind === 'reference' &&
             'dottedName' in node &&
@@ -80,16 +107,22 @@ function initFoldingCtx(
     parsedRules,
     refs,
     toKeep,
+    recalculRules,
     params: { isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized' },
   }
 }
 
-function isFoldable(rule: RuleNode): boolean {
+function isFoldable(
+  rule: RuleNode | undefined,
+  recalculRules: Set<RuleName>,
+): boolean {
   if (!rule) {
     return false
   }
+
   const rawNode = rule.rawNode
   return !(
+    recalculRules.has(rule.dottedName) ||
     'question' in rawNode ||
     // NOTE(@EmileRolley): I assume that a rule can have a [par défaut] attribute without a [question] one.
     // The behavior could be specified.
@@ -211,9 +244,25 @@ function searchAndReplaceConstantValueInParentRefs(
   const refs = ctx.refs.parents.get(ruleName)
 
   if (refs) {
+    // console.time('<<<<<<<<<< searchAndReplaceConstantValueInParentRefs')
+    // for (const parentName of refs) {
+    //   let parentRule = ctx.parsedRules[parentName]
+    //
+    //   if (isFoldable(parentRule, ctx.recalculRules)) {
+    //     const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
+    //
+    //     if (newRule !== undefined) {
+    //       parentRule = newRule
+    //       parentRule.rawNode[ctx.params.isFoldedAttr] = true
+    //       removeInMap(ctx.refs.parents, ruleName, parentName)
+    //     }
+    //   }
+    // }
     refs
       .map((dottedName) => ctx.parsedRules[dottedName])
-      .filter(isFoldable)
+      .filter((rule) => {
+        return isFoldable(rule, ctx.recalculRules)
+      })
       .forEach((parentRule) => {
         const parentName = parentRule.dottedName
         const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
@@ -223,6 +272,7 @@ function searchAndReplaceConstantValueInParentRefs(
           removeInMap(ctx.refs.parents, ruleName, parentName)
         }
       })
+    // console.timeEnd('<<<<<<<<<< searchAndReplaceConstantValueInParentRefs')
   }
 
   return ctx
@@ -237,28 +287,20 @@ function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
  *
  * @note It folds child rules in [refs] if possible.
  */
-function replaceAllPossibleChildRefs(
-  ctx: FoldingCtx,
-  refs: RuleName[],
-): FoldingCtx {
+function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]) {
   if (refs) {
-    refs
-      .map((dottedName) => ctx.parsedRules[dottedName])
-      .filter(isFoldable)
-      .forEach(({ dottedName: childDottedName }) => {
-        let childNode = ctx.parsedRules[childDottedName]
+    for (const childName of refs) {
+      const childNode = ctx.parsedRules[childName]
 
-        if (!childNode) {
-          // TODO: need to investigate
-          return
-        }
-
-        if (!isAlreadyFolded(ctx.params, childNode)) {
-          ctx = tryToFoldRule(ctx, childDottedName, childNode)
-        }
-      })
+      if (
+        childNode &&
+        isFoldable(childNode, ctx.recalculRules) &&
+        !isAlreadyFolded(ctx.params, childNode)
+      ) {
+        tryToFoldRule(ctx, childName, childNode)
+      }
+    }
   }
-  return ctx
 }
 
 export function removeInMap<K, V>(
@@ -282,7 +324,7 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): FoldingCtx {
   const ruleNode = ctx.parsedRules[dottedName]
   if (
     (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
-    isFoldable(ruleNode)
+    isFoldable(ruleNode, ctx.recalculRules)
   ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName)
     removeRuleFromRefs(ctx.refs.childs, dottedName)
@@ -315,7 +357,8 @@ function tryToFoldRule(
 ): FoldingCtx {
   if (
     rule !== undefined &&
-    (isAlreadyFolded(ctx.params, rule) ||
+    (!isFoldable(rule, ctx.recalculRules) ||
+      isAlreadyFolded(ctx.params, rule) ||
       !isInParsedRules(ctx.parsedRules, ruleName))
   ) {
     // Already managed rule
@@ -425,7 +468,10 @@ export function constantFolding(
   let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
 
   Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
-    if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
+    if (
+      isFoldable(ruleNode, ctx.recalculRules) &&
+      !isAlreadyFolded(ctx.params, ruleNode)
+    ) {
       ctx = tryToFoldRule(ctx, ruleName, ruleNode)
     }
   })
@@ -435,7 +481,7 @@ export function constantFolding(
       Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
         const parents = ctx.refs.parents.get(ruleName)
         return (
-          !isFoldable(ruleNode) ||
+          !isFoldable(ruleNode, ctx.recalculRules) ||
           toKeep([ruleName, ruleNode]) ||
           parents?.length > 0
         )

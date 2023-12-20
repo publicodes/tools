@@ -539,6 +539,42 @@ describe('Constant folding [base]', () => {
     })
   })
 
+  it('should not optimize rules used in a [recalcul]', () => {
+    const rawRules = {
+      root: {
+        recalcul: {
+          règle: 'rule to recompute',
+          avec: {
+            constant: 20,
+          },
+        },
+      },
+      'rule to recompute': {
+        formule: 'constant * 2',
+      },
+      constant: {
+        valeur: 10,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      root: {
+        recalcul: {
+          règle: 'rule to recompute',
+          avec: {
+            constant: 20,
+          },
+        },
+      },
+      'rule to recompute': {
+        formule: 'constant * 2',
+      },
+      constant: {
+        valeur: 10,
+        optimized: true,
+      },
+    })
+  })
+
   it('replaceAllRefs bug #3', () => {
     const rawRules = {
       boisson: {
@@ -561,6 +597,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   //
   //
   // TODO: not supported yet
