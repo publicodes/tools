@@ -539,7 +539,7 @@ describe('Constant folding [base]', () => {
     })
   })
 
-  it('should not optimize rules used in a [recalcul]', () => {
+  it('should not fold rules used in a [recalcul]', () => {
     const rawRules = {
       root: {
         recalcul: {
@@ -567,6 +567,49 @@ describe('Constant folding [base]', () => {
       },
       'rule to recompute': {
         formule: 'constant * 2',
+      },
+      constant: {
+        valeur: 10,
+        optimized: true,
+      },
+    })
+  })
+
+  it('should not fold rules used in a [recalcul] but still fold used constant in other rules', () => {
+    const rawRules = {
+      root: {
+        recalcul: {
+          règle: 'rule to recompute',
+          avec: {
+            constant: 20,
+          },
+        },
+      },
+      'rule to recompute': {
+        formule: 'constant * 2',
+      },
+      'rule to fold': {
+        formule: 'constant * 4',
+      },
+      constant: {
+        valeur: 10,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      root: {
+        recalcul: {
+          règle: 'rule to recompute',
+          avec: {
+            constant: 20,
+          },
+        },
+      },
+      'rule to recompute': {
+        formule: 'constant * 2',
+      },
+      'rule to fold': {
+        valeur: '40',
+        optimized: true,
       },
       constant: {
         valeur: 10,
