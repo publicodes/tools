@@ -249,21 +249,6 @@ function searchAndReplaceConstantValueInParentRefs(
         }
       }
     }
-
-    // refs
-    //   .map((dottedName) => ctx.parsedRules[dottedName])
-    //   .filter((rule) => {
-    //     return isFoldable(rule, ctx.recalculRules)
-    //   })
-    //   .forEach((parentRule) => {
-    //     const parentName = parentRule.dottedName
-    //     const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
-    //     if (newRule !== undefined) {
-    //       parentRule = newRule
-    //       parentRule.rawNode[ctx.params.isFoldedAttr] = true
-    //       removeInMap(ctx.refs.parents, ruleName, parentName)
-    //     }
-    //   })
   }
 }
 
