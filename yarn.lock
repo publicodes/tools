@@ -2331,10 +2331,10 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-publicodes@^1.0.0-beta.77:
-  version "1.0.0-beta.77"
-  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.0.0-beta.77.tgz#45e3c4d2a46bfadcc932e1405ea037e659c28134"
-  integrity sha512-F8U3WGUWMo3/rxhWYS1gWIiG20g1Yy/+PpXdHM99d6ZHKWnnyh/4txVEuyVE75glgDs+mTjwZPnmoKWsTMXluA==
+publicodes@^1.0.0-rc.5:
+  version "1.0.0-rc.5"
+  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.0.0-rc.5.tgz#714a600ccaa78ad89da878973999402e29996130"
+  integrity sha512-y5ZxhiBDf/GjSPE9iwoSlcwFNogqhxwl45LrVrGuWeIORgdALTdtHQaPgItQpaKVRSdsZei2GoCnsAIfqLCTJw==
 
 punycode@^2.1.0:
   version "2.3.0"
