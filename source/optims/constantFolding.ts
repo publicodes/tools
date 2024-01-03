@@ -346,6 +346,7 @@ function tryToFoldRule(
     return
   }
 
+  ctx.engine.cache.traversedVariablesStack = []
   const { nodeValue, missingVariables, traversedVariables, unit } =
     ctx.engine.evaluateNode(rule)
 
