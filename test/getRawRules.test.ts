@@ -36,6 +36,7 @@ describe('getRawRules', () => {
         titre: 'Rule A',
         formule: 'B . C * 3',
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -51,6 +52,7 @@ describe('getRawRules', () => {
         titre: 'Rule A',
         formule: 'B . C * 3',
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -60,6 +62,7 @@ describe('getRawRules', () => {
         titre: 'Rule A',
         formule: 'B . C * 3',
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
