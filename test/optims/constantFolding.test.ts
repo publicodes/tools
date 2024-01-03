@@ -143,6 +143,7 @@ describe('Constant folding [base]', () => {
       'ruleA . D': {
         question: "What's the value of D?",
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -164,6 +165,7 @@ describe('Constant folding [base]', () => {
         titre: 'Rule A',
         formule: 'B . C * D',
       },
+      'ruleA . B': null,
       ruleB: {
         formule: 'ruleA . B . C * 3',
       },
@@ -240,6 +242,7 @@ describe('Constant folding [base]', () => {
       ruleB: {
         somme: ['A . B * 2', 10, 12 * 2],
       },
+      A: null,
       'A . B': {
         formule: 'C * 10',
       },
@@ -267,6 +270,7 @@ describe('Constant folding [base]', () => {
       'ruleB . D': {
         question: "What's the value of ruleB . D?",
       },
+      A: null,
       'A . B': {
         formule: 'C * 10',
       },
@@ -363,6 +367,7 @@ describe('Constant folding [base]', () => {
       "biogaz . facteur d'émission": {
         valeur: 20,
       },
+      gaz: null,
       "gaz . facteur d'émission": {
         valeur: 10,
       },
@@ -389,6 +394,7 @@ describe('Constant folding [base]', () => {
       "biogaz . facteur d'émission": {
         valeur: 20,
       },
+      gaz: null,
       "gaz . facteur d'émission": {
         valeur: 10,
       },
@@ -515,6 +521,10 @@ describe('Constant folding [base]', () => {
   })
   it('should work with parentheses inside [formule]', () => {
     const rawRules = {
+      divers: null,
+      'divers . ameublement': null,
+      'divers . ameublement . meubles': null,
+      'divers . ameublement . meubles . armoire': null,
       'divers . ameublement . meubles . armoire . empreinte amortie': {
         titre: 'Empreinte armoire amortie',
         formule: 'armoire . empreinte / (durée * coefficient préservation)',
