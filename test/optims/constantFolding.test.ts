@@ -27,6 +27,7 @@ describe('Constant folding [meta]', () => {
         titre: 'Rule A',
         formule: 'B . C * D',
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -70,6 +71,7 @@ describe('Constant folding [base]', () => {
         titre: 'Rule A',
         formule: 'B . C * 3',
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -88,6 +90,7 @@ describe('Constant folding [base]', () => {
         titre: 'Rule A',
         formule: 'B . C * D',
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -112,6 +115,7 @@ describe('Constant folding [base]', () => {
       'ruleA . D': {
         question: "What's the value of D",
       },
+      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
