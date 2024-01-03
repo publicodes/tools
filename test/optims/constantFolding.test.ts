@@ -539,14 +539,12 @@ describe('Constant folding [base]', () => {
     })
   })
 
-  it('should not fold rules used in a [recalcul]', () => {
+  it('should not fold rules used with a [contexte]', () => {
     const rawRules = {
       root: {
-        recalcul: {
-          règle: 'rule to recompute',
-          avec: {
-            constant: 20,
-          },
+        valeur: 'rule to recompute',
+        contexte: {
+          constant: 20,
         },
       },
       'rule to recompute': {
@@ -558,11 +556,9 @@ describe('Constant folding [base]', () => {
     }
     expect(constantFoldingWith(rawRules)).toStrictEqual({
       root: {
-        recalcul: {
-          règle: 'rule to recompute',
-          avec: {
-            constant: 20,
-          },
+        valeur: 'rule to recompute',
+        contexte: {
+          constant: 20,
         },
       },
       'rule to recompute': {
@@ -575,14 +571,12 @@ describe('Constant folding [base]', () => {
     })
   })
 
-  it('should not fold rules used in a [recalcul] but still fold used constant in other rules', () => {
+  it('should not fold rules used with a [contexte] but still fold used constant in other rules', () => {
     const rawRules = {
       root: {
-        recalcul: {
-          règle: 'rule to recompute',
-          avec: {
-            constant: 20,
-          },
+        valeur: 'rule to recompute',
+        contexte: {
+          constant: 20,
         },
       },
       'rule to recompute': {
@@ -597,11 +591,9 @@ describe('Constant folding [base]', () => {
     }
     expect(constantFoldingWith(rawRules)).toStrictEqual({
       root: {
-        recalcul: {
-          règle: 'rule to recompute',
-          avec: {
-            constant: 20,
-          },
+        valeur: 'rule to recompute',
+        contexte: {
+          constant: 20,
         },
       },
       'rule to recompute': {

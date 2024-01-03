@@ -31,17 +31,16 @@ type FoldingCtx = {
   toKeep?: PredicateOnRule
   params: FoldingParams
   /**
-   * The rules that are evaluated with a modified situation (in a [recalcul] mechanism)
+   * The rules that are evaluated with a modified situation (in a [contexte] mechanism)
    * and we don't want to be folded.
    *
    * @example
    * ```
    * rule:
-   *   recalcul:
-   *	    règle: rule2
-   *	    avec:
-   *	      rule3: 10
-   *	      rule4: 20
+   *	  valeur: rule2
+   *	  contexte:
+   *	    rule3: 10
+   *	    rule4: 20
    * ...
    * ```
    * In this case, [rule2] should not be folded.
@@ -74,10 +73,10 @@ function initFoldingCtx(
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
           if (
-            node.nodeKind === 'recalcul' &&
-            'dottedName' in node.explanation.recalculNode
+            Object.keys(node.rawNode).includes('contexte') &&
+            node.rawNode.valeur !== undefined
           ) {
-            recalculRules.add(node.explanation.recalculNode.dottedName)
+            recalculRules.add(node.rawNode.valeur)
           }
           if (
             node.nodeKind === 'reference' &&
