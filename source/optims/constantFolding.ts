@@ -131,8 +131,7 @@ function isFoldable(
 }
 
 function isEmptyRule(rule: RuleNode): boolean {
-  // There is always a 'nom' attribute.
-  return Object.keys(rule.rawNode).length <= 1
+  return Object.keys(rule.rawNode).length === 0
 }
 
 function formatPublicodesUnit(unit?: Unit): string {
