@@ -162,21 +162,6 @@ ${importedRule.description}`
   }
 }
 
-/**
- * @throws {Error} If the `nom` attribute is different from the `ruleNameToCheck`.
- */
-function removeRawNodeNom(
-  rawNode: Rule,
-  ruleNameToCheck: string,
-): Omit<Rule, 'nom'> {
-  const { nom, ...rest } = rawNode
-  if (nom !== ruleNameToCheck)
-    throw Error(
-      `Imported rule's publicode raw node "nom" attribute is different from the resolveImport script ruleName. Please investigate`,
-    )
-  return rest
-}
-
 function appearsMoreThanOnce(
   rulesToImport: RuleToImport[],
   ruleName: RuleName,
@@ -252,10 +237,7 @@ export function resolveImports(
           utils
             .ruleParents(ruleName)
             .forEach((rule) => neededNamespaces.add(`${namespace} . ${rule}`))
-          return [
-            `${namespace} . ${ruleName}`,
-            removeRawNodeNom(ruleWithUpdatedDescription, ruleName),
-          ]
+          return [`${namespace} . ${ruleName}`, ruleWithUpdatedDescription]
         }
 
         const ruleWithOverridenAttributes = { ...rule.rawNode, ...attrs }
