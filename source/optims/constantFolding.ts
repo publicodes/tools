@@ -78,9 +78,6 @@ function initFoldingCtx(
           ) {
             contextRules.add(ruleName)
             contextRules.add(node.rawNode.valeur)
-            Object.keys(node.rawNode.contexte).map((dottedNameInContext) =>
-              contextRules.add(dottedNameInContext),
-            )
           }
           if (
             node.nodeKind === 'reference' &&
