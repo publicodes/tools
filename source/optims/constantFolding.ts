@@ -72,7 +72,11 @@ function initFoldingCtx(
     const reducedAST =
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
-          if (Object.keys(node.rawNode).includes('contexte')) {
+          if (
+            node.rawNode != null &&
+            Object.keys(node.rawNode).includes('contexte')
+          ) {
+            contextRules.add(ruleName)
             contextRules.add(node.rawNode.valeur)
           }
           if (
@@ -86,6 +90,7 @@ function initFoldingCtx(
         new Set(),
         ruleNode.explanation.valeur,
       ) ?? new Set()
+
     const traversedVariables: RuleName[] = Array.from(reducedAST).filter(
       (name) => !name.endsWith(' . $SITUATION'),
     )
@@ -118,7 +123,6 @@ function isFoldable(
 
   const rawNode = rule.rawNode
 
-  console.log(rule.dottedName, contextRules, contextRules.has(rule.dottedName))
   return !(
     contextRules.has(rule.dottedName) ||
     'question' in rawNode ||
