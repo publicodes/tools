@@ -640,6 +640,9 @@ describe('Constant folding [base]', () => {
         formule: 'nested 2 * 4',
       },
       'rule to recompute . nested 2': {
+        formule: 'nested 3 * 4',
+      },
+      'rule to recompute . nested 3': {
         formule: 'constant * 4',
       },
       constant: {
@@ -660,6 +663,9 @@ describe('Constant folding [base]', () => {
         formule: 'nested 2 * 4',
       },
       'rule to recompute . nested 2': {
+        formule: 'nested 3 * 4',
+      },
+      'rule to recompute . nested 3': {
         formule: 'constant * 4',
       },
       constant: {

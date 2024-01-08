@@ -67,7 +67,7 @@ export type ImportMacro = {
 /**
  * Represents a non-parsed NGC rule.
  */
-export type RawRule = Omit<Rule, 'nom'> & ImportMacro
+export type RawRule = Omit<Rule, 'nom'> | ImportMacro
 
 /**
  * Represents a non-parsed NGC model.

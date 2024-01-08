@@ -203,7 +203,7 @@ export function resolveImports(
   let neededNamespaces = new Set<string>()
   const resolvedRules = Object.entries(rules).reduce((acc, [name, value]) => {
     if (name === IMPORT_KEYWORD) {
-      const importMacro: ImportMacro = value
+      const importMacro = value as ImportMacro
       const engine = getEngine(filePath, importMacro, verbose)
       const rulesToImport: RuleToImport[] =
         importMacro['les règles']?.map(getRuleToImportInfos)
