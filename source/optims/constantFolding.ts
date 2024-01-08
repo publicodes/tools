@@ -1,9 +1,4 @@
-import Engine, {
-  reduceAST,
-  ParsedRules,
-  parseExpression,
-  utils,
-} from 'publicodes'
+import Engine, { reduceAST, ParsedRules, parseExpression } from 'publicodes'
 import type { RuleNode, ASTNode, Unit } from 'publicodes'
 import {
   getAllRefsInNode,
@@ -49,7 +44,14 @@ type FoldingCtx = {
    *	    rule4: 20
    * ...
    * ```
-   * In this case, [rule2] should not be folded.
+   * In this case, [rule2] should not be folded (and all its dependencies
+   * should not be folded!).
+   *
+   * TODO(@EmileRolley): currently, all childs of a rule with a [contexte]
+   * mechanism are not folded. However, it could be smarter to keep track of
+   * each contexte rules and fold the child rules that are not impacted by the
+   * contexte. For now we choose to keep it simple and to over-fold instead of
+   * taking the risk to alter the result.
    */
   impactedByContexteRules: Set<RuleName>
 }
@@ -117,10 +119,14 @@ function initFoldingCtx(
   //
   // NOTE(@EmileRolley): contexte rule will be added in the contextRules set.
   // Therefore, they won't be marked as folded. It's a wanted behavior? Not sure.
+  //
+  // WARN(@EmileRolley): the [impactedByContexteRules] is updated while
+  // iterating it's convenient but the semantics may vary depending on the
+  // javascript runtime used.
   for (const ruleName of impactedByContexteRules) {
-    getAllChilds(ruleName, refs.childs).forEach((rule) =>
-      impactedByContexteRules.add(rule),
-    )
+    refs.childs
+      .get(ruleName)
+      ?.forEach((rule) => impactedByContexteRules.add(rule))
   }
 
   return {
@@ -147,19 +153,6 @@ function getAllRefsInNodeImpactedByContexte(
   })
 
   return impactedRules
-}
-
-function getAllChilds(ruleName: RuleName, childs: RefMap): RuleName[] {
-  const allChilds = []
-
-  for (const child of childs.get(ruleName) ?? []) {
-    if (!allChilds.includes(child)) {
-      allChilds.push(child)
-      allChilds.push(...getAllChilds(child, childs))
-    }
-  }
-
-  return allChilds
 }
 
 function isFoldable(
