@@ -6,7 +6,11 @@ type SourceMap = {
   args: Record<string, ASTNode | Array<ASTNode>>
 }
 
-function serializeValue(node: ASTNode, parentSourceMap: SourceMap): any {
+function serializeValue(
+  node: ASTNode,
+  parentSourceMap?: SourceMap,
+  needParens = false,
+): any {
   switch (node.nodeKind) {
     case 'reference': {
       return node.name
@@ -35,9 +39,13 @@ function serializeValue(node: ASTNode, parentSourceMap: SourceMap): any {
       if (node?.sourceMap?.mecanismName === 'est défini') {
         return serializeMechanism(node)
       }
-      return `${serializeValue(node.explanation[0], node.sourceMap)} ${
-        node.operationKind
-      } ${serializeValue(node.explanation[1], node.sourceMap)}`
+      return (
+        (needParens ? '(' : '') +
+        `${serializeValue(node.explanation[0], node.sourceMap, true)} ${
+          node.operationKind
+        } ${serializeValue(node.explanation[1], node.sourceMap, true)}` +
+        (needParens ? ')' : '')
+      )
     }
     case 'unité': {
       const unit = serializeUnit(node.unit)
@@ -59,6 +67,7 @@ function serializeMechanism(node: ASTNode): Record<string, any> {
     const value = sourceMap.args[key]
     const isArray = Array.isArray(value)
 
+    // FIXME: bug with 'une de ses conditions' with 'applicable si'.
     rawRule[sourceMap.mecanismName] = isArray
       ? value.map((v) => serializeValue(v, sourceMap))
       : serializeValue(value, sourceMap)
@@ -69,12 +78,26 @@ function serializeMechanism(node: ASTNode): Record<string, any> {
 function serializeASTNode(node: ASTNode): RawRule {
   return reduceAST<RawRule>(
     (rawRule, node: ASTNode) => {
+      console.log(`\n----- serializing `, node.nodeKind)
       switch (node.nodeKind) {
+        case 'constant': {
+          const serializedValue = serializeValue(node)
+          console.log(`serializing constant`, node)
+          return serializedValue
+        }
         default: {
           if (node?.sourceMap) {
             switch (node.sourceMap.mecanismName) {
               case 'dans la situation': {
                 if (node.nodeKind === 'condition') {
+                  const serializedNode = serializeASTNode(
+                    node.explanation.alors,
+                  )
+                  if (typeof serializedNode !== 'object') {
+                    return {
+                      valeur: serializedNode,
+                    }
+                  }
                   return {
                     ...rawRule,
                     ...serializeASTNode(node.explanation.alors),
@@ -85,18 +108,16 @@ function serializeASTNode(node: ASTNode): RawRule {
                   )
                 }
               }
-              case 'une de de ces conditions': {
-                console.log(node.sourceMap)
-              }
               default: {
                 return { ...rawRule, ...serializeMechanism(node) }
               }
             }
           }
+          return { ...rawRule, ...serializeMechanism(node) }
         }
       }
     },
-    {},
+    {} as RawRule,
     node,
   )
 }
@@ -107,7 +128,9 @@ export function serializeParsedRules(
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {
+    console.log(`serializing rule ${node.nodeKind}`)
     rawRules[rule] = {
+      ...node.rawNode,
       ...serializeASTNode(node.explanation.valeur),
     }
     delete rawRules[rule].nom
