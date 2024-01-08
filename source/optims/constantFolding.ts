@@ -1,6 +1,7 @@
 import Engine, { reduceAST, ParsedRules, parseExpression } from 'publicodes'
 import type { RuleNode, ASTNode, Unit } from 'publicodes'
 import {
+  getAllRefsInNode,
   RuleName,
   serializeParsedExprAST,
   substituteInParsedExpr,
@@ -72,12 +73,20 @@ function initFoldingCtx(
     const reducedAST =
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
-          if (
-            node.rawNode != null &&
-            Object.keys(node.rawNode).includes('contexte')
-          ) {
+          if (node.nodeKind === 'contexte') {
+            // Find all rule references impacted by the contexte in the rule node
+            const impactedRules = getAllRefsInNode(node).filter((ref) => {
+              return (
+                ref !== ruleName &&
+                !ref.endsWith(' . $SITUATION') &&
+                !node.explanation.contexte.find(
+                  ([contexteRef, _]) => contexteRef.dottedName === ref,
+                )
+              )
+            })
+
+            impactedRules.forEach((rule) => contextRules.add(rule))
             contextRules.add(ruleName)
-            contextRules.add(node.rawNode.valeur)
           }
           if (
             node.nodeKind === 'reference' &&

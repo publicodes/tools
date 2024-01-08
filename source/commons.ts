@@ -115,7 +115,7 @@ export const disabledLogger: Logger = {
  *
  * @returns The references.
  */
-export function getAllRefsInNode(node: RuleNode): RuleName[] {
+export function getAllRefsInNode(node: ASTNode): RuleName[] {
   return reduceAST<RuleName[]>(
     (refs: RuleName[], node: ASTNode) => {
       if (node === undefined) {
