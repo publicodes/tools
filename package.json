@@ -47,7 +47,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/node": "^18.11.18",
-    "publicodes": "^1.0.0-rc.5"
+    "publicodes": "^1.0.0-rc.6"
   },
   "devDependencies": {
     "@types/jest": "^29.2.5",
