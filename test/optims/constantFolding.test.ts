@@ -585,6 +585,42 @@ describe('Constant folding [base]', () => {
     })
   })
 
+  it('should not fold rules used with a [contexte] impacting a complex formula', () => {
+    const rawRules = {
+      root: {
+        formule: {
+          somme: ['rule to recompute', 10],
+        },
+        contexte: {
+          constant: 20,
+        },
+      },
+      'rule to recompute': {
+        formule: 'constant * 2',
+      },
+      constant: {
+        valeur: 10,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      root: {
+        formule: {
+          somme: ['rule to recompute', 10],
+        },
+        contexte: {
+          constant: 20,
+        },
+      },
+      'rule to recompute': {
+        formule: 'constant * 2',
+      },
+      constant: {
+        valeur: 10,
+        optimized: true,
+      },
+    })
+  })
+
   it('should not fold rules used with a [contexte] but still fold used constant in other rules', () => {
     const rawRules = {
       root: {
