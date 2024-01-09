@@ -390,17 +390,9 @@ function tryToFoldRule(
     return
   }
 
-  ctx.engine.cache.traversedVariablesStack = []
-  const { nodeValue, missingVariables, traversedVariables, unit } =
-    ctx.engine.evaluateNode(rule)
+  const { nodeValue, missingVariables, unit } = ctx.engine.evaluateNode(rule)
 
-  const traversedVariablesWithoutSelf = traversedVariables.filter(
-    (dottedName) => dottedName !== ruleName,
-  )
-
-  // NOTE(@EmileRolley): we need to evaluate due to possible standalone rule [formule]
-  // parsed as a [valeur].
-  if ('valeur' in rule.rawNode && traversedVariablesWithoutSelf?.length > 0) {
+  if ('valeur' in rule.rawNode) {
     rule.rawNode.formule = rule.rawNode.valeur
     delete rule.rawNode.valeur
   }
@@ -429,16 +421,7 @@ function tryToFoldRule(
       // it from the [refs].
       const childs = ctx.refs.childs.get(ruleName) ?? []
 
-      updateRefCounting(
-        ctx,
-        ruleName,
-        // NOTE(@EmileRolley): for some reason, the [traversedVariables] are not always
-        // depencies of the rule. Consequently, we need to keep only the ones that are
-        // in the [childs] list in order to avoid removing rules that are not dependencies.
-        traversedVariablesWithoutSelf?.filter((v: RuleName) =>
-          childs.includes(v),
-        ) ?? [],
-      )
+      updateRefCounting(ctx, ruleName, childs)
       delete ctx.parsedRules[ruleName].rawNode.formule
     }
 
