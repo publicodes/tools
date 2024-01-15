@@ -4,7 +4,7 @@ import Engine, {
   parseExpression,
   serializeEvaluation,
 } from 'publicodes'
-import type { RuleNode, ASTNode, Unit } from 'publicodes'
+import type { RuleNode, ASTNode } from 'publicodes'
 import {
   getAllRefsInNode,
   RuleName,
@@ -360,7 +360,7 @@ function updateRefCounting(
     if (ctx.refs.parents.get(ruleNameToUpdate)?.length === 0) {
       deleteRule(ctx, ruleNameToUpdate)
     }
-  })
+  }
 }
 
 function tryToFoldRule(
@@ -388,7 +388,7 @@ function tryToFoldRule(
     return
   }
 
-  const { nodeValue, missingVariables, unit } = ctx.engine.evaluateNode(rule)
+  const evaluatedNode = ctx.engine.evaluateNode(rule)
 
   if ('valeur' in rule.rawNode) {
     rule.rawNode.formule = rule.rawNode.valeur
@@ -457,17 +457,14 @@ export function constantFolding(
   console.timeEnd('copy')
 
   console.time('initFoldingCtx')
-  let ctx: FoldingCtx = {
-    engine,
-    parsedRules,
-    toKeep,
-    refs: getRefs(parsedRules),
-    params: params?.isFoldedAttr ? params : { isFoldedAttr: 'optimized' },
-  }
+  let ctx = initFoldingCtx(engine, parsedRules, toKeep, params)
   console.timeEnd('initFoldingCtx')
 
   for (const [ruleName, ruleNode] of Object.entries(ctx.parsedRules)) {
-    if (isFoldable(ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
+    if (
+      isFoldable(ruleNode, ctx.impactedByContexteRules) &&
+      !isAlreadyFolded(ctx.params, ruleNode)
+    ) {
       tryToFoldRule(ctx, ruleName, ruleNode)
     }
   }
