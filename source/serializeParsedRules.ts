@@ -78,11 +78,21 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
     }
 
     case 'unité': {
-      console.log('[UNIT]:', node)
-      const unit = serializeUnit(node.unit)
-      const nodeValue = serializeASTNode(node.explanation)
+      const serializedUnit = serializeUnit(node.unit)
+      const serializedExplanation = serializeASTNode(node.explanation)
 
-      return nodeValue + (unit ? ' ' + unit : '')
+      // Inlined unit (e.g. '10 €/mois')
+      if (node?.explanation?.nodeKind === 'constant') {
+        return (
+          serializedExplanation + (serializedUnit ? ' ' + serializedUnit : '')
+        )
+      }
+
+      // Explicit [unité] mecanism
+      return {
+        unité: serializedUnit,
+        ...serializedRuleToRawRule(serializedExplanation),
+      }
     }
 
     default: {

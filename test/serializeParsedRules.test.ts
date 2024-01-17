@@ -476,23 +476,30 @@ describe('API > mecanisms list', () => {
     expect(serializedRules).toStrictEqual(rules)
   })
 
-  // TODO
-  // it('should serialize rule with [unité]', () => {
-  //   const rules = {
-  //     "date d'embauche": {
-  //       valeur: '14/04/2008',
-  //     },
-  //     "ancienneté en fin d'année": {
-  //       durée: {
-  //         depuis: "date d'embauche",
-  //         "jusqu'à": '31/12/2020',
-  //       },
-  //     },
-  //   }
-  //   const serializedRules = serializeParsedRules(
-  //     new Engine(rules).getParsedRules(),
-  //   )
-  //   console.log(JSON.stringify(serializedRules, null, 2))
-  //   expect(serializedRules).toStrictEqual(rules)
-  // })
+  it('should serialize rule with [unité]', () => {
+    const rules = {
+      test1: {
+        valeur: 35,
+        unité: '€/mois',
+      },
+      test2: {
+        valeur: '35 €/mois',
+      },
+      test3: {
+        variations: [
+          { si: 'test1 > 0', alors: 'test1' },
+          {
+            sinon: {
+              somme: ['test1', 'test2'],
+              unité: '€/mois',
+            },
+          },
+        ],
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
 })
