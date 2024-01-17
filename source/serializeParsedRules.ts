@@ -35,7 +35,8 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
 
     case 'operation': {
       switch (node?.sourceMap?.mecanismName) {
-        /* All these mecanisms are inlined with simplier ones. Therefore,
+        /*
+         * All these mecanisms are inlined with simplier ones. Therefore,
          * we need to serialize the sourceMap in order to retrieve the
          * original mecanism.
          *
@@ -49,7 +50,8 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
         case 'moyenne':
         case 'une de ces conditions':
         case 'toutes ces conditions':
-        /* The engine parse the mecanism
+        /*
+         * The engine parse the mecanism
          * 'est défini: <rule>'
          * as
          * 'est non défini: <rule> = non'
@@ -226,13 +228,14 @@ function serializeASTNode(node: ASTNode): SerializedRule {
           const mecanismName = sourceMap?.mecanismName
           switch (mecanismName) {
             case 'dans la situation': {
-              // The engine parse all rules into a root condition:
-              //
-              // - si:
-              //   est non défini: <rule> . $SITUATION
-              // - alors: <rule>
-              // - sinon: <rule> . $SITUATION
-              //
+              /*
+               * The engine parse all rules into a root condition:
+               *
+               * - si:
+               *   est non défini: <rule> . $SITUATION
+               * - alors: <rule>
+               * - sinon: <rule> . $SITUATION
+               */
               if (
                 sourceMap.args['dans la situation']['title'] === '$SITUATION'
               ) {
