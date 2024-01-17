@@ -502,4 +502,151 @@ describe('API > mecanisms list', () => {
     )
     expect(serializedRules).toStrictEqual(rules)
   })
+
+  it('should serialize rule with [par défaut]', () => {
+    const rules = {
+      'prix HT': {
+        valeur: '50 €',
+      },
+      'prix TTC': {
+        assiette: 'prix HT * (100 % + TVA)',
+      },
+      TVA: {
+        valeur: '50 %',
+        'par défaut': '20 %',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
+
+  it('should serialize rule with [avec]', () => {
+    const rules = {
+      'prix final': {
+        valeur: 'prix de base * (100% - réduction)',
+        avec: {
+          'prix de base': '157 €',
+          réduction: '20 %',
+        },
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual({
+      'prix final': {
+        valeur: 'prix de base * (100 % - réduction)',
+      },
+      'prix final . prix de base': {
+        valeur: '157 €',
+      },
+      'prix final . réduction': {
+        valeur: '20 %',
+      },
+    })
+  })
+
+  it('should serialize rule with [texte]', () => {
+    const rules = {
+      'aide vélo': {
+        texte: `La région subventionne l’achat d’un vélo à hauteur de
+    {{ prise en charge }} et jusqu’à un plafond de {{ 500 € }}.
+    Les éventuelles aides locales déjà perçues sont déduites de
+    ce montant.
+
+    Par exemple, pour un vélo de {{ exemple }}, la région {{ 'Nouvelle Aquitaine' }}
+    vous versera {{ exemple * prise en charge }}`,
+      },
+      'aide vélo . prise en charge': {
+        valeur: '50 %',
+      },
+      'aide vélo . exemple': {
+        valeur: '250 €',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
+
+  it('should serialize rule with multiple [mécanismes chaînés]', () => {
+    const rules = {
+      'nombre de repas': {
+        valeur: '12 repas',
+      },
+      'remboursement repas': {
+        valeur: 'nombre de repas * 4.21 €/repas',
+        plafond: '500 €',
+        abattement: '25 €',
+        arrondi: 'oui',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
+
+  it('should serialize rule with multiple [une possibilité]', () => {
+    const rules = {
+      'chauffage collectif': {
+        avec: {
+          collectif: null,
+          individuel: null,
+        },
+        question: 'Votre chauffage est-il collectif ou individuel ?',
+        'par défaut': "'collectif'",
+        formule: {
+          'une possibilité': {
+            'choix obligatoire': 'oui',
+            possibilités: ['collectif', 'individuel'],
+          },
+        },
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual({
+      'chauffage collectif': {
+        question: 'Votre chauffage est-il collectif ou individuel ?',
+        'par défaut': "'collectif'",
+        'une possibilité': {
+          'choix obligatoire': 'oui',
+          possibilités: ['collectif', 'individuel'],
+        },
+      },
+      'chauffage collectif . collectif': null,
+      'chauffage collectif . individuel': null,
+    })
+  })
+
+  // TODO
+  // it('should serialize rule with [private rule]', () => {
+  //   const rules = {
+  //     'aide vélo': {
+  //       texte: `La région subventionne l’achat d’un vélo à hauteur de
+  //   {{ prise en charge }} et jusqu’à un plafond de {{ 500 € }}.
+  //   Les éventuelles aides locales déjà perçues sont déduites de
+  //   ce montant.
+  //
+  //   Par exemple, pour un vélo de {{ exemple }}, la région {{ 'Nouvelle Aquitaine' }}
+  //   vous versera {{ exemple * prise en charge }}`,
+  //     },
+  //     'aide vélo . prise en charge': {
+  //       valeur: '50 %',
+  //     },
+  //     'aide vélo . exemple': {
+  //       valeur: '250 €',
+  //     },
+  //   }
+  //   const serializedRules = serializeParsedRules(
+  //     new Engine(rules).getParsedRules(),
+  //   )
+  //   console.log(JSON.stringify(serializedRules, null, 2))
+  //   expect(serializedRules).toStrictEqual(rules)
+  // })
 })

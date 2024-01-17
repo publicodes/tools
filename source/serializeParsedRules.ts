@@ -1,11 +1,6 @@
 import { ASTNode, ParsedRules, reduceAST, serializeUnit } from 'publicodes'
 import { RawRule, RuleName } from './commons'
-//
-// type SourceMap = {
-//   mecanismName: string
-//   args: Record<string, ASTNode | Array<ASTNode>>
-// }
-//
+
 type SerializedRule = RawRule | number | string
 
 function serializedRuleToRawRule(serializedRule: SerializedRule): RawRule {
@@ -18,7 +13,6 @@ function serializedRuleToRawRule(serializedRule: SerializedRule): RawRule {
 }
 
 function serializeValue(node: ASTNode, needParens = false): SerializedRule {
-  // console.log('[SERIALIZE_VALUE]:', node.nodeKind, needParens)
   switch (node.nodeKind) {
     case 'reference': {
       return node.name
@@ -96,11 +90,12 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
     }
 
     default: {
-      return `TODO: ${node.nodeKind}`
+      throw new Error(`[SERIALIZE_VALUE]: '${node.nodeKind}' not implemented`)
     }
   }
 }
 
+// TODO: this function might be refactored
 function serializeSourceMap(node: ASTNode): SerializedRule {
   const sourceMap = node.sourceMap
 
@@ -109,9 +104,6 @@ function serializeSourceMap(node: ASTNode): SerializedRule {
     const value = sourceMap.args[key]
     const isArray = Array.isArray(value)
 
-    console.log('[SOURCE_MAP]:', key)
-
-    // FIXME: bug with 'une de ses conditions' with 'applicable si'.
     rawRule[sourceMap.mecanismName] = isArray
       ? value.map((v) => serializeASTNode(v))
       : serializeASTNode(value)
@@ -121,14 +113,7 @@ function serializeSourceMap(node: ASTNode): SerializedRule {
 
 function serializeASTNode(node: ASTNode): SerializedRule {
   return reduceAST<SerializedRule>(
-    (rawRule, node: ASTNode) => {
-      // if (node?.nodeKind) {
-      console.log('[NODE_KIND]:', node.nodeKind)
-      console.log('[MECANISME_NAME]:', node?.sourceMap?.mecanismName)
-      // } else {
-      //   console.log('[NODE_KIND]:', node)
-      //   return rawRule
-      // }
+    (_, node: ASTNode) => {
       switch (node?.nodeKind) {
         case 'reference':
         case 'constant':
@@ -169,9 +154,12 @@ function serializeASTNode(node: ASTNode): SerializedRule {
         }
 
         case 'arrondi': {
+          const serializedValeur = serializedRuleToRawRule(
+            serializeASTNode(node.explanation.valeur),
+          )
           return {
+            ...serializedValeur,
             arrondi: serializeASTNode(node.explanation.arrondi),
-            valeur: serializeASTNode(node.explanation.valeur),
           }
         }
 
@@ -227,8 +215,8 @@ function serializeASTNode(node: ASTNode): SerializedRule {
             serializeASTNode(node.explanation.node),
           )
           return {
-            contexte,
             ...serializedExplanationNode,
+            contexte,
           }
         }
 
@@ -257,10 +245,10 @@ function serializeASTNode(node: ASTNode): SerializedRule {
                 serializeASTNode(node.explanation.alors),
               )
               return {
+                ...serializedExplanationNode,
                 [mecanismName]: serializeASTNode(
                   sourceMap.args[mecanismName] as ASTNode,
                 ),
-                ...serializedExplanationNode,
               }
             }
 
@@ -273,57 +261,66 @@ function serializeASTNode(node: ASTNode): SerializedRule {
 
             case 'abattement':
             case 'plancher':
-            case 'plafond': {
+            case 'plafond':
+            case 'par défaut': {
               const serializedExplanationNode = serializedRuleToRawRule(
                 serializeASTNode(node.sourceMap.args.valeur as ASTNode),
               )
 
               return {
+                ...serializedExplanationNode,
                 [mecanismName]: serializeASTNode(
                   node.sourceMap.args[mecanismName] as ASTNode,
                 ),
-                ...serializedExplanationNode,
               }
+            }
+
+            default: {
+              throw new Error(
+                `[SERIALIZE_AST_NODE]: mecanism '${mecanismName}' found in a '${node.nodeKind}`,
+              )
             }
           }
         }
 
+        case 'variable manquante': {
+          // Simple need to unwrap the explanation node
+          return serializeASTNode(node.explanation)
+        }
+
+        case 'texte': {
+          const serializedText = node.explanation.reduce(
+            (currText: string, node: ASTNode | string) => {
+              if (typeof node === 'string') {
+                return currText + node
+              }
+
+              const serializedNode = serializeASTNode(node)
+              if (typeof serializedNode !== 'string') {
+                throw new Error(`[SERIALIZE_AST_NODE > 'texte']: all childs of 'texte' expect to be serializable as string.
+				Got '${serializedNode}'`)
+              }
+              return currText + '{{ ' + serializedNode + ' }}'
+            },
+            '',
+          )
+          return { texte: serializedText }
+        }
+
+        case 'une possibilité': {
+          return {
+            'une possibilité': {
+              'choix obligatoire': node['choix obligatoire'],
+              possibilités: node.explanation.map(serializeASTNode),
+            },
+          }
+        }
+
         default: {
-          // console.log('[DEFAULT]:', node.nodeKind)
-          // console.log('[KIND]:', node.nodeKind)
-          // console.log('[SOURCE_MAP]:', node.sourceMap)
-          // if (node?.sourceMap) {
-          //   switch (node.sourceMap.mecanismName) {
-          //     case 'dans la situation': {
-          //       if (node.nodeKind === 'condition') {
-          //         console.log(`\n----- serializing `, node.nodeKind)
-          //         console.log(`----- node `, node)
-          //         const serializedNode = serializeASTNode(
-          //           node.explanation.alors,
-          //         )
-          //         if (typeof serializedNode !== 'object') {
-          //           return {
-          //             valeur: serializedNode,
-          //           }
-          //         }
-          //         return {
-          //           ...rawRule,
-          //           ...serializeASTNode(node.explanation.alors),
-          //         }
-          //       } else {
-          //         console.error(
-          //           `'dans la situation' expect be resolved to a condition got ${node.nodeKind}`,
-          //         )
-          //       }
-          //     }
-          //     default: {
-          //       return { ...rawRule, ...serializeMechanism(node) }
-          //     }
-          //   }
-          // } else {
-          //   return { ...rawRule, ...serializeMechanism(node) }
-          // }
-          // return { ...rawRule, ...serializeSourceMap(node) }
+          throw new Error(
+            `[SERIALIZE_AST_NODE]: '${node.nodeKind}' not implemented.
+		Node:\n${JSON.stringify(node, null, 2)}`,
+          )
         }
       }
     },
@@ -335,13 +332,39 @@ function serializeASTNode(node: ASTNode): SerializedRule {
 export function serializeParsedRules(
   parsedRules: ParsedRules<RuleName>,
 ): Record<RuleName, RawRule> {
+  /**
+   * This mecanisms are syntaxique sugars that are inlined with simplier ones.
+   * Consequently, we need to remove them from the rawNode in order to avoid
+   * duplicate mecanisms.
+   *
+   *
+   * NOTE: for now, the [avec] mecanism is unfolded as full rules. Therefore,
+   * we need to remove the [avec] mecanism from the rawNode in order to
+   * avoid duplicate rule definitions.
+   *
+   * TODO: a way to keep the [avec] mecanism in the rawNode could be investigated but
+   * for now it's not a priority.
+   */
+  const syntaxiqueSugars = ['avec', 'formule']
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {
-    console.log(`serializing ${rule}`)
+    if (Object.keys(node.rawNode).length === 0) {
+      console.log(`[SERIALIZE_PARSED_RULES]: empty rule '${rule}' found`)
+      // Empty rule should be null not {}
+      rawRules[rule] = null
+      continue
+    }
+
     const serializedNode = serializedRuleToRawRule(
       serializeASTNode(node.explanation.valeur),
     )
+
+    syntaxiqueSugars.forEach((attr) => {
+      if (attr in node.rawNode) {
+        delete node.rawNode[attr]
+      }
+    })
 
     rawRules[rule] = {
       ...node.rawNode,
