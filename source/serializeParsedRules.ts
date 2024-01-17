@@ -172,8 +172,9 @@ function serializeASTNode(node: ASTNode): SerializedRule {
           }
         }
 
-        case 'taux progressif':
-        case 'barème': {
+        case 'barème':
+        case 'grille':
+        case 'taux progressif': {
           const serializedNode = {
             assiette: serializeASTNode(node.explanation.assiette),
             tranches: node.explanation.tranches.map((tranche) => {
@@ -350,7 +351,6 @@ export function serializeParsedRules(
 
   for (const [rule, node] of Object.entries(parsedRules)) {
     if (Object.keys(node.rawNode).length === 0) {
-      console.log(`[SERIALIZE_PARSED_RULES]: empty rule '${rule}' found`)
       // Empty rule should be null not {}
       rawRules[rule] = null
       continue

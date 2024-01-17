@@ -36,6 +36,30 @@ describe('API > mecanisms list', () => {
     expect(serializedRules).toStrictEqual(rules)
   })
 
+  it('should serialize rule with constant [formule]', () => {
+    const rules = {
+      rule: {
+        titre: 'My rule',
+        formule: '10 * rule2',
+      },
+      rule2: {
+        valeur: 2,
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual({
+      rule: {
+        titre: 'My rule',
+        valeur: '10 * rule2',
+      },
+      rule2: {
+        valeur: 2,
+      },
+    })
+  })
+
   it('should serialize rule with ref [applicable si]', () => {
     const rules = {
       rule: {
@@ -356,6 +380,35 @@ describe('API > mecanisms list', () => {
             { taux: '30 %', plafond: '72617 €' },
             { taux: '41 %', plafond: '153783 €' },
             { taux: '45 %' },
+          ],
+        },
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
+
+  it('should serialize rule with [grille]', () => {
+    const rules = {
+      'SMIC horaire': {
+        valeur: '10 €/heures',
+      },
+      'revenu cotisé': {
+        valeur: '1900 €/an',
+      },
+      'trimestres validés': {
+        unité: 'trimestres validés/an',
+        grille: {
+          assiette: 'revenu cotisé',
+          multiplicateur: 'SMIC horaire',
+          tranches: [
+            { montant: 0, plafond: '150 heures/an' },
+            { montant: 1, plafond: '300 heures/an' },
+            { montant: 2, plafond: '450 heures/an' },
+            { montant: 3, plafond: '600 heures/an' },
+            { montant: 4 },
           ],
         },
       },
