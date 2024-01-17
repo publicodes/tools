@@ -370,8 +370,6 @@ export function serializeParsedRules(
       ...node.rawNode,
       ...serializedNode,
     }
-
-    delete rawRules[rule].nom
   }
 
   return rawRules
