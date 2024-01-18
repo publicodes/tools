@@ -2,7 +2,9 @@ import Engine, {
   reduceAST,
   ParsedRules,
   parseExpression,
-  serializeEvaluation,
+  transformAST,
+  traverseASTNode,
+  Unit,
 } from 'publicodes'
 import type { RuleNode, ASTNode } from 'publicodes'
 import {
@@ -208,67 +210,67 @@ function lexicalSubstitutionOfRefValue(
   parent: RuleNode,
   constant: RuleNode,
 ): RuleNode | undefined {
-  // Retrieves the name form used in the rule. For exemple, the rule 'root . a
-  // . b' could have the name 'b', 'a . b' or 'root . a . b'.
-  // const substituteAST = transformAST((node, transform) => {
-  //   // if
-  // })
-
-  const refName = reduceAST<string>(
-    (_, node: ASTNode) => {
+  const newNode = traverseASTNode(
+    transformAST((node, _) => {
       if (
         node.nodeKind === 'reference' &&
         node.dottedName === constant.dottedName
       ) {
-        return node.name
+        // TODO: needs to be extracted in a function checking if a node is a
+        // constant node.
+        // @ts-ignore
+        return constant.explanation.valeur.explanation.alors
       }
-    },
-    '',
+    }),
     parent,
   )
 
-  const constValue = constant.rawNode.valeur
-
-  // NOTE: here we directly replace the [rawNode] as it's what we get back with [getRawNodes]
-  // at the end.
-  // Instead, we could transform the complete parsed rule and serialize it at the end.
+  return newNode as RuleNode
   //
-  // If I continue to transform directly the [rawNode] then I can use directly the
-  // rules given to the engine and no need to make a deep copy therefore. We simply
-  // need to add the dottedName info in the rawRule.
-  if ('formule' in parent.rawNode) {
-    if (typeof parent.rawNode.formule === 'string') {
-      const newFormule = replaceAllRefs(
-        parent.rawNode.formule,
-        refName,
-        constValue,
-        constant.dottedName,
-      )
-      parent.rawNode.formule = newFormule
-      return parent
-    } else if ('somme' in parent.rawNode.formule) {
-      // TODO: needs to be abstracted
-      parent.rawNode.formule.somme = (
-        parent.rawNode.formule.somme as (string | number)[]
-      ).map((expr: string | number) => {
-        return typeof expr === 'string'
-          ? replaceAllRefs(expr, refName, constValue, constant.dottedName)
-          : expr
-      })
-      return parent
-    }
-  }
-  // When a rule defined as an unique string: 'var * var2', it's parsed as a [valeur] attribute not a [formule].
-  if (typeof parent.rawNode.valeur === 'string') {
-    parent.rawNode.formule = replaceAllRefs(
-      parent.rawNode.valeur,
-      refName,
-      constValue,
-      constant.dottedName,
-    )
-    delete parent.rawNode.valeur
-    return parent
-  }
+  // const refName = reduceAST<ASTNode>((_, node: ASTNode) => {}, '', parent)
+  //
+  // const constValue = constant.rawNode.valeur
+  //
+  // // NOTE: here we directly replace the [rawNode] as it's what we get back with [getRawNodes]
+  // // at the end.
+  // // Instead, we could transform the complete parsed rule and serialize it at the end.
+  // //
+  // // If I continue to transform directly the [rawNode] then I can use directly the
+  // // rules given to the engine and no need to make a deep copy therefore. We simply
+  // // need to add the dottedName info in the rawRule.
+  // if ('formule' in parent.rawNode) {
+  //   if (typeof parent.rawNode.formule === 'string') {
+  //     const newFormule = replaceAllRefs(
+  //       parent.rawNode.formule,
+  //       refName,
+  //       constValue,
+  //       constant.dottedName,
+  //     )
+  //     parent.rawNode.formule = newFormule
+  //     return parent
+  //   } else if ('somme' in parent.rawNode.formule) {
+  //     // TODO: needs to be abstracted
+  //     parent.rawNode.formule.somme = (
+  //       parent.rawNode.formule.somme as (string | number)[]
+  //     ).map((expr: string | number) => {
+  //       return typeof expr === 'string'
+  //         ? replaceAllRefs(expr, refName, constValue, constant.dottedName)
+  //         : expr
+  //     })
+  //     return parent
+  //   }
+  // }
+  // // When a rule defined as an unique string: 'var * var2', it's parsed as a [valeur] attribute not a [formule].
+  // if (typeof parent.rawNode.valeur === 'string') {
+  //   parent.rawNode.formule = replaceAllRefs(
+  //     parent.rawNode.valeur,
+  //     refName,
+  //     constValue,
+  //     constant.dottedName,
+  //   )
+  //   delete parent.rawNode.valeur
+  //   return parent
+  // }
 }
 
 /** Replaces all references in parent refs of [ruleName] by its [rule.valeur] */
@@ -281,13 +283,13 @@ function searchAndReplaceConstantValueInParentRefs(
 
   if (refs) {
     for (const parentName of refs) {
-      let parentRule = ctx.parsedRules[parentName]
+      const parentRule = ctx.parsedRules[parentName]
 
       if (isFoldable(parentRule, ctx.impactedByContexteRules)) {
         const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
         if (newRule !== undefined) {
-          parentRule = newRule
-          parentRule.rawNode[ctx.params.isFoldedAttr] = true
+          ctx.parsedRules[parentName] = newRule
+          ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] = true
           removeInMap(ctx.refs.parents, ruleName, parentName)
         }
       }
@@ -314,7 +316,7 @@ function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]) {
         isFoldable(childNode, ctx.impactedByContexteRules) &&
         !isAlreadyFolded(ctx.params, childNode)
       ) {
-        tryToFoldRule(ctx, childName, childNode)
+        fold(ctx, childName, childNode)
       }
     }
   }
@@ -363,11 +365,43 @@ function updateRefCounting(
   }
 }
 
-function tryToFoldRule(
-  ctx: FoldingCtx,
-  ruleName: RuleName,
-  rule: RuleNode,
-): void {
+function replaceRuleWithEvaluatedNodeValue(
+  rule: ASTNode,
+  nodeValue: number | boolean | string | Record<string, unknown>,
+  unit: Unit | undefined,
+) {
+  const constantNode = {
+    nodeValue,
+    type: typeof nodeValue,
+    nodeKind: 'constant',
+    missingVariables: {},
+    rawNode: {
+      valeur: nodeValue,
+    },
+    fullPrecision: true,
+    isNullable: false,
+    isActive: true,
+  }
+  //
+  // The engine parse all rules into a root condition:
+  //
+  // - si:
+  //   est non défini: <rule> . $SITUATION
+  // - alors: <rule>
+  // - sinon: <rule> . $SITUATION
+  //
+  // @ts-ignore
+  rule.explanation.valeur.explanation.alors =
+    unit !== undefined
+      ? {
+          nodeKind: 'unité',
+          unit,
+          explanation: constantNode,
+        }
+      : constantNode
+}
+
+function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   if (
     rule !== undefined &&
     (!isFoldable(rule, ctx.impactedByContexteRules) ||
@@ -388,50 +422,37 @@ function tryToFoldRule(
     return
   }
 
-  const evaluatedNode = ctx.engine.evaluateNode(rule)
+  const { missingVariables, nodeValue, unit } = ctx.engine.evaluateNode(rule)
 
-  if ('valeur' in rule.rawNode) {
-    rule.rawNode.formule = rule.rawNode.valeur
-    delete rule.rawNode.valeur
-  }
-
-  const missingVariablesNames = Object.keys(evaluatedNode.missingVariables)
+  const missingVariablesNames = Object.keys(missingVariables)
 
   // Constant leaf -> search and replace the constant in all its parents.
   if (missingVariablesNames.length === 0) {
-    ctx.parsedRules[ruleName].rawNode.valeur =
-      serializeEvaluation(evaluatedNode)
+    replaceRuleWithEvaluatedNodeValue(rule, nodeValue, unit)
 
     searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
     if (ctx.parsedRules[ruleName] === undefined) {
       return
     }
 
-    if ('formule' in rule.rawNode) {
-      // The rule do not depends on any other rule anymore, so we need to remove
-      // it from the [refs].
-      const childs = ctx.refs.childs.get(ruleName) ?? []
+    const childs = ctx.refs.childs.get(ruleName) ?? []
 
-      updateRefCounting(ctx, ruleName, childs)
-      delete ctx.parsedRules[ruleName].rawNode.formule
-    }
+    updateRefCounting(ctx, ruleName, childs)
+    delete ctx.parsedRules[ruleName].rawNode.formule
 
     if (ctx.refs.parents.get(ruleName)?.length === 0) {
-      // NOTE(@EmileRolley): temporary work around until all mechanisms are supported.
-      // Indeed, when replacing a leaf ref by its value in all its parents,
-      // it should always be removed.
       deleteRule(ctx, ruleName)
     } else {
       ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = true
     }
 
     return
-  } else if ('formule' in rule.rawNode) {
-    // Try to replace internal refs if possible.
-    const childs = ctx.refs.childs.get(ruleName)
-    if (childs?.length > 0) {
-      replaceAllPossibleChildRefs(ctx, childs)
-    }
+  } else {
+    // // Try to replace internal refs if possible.
+    // const childs = ctx.refs.childs.get(ruleName)
+    // if (childs?.length > 0) {
+    //   replaceAllPossibleChildRefs(ctx, childs)
+    // }
   }
 }
 
@@ -450,22 +471,19 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
-  console.time('copy')
   const parsedRules: ParsedRules<RuleName> =
     // PERF: could it be avoided?
     JSON.parse(JSON.stringify(engine.getParsedRules()))
-  console.timeEnd('copy')
 
-  console.time('initFoldingCtx')
   let ctx = initFoldingCtx(engine, parsedRules, toKeep, params)
-  console.timeEnd('initFoldingCtx')
 
-  for (const [ruleName, ruleNode] of Object.entries(ctx.parsedRules)) {
+  for (const ruleName in ctx.parsedRules) {
+    const ruleNode = ctx.parsedRules[ruleName]
     if (
       isFoldable(ruleNode, ctx.impactedByContexteRules) &&
       !isAlreadyFolded(ctx.params, ruleNode)
     ) {
-      tryToFoldRule(ctx, ruleName, ruleNode)
+      fold(ctx, ruleName, ruleNode)
     }
   }
 

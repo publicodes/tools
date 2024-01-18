@@ -337,7 +337,7 @@ export function serializeParsedRules(
   parsedRules: ParsedRules<RuleName>,
 ): Record<RuleName, RawRule> {
   /**
-   * This mecanisms are syntaxique sugars that are inlined with simplier ones.
+   * This mecanisms are syntaxic sugars that are inlined with simplier ones.
    * Consequently, we need to remove them from the rawNode in order to avoid
    * duplicate mecanisms.
    *
@@ -349,7 +349,7 @@ export function serializeParsedRules(
    * TODO: a way to keep the [avec] mecanism in the rawNode could be investigated but
    * for now it's not a priority.
    */
-  const syntaxiqueSugars = ['avec', 'formule']
+  const syntaxicSugars = ['avec', 'formule', 'valeur']
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {
@@ -363,14 +363,15 @@ export function serializeParsedRules(
       serializeASTNode(node.explanation.valeur),
     )
 
-    syntaxiqueSugars.forEach((attr) => {
-      if (attr in node.rawNode) {
-        delete node.rawNode[attr]
+    rawRules[rule] = { ...node.rawNode }
+    syntaxicSugars.forEach((attr) => {
+      if (attr in rawRules[rule]) {
+        delete rawRules[rule][attr]
       }
     })
 
     rawRules[rule] = {
-      ...node.rawNode,
+      ...rawRules[rule],
       ...serializedNode,
     }
   }

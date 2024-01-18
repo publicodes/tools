@@ -703,3 +703,50 @@ describe('API > mecanisms list', () => {
   //   expect(serializedRules).toStrictEqual(rules)
   // })
 })
+
+describe('More complexe cases', () => {
+  it('should serialize the same rules multiple times', () => {
+    const rules = {
+      ruleA: {
+        titre: 'Rule A',
+        valeur: 'B . C * D',
+      },
+      'ruleA . B . C': {
+        valeur: '10',
+      },
+      'ruleA . D': {
+        valeur: '3',
+      },
+    }
+    const parsedRules = new Engine(rules, {
+      allowOrphanRules: true,
+    }).getParsedRules()
+
+    expect(serializeParsedRules(parsedRules)).toStrictEqual(
+      serializeParsedRules(parsedRules),
+    )
+  })
+  it('should correctly serialize [valeur] composed with other mecanisms', () => {
+    const rules = {
+      ex1: {
+        valeur: {
+          somme: ['15.89 €', '12 % * 14 €', '-20 €'],
+        },
+      },
+      ex2: {
+        valeur: '2 * 15.89 €',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual({
+      ex1: {
+        somme: ['15.89 €', '12 % * 14 €', '-20 €'],
+      },
+      ex2: {
+        valeur: '2 * 15.89 €',
+      },
+    })
+  })
+})
