@@ -1,18 +1,12 @@
 import Engine, {
   reduceAST,
   ParsedRules,
-  parseExpression,
   transformAST,
   traverseASTNode,
   Unit,
 } from 'publicodes'
 import type { RuleNode, ASTNode } from 'publicodes'
-import {
-  getAllRefsInNode,
-  RuleName,
-  serializeParsedExprAST,
-  substituteInParsedExpr,
-} from '../commons'
+import { getAllRefsInNode, RuleName } from '../commons'
 
 type RefMap = Map<
   RuleName,
@@ -191,21 +185,6 @@ function isEmptyRule(rule: RuleNode): boolean {
   return Object.keys(rule.rawNode).length === 0
 }
 
-function replaceAllRefs(
-  str: string,
-  refName: string,
-  constantValue: any,
-  currentRuleName: string,
-): string {
-  const parsedExpression = parseExpression(str, currentRuleName)
-  const newParsedExpression = substituteInParsedExpr(
-    parsedExpression,
-    refName,
-    constantValue,
-  )
-  return serializeParsedExprAST(newParsedExpression)
-}
-
 function lexicalSubstitutionOfRefValue(
   parent: RuleNode,
   constant: RuleNode,
@@ -299,27 +278,6 @@ function searchAndReplaceConstantValueInParentRefs(
 
 function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
   return 'rawNode' in rule && params.isFoldedAttr in rule.rawNode
-}
-
-/**
- * Subsitutes [parentRuleNode.formule] ref constant from [refs].
- *
- * @note It folds child rules in [refs] if possible.
- */
-function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]) {
-  if (refs) {
-    for (const childName of refs) {
-      const childNode = ctx.parsedRules[childName]
-
-      if (
-        childNode &&
-        isFoldable(childNode, ctx.impactedByContexteRules) &&
-        !isAlreadyFolded(ctx.params, childNode)
-      ) {
-        fold(ctx, childName, childNode)
-      }
-    }
-  }
 }
 
 function removeInMap<K, V>(map: Map<K, V[]>, key: K, val: V) {
