@@ -3,7 +3,10 @@ import Engine from 'publicodes'
 import type { ParsedRules } from 'publicodes'
 
 export function callWithEngine<R>(fn: (engine: Engine) => R, rawRules: any): R {
-  const engine = new Engine(rawRules, { logger: disabledLogger })
+  const engine = new Engine(rawRules, {
+    logger: disabledLogger,
+    allowOrphanRules: true,
+  })
   return fn(engine)
 }
 

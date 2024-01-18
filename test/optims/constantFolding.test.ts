@@ -27,7 +27,6 @@ describe('Constant folding [meta]', () => {
         titre: 'Rule A',
         formule: 'B . C * D',
       },
-      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -35,7 +34,10 @@ describe('Constant folding [meta]', () => {
         valeur: '3',
       },
     }
-    const engine = new Engine(rawRules, { logger: disabledLogger })
+    const engine = new Engine(rawRules, {
+      logger: disabledLogger,
+      allowOrphanRules: true,
+    })
     const untouchedParsedRules = getRawNodes(engine.getParsedRules())
 
     constantFolding(engine, ([ruleName, _]) => ruleName === 'ruleA')
@@ -50,10 +52,10 @@ describe('Constant folding [base]', () => {
   it('∅ -> ∅', () => {
     expect(constantFoldingWith({})).toStrictEqual({})
   })
+
   it('should remove empty nodes', () => {
     expect(
       constantFoldingWith({
-        ruleA: null,
         ruleB: {
           formule: '10 * 10',
         },
@@ -65,13 +67,13 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should replace a [formule] with 1 dependency with the corresponding constant value', () => {
     const rawRules = {
       ruleA: {
         titre: 'Rule A',
         formule: 'B . C * 3',
       },
-      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -84,13 +86,13 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should replace a [formule] with 2 dependencies with the corresponding constant value', () => {
     const rawRules = {
       ruleA: {
         titre: 'Rule A',
         formule: 'B . C * D',
       },
-      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -106,6 +108,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should replace the constant reference without being able to fold entirely the rule', () => {
     const rawRules = {
       ruleA: {
@@ -115,7 +118,6 @@ describe('Constant folding [base]', () => {
       'ruleA . D': {
         question: "What's the value of D",
       },
-      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -131,6 +133,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should partially fold rule with constant with multiple parents dependencies', () => {
     const rawRules = {
       ruleA: {
@@ -143,7 +146,6 @@ describe('Constant folding [base]', () => {
       'ruleA . D': {
         question: "What's the value of D?",
       },
-      'ruleA . B': null,
       'ruleA . B . C': {
         valeur: '10',
       },
@@ -159,13 +161,13 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should partially fold rule with constant with multiple parents dependencies add keep the only targeted rule: [ruleA]', () => {
     const rawRules = {
       ruleA: {
         titre: 'Rule A',
         formule: 'B . C * D',
       },
-      'ruleA . B': null,
       ruleB: {
         formule: 'ruleA . B . C * 3',
       },
@@ -187,6 +189,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should fold a constant within _two degrees_', () => {
     const rawRules = {
       A: {
@@ -206,6 +209,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should fold constant within two degrees with B, a partially foldable rule', () => {
     const rawRules = {
       A: {
@@ -234,6 +238,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should completely fold a [somme] mechanism', () => {
     const rawRules = {
       ruleA: {
@@ -242,7 +247,6 @@ describe('Constant folding [base]', () => {
       ruleB: {
         somme: ['A . B * 2', 10, 12 * 2],
       },
-      A: null,
       'A . B': {
         formule: 'C * 10',
       },
@@ -257,6 +261,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should partially fold [formule > somme] mechanism', () => {
     const rawRules = {
       ruleA: {
@@ -270,7 +275,6 @@ describe('Constant folding [base]', () => {
       'ruleB . D': {
         question: "What's the value of ruleB . D?",
       },
-      A: null,
       'A . B': {
         formule: 'C * 10',
       },
@@ -293,6 +297,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should fold a mutiple [somme] deep dependencies', () => {
     const rawRules = {
       omr: {
@@ -358,6 +363,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should replace properly child rule references when one is a substring of the other: (Ambiguity with rule name)', () => {
     const rawRules = {
       biogaz: {
@@ -367,7 +373,6 @@ describe('Constant folding [base]', () => {
       "biogaz . facteur d'émission": {
         valeur: 20,
       },
-      gaz: null,
       "gaz . facteur d'émission": {
         valeur: 10,
       },
@@ -385,6 +390,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('replaceAllRefs bug #1', () => {
     const rawRules = {
       biogaz: {
@@ -394,7 +400,6 @@ describe('Constant folding [base]', () => {
       "biogaz . facteur d'émission": {
         valeur: 20,
       },
-      gaz: null,
       "gaz . facteur d'émission": {
         valeur: 10,
       },
@@ -412,6 +417,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('replaceAllRefs bug #2', () => {
     const rawRules = {
       boisson: {
@@ -434,6 +440,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should fold standalone [formule] rule', () => {
     const rawRules = {
       boisson: 'tasse de café * nombre',
@@ -454,6 +461,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should keeps % when folding', () => {
     const rawRules = {
       boisson: 'pct * nombre',
@@ -474,6 +482,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('par défaut = 0', () => {
     const rawRules = {
       'chocolat chaud': {
@@ -498,6 +507,7 @@ describe('Constant folding [base]', () => {
       },
     })
   })
+
   it('should replace constant ref, even if it starts with diacritic', () => {
     const rawRules = {
       piscine: {
@@ -519,12 +529,9 @@ describe('Constant folding [base]', () => {
       'piscine . nombre': { question: 'Combien ?', 'par défaut': 2 },
     })
   })
+
   it('should work with parentheses inside [formule]', () => {
     const rawRules = {
-      divers: null,
-      'divers . ameublement': null,
-      'divers . ameublement . meubles': null,
-      'divers . ameublement . meubles . armoire': null,
       'divers . ameublement . meubles . armoire . empreinte amortie': {
         titre: 'Empreinte armoire amortie',
         formule: 'armoire . empreinte / (durée * coefficient préservation)',
