@@ -6,7 +6,7 @@ import Engine, {
   Unit,
 } from 'publicodes'
 import type { RuleNode, ASTNode } from 'publicodes'
-import { getAllRefsInNode, RuleName } from '../commons'
+import { RuleName } from '../commons'
 
 type RefMap = Map<
   RuleName,
@@ -91,14 +91,9 @@ function initFoldingCtx(
 
             // We can't fold it
             if (Object.keys(missingVariables).length !== 0) {
-              // Find all rule references impacted by the contexte in the rule node
-              const impactedRules = getAllRefsInNodeImpactedByContexte(
-                ruleName,
-                node,
-                node.explanation.contexte.map(([ref, _]) => ref.dottedName),
-              )
-
-              impactedRules.forEach((rule) => impactedByContexteRules.add(rule))
+              node.explanation.contexte.forEach(([ref, _]) => {
+                impactedByContexteRules.add(ref.dottedName)
+              })
               impactedByContexteRules.add(ruleName)
             }
           }
@@ -126,20 +121,6 @@ function initFoldingCtx(
     }
   }
 
-  // All childs of a rule impacted by a contexte rule are also impacted.
-  //
-  // NOTE(@EmileRolley): contexte rule will be added in the contextRules set.
-  // Therefore, they won't be marked as folded. It's a wanted behavior? Not sure.
-  //
-  // WARN(@EmileRolley): the [impactedByContexteRules] is updated while
-  // iterating it's convenient but the semantics may vary depending on the
-  // javascript runtime used.
-  for (const ruleName of impactedByContexteRules) {
-    refs.childs
-      .get(ruleName)
-      ?.forEach((rule) => impactedByContexteRules.add(rule))
-  }
-
   return {
     engine,
     parsedRules,
@@ -152,33 +133,23 @@ function initFoldingCtx(
   }
 }
 
-function getAllRefsInNodeImpactedByContexte(
-  ruleName: RuleName,
-  node: ASTNode,
-  contexteRefs: RuleName[],
-): RuleName[] {
-  const impactedRules = getAllRefsInNode(node).filter((ref) => {
-    return (
-      ref !== ruleName &&
-      !ref.endsWith(' . $SITUATION') &&
-      !contexteRefs.includes(ref)
-    )
-  })
-
-  return impactedRules
-}
-
 function isFoldable(
   rule: RuleNode | undefined,
+  childs: Set<RuleName> | undefined,
   contextRules: Set<RuleName>,
 ): boolean {
-  if (!rule) {
-    return false
-  }
+  let childInContext = false
 
-  const rawNode = rule.rawNode
+  childs?.forEach((child) => {
+    if (contextRules.has(child)) {
+      childInContext = true
+      return
+    }
+  })
 
-  return !(contextRules.has(rule.dottedName) || 'question' in rawNode)
+  return (
+    rule !== undefined && !contextRules.has(rule.dottedName) && !childInContext
+  )
 }
 
 function isEmptyRule(rule: RuleNode): boolean {
@@ -227,7 +198,13 @@ function searchAndReplaceConstantValueInParentRefs(
     for (const parentName of refs) {
       const parentRule = ctx.parsedRules[parentName]
 
-      if (isFoldable(parentRule, ctx.impactedByContexteRules)) {
+      if (
+        isFoldable(
+          parentRule,
+          ctx.refs.childs.get(parentName),
+          ctx.impactedByContexteRules,
+        )
+      ) {
         const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
         if (newRule !== undefined) {
           ctx.parsedRules[parentName] = newRule
@@ -264,7 +241,11 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
   const ruleNode = ctx.parsedRules[dottedName]
   if (
     (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
-    isFoldable(ruleNode, ctx.impactedByContexteRules)
+    isFoldable(
+      ruleNode,
+      ctx.refs.childs.get(dottedName),
+      ctx.impactedByContexteRules,
+    )
   ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName)
     removeRuleFromRefs(ctx.refs.childs, dottedName)
@@ -356,7 +337,11 @@ function replaceRuleWithEvaluatedNodeValue(
 function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   if (
     rule !== undefined &&
-    (!isFoldable(rule, ctx.impactedByContexteRules) ||
+    (!isFoldable(
+      rule,
+      ctx.refs.childs.get(ruleName),
+      ctx.impactedByContexteRules,
+    ) ||
       isAlreadyFolded(ctx.params, rule) ||
       !(ruleName in ctx.parsedRules))
   ) {
@@ -417,26 +402,25 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
-  console.time('deepCopy')
   const parsedRules: ParsedRules<RuleName> =
     // PERF: could it be avoided?
     JSON.parse(JSON.stringify(engine.getParsedRules()))
-  console.timeEnd('deepCopy')
 
-  console.time('initFoldingCtx')
   let ctx = initFoldingCtx(engine, parsedRules, toKeep, params)
-  console.timeEnd('initFoldingCtx')
 
   let nbRules = Object.keys(ctx.parsedRules).length
   let nbRulesBefore = undefined
 
-  console.time(`fold`)
   while (nbRules !== nbRulesBefore) {
     for (const ruleName in ctx.parsedRules) {
       const ruleNode = ctx.parsedRules[ruleName]
 
       if (
-        isFoldable(ruleNode, ctx.impactedByContexteRules) &&
+        isFoldable(
+          ruleNode,
+          ctx.refs.childs.get(ruleName),
+          ctx.impactedByContexteRules,
+        ) &&
         !isAlreadyFolded(ctx.params, ruleNode)
       ) {
         fold(ctx, ruleName, ruleNode)
@@ -445,23 +429,24 @@ export function constantFolding(
     nbRulesBefore = nbRules
     nbRules = Object.keys(ctx.parsedRules).length
   }
-  console.timeEnd(`fold`)
 
   if (toKeep) {
-    console.time('filter')
     for (const ruleName in ctx.parsedRules) {
       const ruleNode = ctx.parsedRules[ruleName]
       const parents = ctx.refs.parents.get(ruleName)
 
       if (
-        isFoldable(ruleNode, ctx.impactedByContexteRules) &&
+        isFoldable(
+          ruleNode,
+          ctx.refs.childs.get(ruleName),
+          ctx.impactedByContexteRules,
+        ) &&
         !toKeep([ruleName, ruleNode]) &&
         (!parents || parents?.size === 0)
       ) {
         delete ctx.parsedRules[ruleName]
       }
     }
-    console.timeEnd('filter')
   }
 
   return ctx.parsedRules

@@ -1,7 +1,7 @@
 import { ASTNode, ParsedRules, reduceAST, serializeUnit } from 'publicodes'
 import { RawRule, RuleName } from './commons'
 
-type SerializedRule = RawRule | number | string
+type SerializedRule = RawRule | number | string | null
 
 function serializedRuleToRawRule(serializedRule: SerializedRule): RawRule {
   if (typeof serializedRule === 'object') {
@@ -26,8 +26,11 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
           return `'${node.nodeValue}'`
         case 'number':
           return Number(node.nodeValue)
-        // TODO: case 'date':
         default: {
+          if (node.nodeValue === null) {
+            return null
+          }
+          // TODO: case 'date':
           return node.nodeValue?.toLocaleString('fr-FR')
         }
       }
@@ -77,6 +80,10 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
       const serializedUnit = serializeUnit(node.unit)
       const serializedExplanation = serializeASTNode(node.explanation)
 
+      if (serializedExplanation === null) {
+        return null
+      }
+
       // Inlined unit (e.g. '10 €/mois')
       if (node?.explanation?.nodeKind === 'constant') {
         return (
@@ -107,7 +114,7 @@ function serializeSourceMap(node: ASTNode): SerializedRule {
     const isArray = Array.isArray(value)
 
     rawRule[sourceMap.mecanismName] = isArray
-      ? value.map((v) => serializeASTNode(v))
+      ? value.map((v) => serializeASTNode(v)).filter((v) => v !== null)
       : serializeASTNode(value)
   }
   return rawRule
@@ -349,7 +356,22 @@ export function serializeParsedRules(
    * TODO: a way to keep the [avec] mecanism in the rawNode could be investigated but
    * for now it's not a priority.
    */
-  const syntaxicSugars = ['avec', 'formule', 'valeur', 'contexte']
+  const syntaxicSugars = [
+    'avec',
+    'formule',
+    'valeur',
+    'contexte',
+    'somme',
+    'moyenne',
+    'produit',
+    'une de ces conditions',
+    'toutes ces conditions',
+    'est défini',
+    'est non défini',
+    'texte',
+    'le maximum de',
+    'le minimum de',
+  ]
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {
