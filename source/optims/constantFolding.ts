@@ -11,7 +11,7 @@ import { getAllRefsInNode, RuleName } from '../commons'
 type RefMap = Map<
   RuleName,
   // NOTE: It's an array but it's built from a Set, so no duplication
-  RuleName[] | undefined
+  Set<RuleName> | undefined
 >
 
 type RefMaps = {
@@ -60,9 +60,9 @@ type FoldingCtx = {
 function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
   let vals = map.get(key)
   if (vals) {
-    vals = vals.concat(values)
+    values.forEach((val) => vals.add(val))
   }
-  map.set(key, vals || values)
+  map.set(key, vals || new Set(values))
 }
 
 function initFoldingCtx(
@@ -235,12 +235,9 @@ function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
   return 'rawNode' in rule && params.isFoldedAttr in rule.rawNode
 }
 
-function removeInMap<K, V>(map: Map<K, V[]>, key: K, val: V) {
+function removeInMap<K, V>(map: Map<K, Set<V>>, key: K, val: V) {
   if (map.has(key)) {
-    map.set(
-      key,
-      map.get(key).filter((v) => v !== val),
-    )
+    map.get(key).delete(val)
   }
 }
 
@@ -268,11 +265,11 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
 function updateRefCounting(
   ctx: FoldingCtx,
   parentRuleName: RuleName,
-  ruleNamesToUpdate: RuleName[],
+  ruleNamesToUpdate: Set<RuleName>,
 ) {
   for (const ruleNameToUpdate of ruleNamesToUpdate) {
     removeInMap(ctx.refs.parents, ruleNameToUpdate, parentRuleName)
-    if (ctx.refs.parents.get(ruleNameToUpdate)?.length === 0) {
+    if (ctx.refs.parents.get(ruleNameToUpdate)?.size === 0) {
       deleteRule(ctx, ruleNameToUpdate)
     }
   }
@@ -342,7 +339,7 @@ function replaceRuleWithEvaluatedNodeValue(
  *
  * @note It folds child rules in [refs] if possible.
  */
-function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]) {
+function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: Set<RuleName>) {
   if (refs) {
     for (const childName of refs) {
       const childNode = ctx.parsedRules[childName]
@@ -372,7 +369,7 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   const ruleParents = ctx.refs.parents.get(ruleName)
   if (
     isEmptyRule(rule) &&
-    (ruleParents === undefined || ruleParents?.length === 0)
+    (ruleParents === undefined || ruleParents?.size === 0)
   ) {
     // Empty rule with no parent
     deleteRule(ctx, ruleName)
@@ -392,12 +389,12 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
       return
     }
 
-    const childs = ctx.refs.childs.get(ruleName) ?? []
+    const childs = ctx.refs.childs.get(ruleName) ?? new Set()
 
     updateRefCounting(ctx, ruleName, childs)
     delete ctx.parsedRules[ruleName].rawNode.formule
 
-    if (ctx.refs.parents.get(ruleName)?.length === 0) {
+    if (ctx.refs.parents.get(ruleName)?.size === 0) {
       deleteRule(ctx, ruleName)
     } else {
       ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = true
@@ -407,7 +404,7 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   } else {
     // Try to replace internal refs if possible.
     const childs = ctx.refs.childs.get(ruleName)
-    if (childs?.length > 0) {
+    if (childs?.size > 0) {
       replaceAllPossibleChildRefs(ctx, childs)
     }
   }
@@ -452,7 +449,7 @@ export function constantFolding(
         return (
           !isFoldable(ruleNode, ctx.impactedByContexteRules) ||
           toKeep([ruleName, ruleNode]) ||
-          parents?.length > 0
+          parents?.size > 0
         )
       }),
     )
