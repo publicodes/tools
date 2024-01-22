@@ -776,131 +776,148 @@ describe('Constant folding [base]', () => {
     })
   })
 
-  //
-  //
-  // TODO: not supported yet
-  //
-  //
-  // it('should fold a constant within two degrees with an [applicable si] (set to false) mechanism', () => {
-  // 	const rawRules = {
-  // 		A: {
-  // 			valeur: 'B',
-  // 		},
-  // 		'A . B': {
-  // 			'applicable si': 'présent',
-  // 			valeur: 'C * 10',
-  // 		},
-  // 		'A . B . présent': {
-  // 			question: 'Is present?',
-  // 			'par défaut': 'non',
-  // 		},
-  // 		'A . B . C': {
-  // 			valeur: 7,
-  // 		},
-  // 	}
-  // 	expect(constantFoldingWith(rawRules)).toStrictEqual({
-  // 		A: {
-  // 			valeur: 'B',
-  // 		},
-  // 		'A . B': {
-  // 			'applicable si': 'présent',
-  // 			valeur: '7 * 10',
-  // 			'est compressée': true,
-  // 		},
-  // 		'A . B . présent': {
-  // 			question: 'Is present?',
-  // 			'par défaut': 'non',
-  // 		},
-  // 	})
-  // })
-  // it('should fold a constant within two degrees with an [applicable si] (set to true) mechanism', () => {
-  // 	const rawRules = {
-  // 		A: {
-  // 			valeur: 'B',
-  // 		},
-  // 		'A . B': {
-  // 			'applicable si': 'présent',
-  // 			valeur: 'C * 10',
-  // 		},
-  // 		'A . B . présent': {
-  // 			question: 'Is present?',
-  // 			'par défaut': 'oui',
-  // 		},
-  // 		'A . B . C': {
-  // 			valeur: 7,
-  // 		},
-  // 	}
-  // 	expect(constantFoldingWith(rawRules)).toStrictEqual({
-  // 		A: {
-  // 			valeur: 'B',
-  // 		},
-  // 		'A . B': {
-  // 			'applicable si': 'présent',
-  // 			valeur: '7 * 10',
-  // 			'est compressée': true,
-  // 		},
-  // 		'A . B . présent': {
-  // 			question: 'Is present?',
-  // 			'par défaut': 'oui',
-  // 		},
-  // 	})
-  // })
-  //
-  // it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊤)]', () => {
-  // 	const rawRules = {
-  // 		root: {
-  // 			'applicable si': {
-  // 				'toutes ces conditions': ['unfoldable < foldable'],
-  // 			},
-  // 			valeur: 'foldable * pas foldable',
-  // 		},
-  // 		'root . foldable': {
-  // 			valeur: 20,
-  // 		},
-  // 		'root . unfoldable': {
-  // 			'par défaut': 10,
-  // 		},
-  // 	}
-  // 	expect(constantFoldingWith(rawRules)).toStrictEqual({
-  // 		root: {
-  // 			'applicable si': {
-  // 				// TODO: should be replaced by 'unfoldable < 20'
-  // 				'toutes ces conditions': ['unfoldable < foldable'],
-  // 			},
-  // 			valeur: '20 * unfoldable',
-  // 			'est compressée': true,
-  // 		},
-  // 		'root . unfoldable': {
-  // 			'par défaut': 10,
-  // 		},
-  // 	})
-  // })
-  // it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊥)] ', () => {
-  // 	const rawRules = {
-  // 		root: {
-  // 			'applicable si': {
-  // 				'toutes ces conditions': ['unfoldable > foldable'],
-  // 			},
-  // 			valeur: 'foldable * unfoldable',
-  // 		},
-  // 		'root . foldable': {
-  // 			valeur: 20,
-  // 		},
-  // 		'root . unfoldable': {
-  // 			'par défaut': 10,
-  // 		},
-  // 	}
-  // 	expect(constantFoldingWith(rawRules)).toStrictEqual({
-  // 		root: {
-  // 			'applicable si': {
-  // 				'toutes ces conditions': ['unfoldable > 20'],
-  // 			},
-  // 			valeur: '20 * unfoldable',
-  // 			'est compressée': true,
-  // 		},
-  // 		'root . unfoldable': {
-  // 			'par défaut': 10,
-  // 		},
-  // 	})
-  // })
+  it('should fold a unit rule with a constant [unité]', () => {
+    const rawRules = {
+      root: {
+        formule: '14 repas/semaine * plats . végétalien . empreinte',
+        unité: 'kgCO2e/semaine',
+      },
+      'plats . végétalien . empreinte': {
+        titre: "Empreinte d'un repas végétalien",
+        formule: 0.785,
+        unité: 'kgCO2e/repas',
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      root: {
+        valeur: '10.99 kgCO2e/semaine',
+        unité: 'kgCO2e/semaine',
+        optimized: true,
+      },
+    })
+  })
+
+  it('should fold a constant within two degrees with an [applicable si] (set to false) mechanism', () => {
+    const rawRules = {
+      A: {
+        valeur: 'B',
+      },
+      'A . B': {
+        'applicable si': 'présent',
+        valeur: 'C * 10',
+      },
+      'A . B . présent': {
+        question: 'Is present?',
+        'par défaut': 'non',
+      },
+      'A . B . C': {
+        valeur: 7,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      A: {
+        valeur: 'B',
+      },
+      'A . B': {
+        'applicable si': 'présent',
+        valeur: '7 * 10',
+        optimized: true,
+      },
+      'A . B . présent': {
+        question: 'Is present?',
+        'par défaut': 'non',
+      },
+    })
+  })
+
+  it('should fold a constant within two degrees with an [applicable si] (set to true) mechanism', () => {
+    const rawRules = {
+      A: {
+        valeur: 'B',
+      },
+      'A . B': {
+        'applicable si': 'présent',
+        valeur: 'C * 10',
+      },
+      'A . B . présent': {
+        question: 'Is present?',
+        'par défaut': 'oui',
+      },
+      'A . B . C': {
+        valeur: 7,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      A: {
+        valeur: 'B',
+      },
+      'A . B': {
+        'applicable si': 'présent',
+        valeur: '7 * 10',
+        optimized: true,
+      },
+      'A . B . présent': {
+        question: 'Is present?',
+        'par défaut': 'oui',
+      },
+    })
+  })
+
+  it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊤)]', () => {
+    const rawRules = {
+      root: {
+        'applicable si': {
+          'toutes ces conditions': ['unfoldable < foldable'],
+        },
+        valeur: 'foldable * unfoldable',
+      },
+      'root . foldable': {
+        valeur: 20,
+      },
+      'root . unfoldable': {
+        'par défaut': 10,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      root: {
+        'applicable si': {
+          'toutes ces conditions': ['unfoldable < 20'],
+        },
+        valeur: '20 * unfoldable',
+        optimized: true,
+      },
+      'root . unfoldable': {
+        'par défaut': 10,
+      },
+    })
+  })
+
+  it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊥)] ', () => {
+    const rawRules = {
+      root: {
+        'applicable si': {
+          'toutes ces conditions': ['unfoldable > foldable'],
+        },
+        valeur: 'foldable * unfoldable',
+      },
+      'root . foldable': {
+        valeur: 20,
+      },
+      'root . unfoldable': {
+        'par défaut': 10,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      root: {
+        'applicable si': {
+          'toutes ces conditions': ['unfoldable > 20'],
+        },
+        valeur: '20 * unfoldable',
+        optimized: true,
+      },
+      'root . unfoldable': {
+        'par défaut': 10,
+      },
+    })
+  })
 })
