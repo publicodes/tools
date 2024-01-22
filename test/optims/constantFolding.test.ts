@@ -561,7 +561,7 @@ describe('Constant folding [base]', () => {
     })
   })
 
-  it('should not fold rules impacted by a [contexte]', () => {
+  it('should not fold rules impacted by a [contexte] with a question in dependency', () => {
     const rawRules = {
       root: {
         valeur: 'rule to recompute',
@@ -570,7 +570,10 @@ describe('Constant folding [base]', () => {
         },
       },
       'rule to recompute': {
-        valeur: 'constant * 2',
+        valeur: 'constant * 2 * question',
+      },
+      question: {
+        question: 'Question ?',
       },
       constant: {
         valeur: 10,
@@ -584,51 +587,40 @@ describe('Constant folding [base]', () => {
         },
       },
       'rule to recompute': {
-        valeur: 'constant * 2',
+        valeur: '(constant * 2) * question',
+      },
+      question: {
+        question: 'Question ?',
       },
       constant: {
         valeur: 10,
-        // TODO: should be marked as optimized?
-        // optimized: true,
       },
     })
   })
 
-  it('should not fold nested rules impacted by a [contexte]', () => {
+  it('should fold rules impacted by a [contexte] with multiple contexte rules', () => {
     const rawRules = {
       root: {
         valeur: 'rule to recompute',
         contexte: {
-          constant: 20,
+          constant: 50,
+          'constant 2': 100,
         },
       },
       'rule to recompute': {
-        valeur: 'rule to recompute . nested * 2',
-      },
-      'rule to recompute . nested': {
-        valeur: 'constant * 4',
+        valeur: 'constant * 2 + constant 2',
       },
       constant: {
         valeur: 10,
+      },
+      'constant 2': {
+        valeur: 15,
       },
     }
     expect(constantFoldingWith(rawRules)).toStrictEqual({
       root: {
-        valeur: 'rule to recompute',
-        contexte: {
-          constant: 20,
-        },
-      },
-      'rule to recompute': {
-        valeur: 'rule to recompute . nested * 2',
-      },
-      'rule to recompute . nested': {
-        valeur: 'constant * 4',
-      },
-      constant: {
-        valeur: 10,
-        // TODO: should be marked as optimized?
-        // optimized: true,
+        valeur: 200,
+        optimized: true,
       },
     })
   })
@@ -651,7 +643,10 @@ describe('Constant folding [base]', () => {
         valeur: 'nested 3 * 4',
       },
       'rule to recompute . nested 3': {
-        valeur: 'constant * 4',
+        valeur: 'constant * 4 * question',
+      },
+      question: {
+        question: 'Question ?',
       },
       constant: {
         valeur: 10,
@@ -674,7 +669,10 @@ describe('Constant folding [base]', () => {
         valeur: 'nested 3 * 4',
       },
       'rule to recompute . nested 3': {
-        valeur: 'constant * 4',
+        valeur: '(constant * 4) * question',
+      },
+      question: {
+        question: 'Question ?',
       },
       constant: {
         valeur: 10,
@@ -688,7 +686,7 @@ describe('Constant folding [base]', () => {
     const rawRules = {
       root: {
         valeur: {
-          somme: ['rule to recompute', 10],
+          somme: ['rule to recompute', 'question', 10],
         },
         contexte: {
           constant: 20,
@@ -696,6 +694,9 @@ describe('Constant folding [base]', () => {
       },
       'rule to recompute': {
         valeur: 'constant * 2',
+      },
+      question: {
+        question: 'Question ?',
       },
       constant: {
         valeur: 10,
@@ -703,13 +704,16 @@ describe('Constant folding [base]', () => {
     }
     expect(constantFoldingWith(rawRules)).toStrictEqual({
       root: {
-        somme: ['rule to recompute', 10],
+        somme: ['rule to recompute', 'question', 10],
         contexte: {
           constant: 20,
         },
       },
       'rule to recompute': {
         valeur: 'constant * 2',
+      },
+      question: {
+        question: 'Question ?',
       },
       constant: {
         valeur: 10,
@@ -719,12 +723,12 @@ describe('Constant folding [base]', () => {
     })
   })
 
-  it('should not fold rules used with a [contexte] but still fold used constant in other rules', () => {
+  it('should fold a constant rule even with [contexte]', () => {
     const rawRules = {
       root: {
         valeur: 'rule to recompute',
         contexte: {
-          constant: 20,
+          constant: 15,
         },
       },
       'rule to recompute': {
@@ -739,22 +743,12 @@ describe('Constant folding [base]', () => {
     }
     expect(constantFoldingWith(rawRules)).toStrictEqual({
       root: {
-        valeur: 'rule to recompute',
-        contexte: {
-          constant: 20,
-        },
-      },
-      'rule to recompute': {
-        valeur: 'constant * 2',
+        valeur: 30,
+        optimized: true,
       },
       'rule to fold': {
         valeur: 40,
         optimized: true,
-      },
-      constant: {
-        valeur: 10,
-        // TODO: should be marked as optimized?
-        // optimized: true,
       },
     })
   })

@@ -86,15 +86,20 @@ function initFoldingCtx(
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
           if (node.nodeKind === 'contexte') {
-            // Find all rule references impacted by the contexte in the rule node
-            const impactedRules = getAllRefsInNodeImpactedByContexte(
-              ruleName,
-              node,
-              node.explanation.contexte.map(([ref, _]) => ref.dottedName),
-            )
+            const { missingVariables } = engine.evaluateNode(node)
 
-            impactedRules.forEach((rule) => impactedByContexteRules.add(rule))
-            impactedByContexteRules.add(ruleName)
+            // We can't fold it
+            if (Object.keys(missingVariables).length !== 0) {
+              // Find all rule references impacted by the contexte in the rule node
+              const impactedRules = getAllRefsInNodeImpactedByContexte(
+                ruleName,
+                node,
+                node.explanation.contexte.map(([ref, _]) => ref.dottedName),
+              )
+
+              impactedRules.forEach((rule) => impactedByContexteRules.add(rule))
+              impactedByContexteRules.add(ruleName)
+            }
           }
           if (
             node.nodeKind === 'reference' &&
@@ -170,15 +175,7 @@ function isFoldable(
 
   const rawNode = rule.rawNode
 
-  return !(
-    contextRules.has(rule.dottedName) ||
-    'question' in rawNode ||
-    // NOTE(@EmileRolley): I assume that a rule can have a [par défaut]
-    // attribute without a [question] one. The behavior could be specified.
-    'par défaut' in rawNode ||
-    'applicable si' in rawNode ||
-    'non applicable si' in rawNode
-  )
+  return !(contextRules.has(rule.dottedName) || 'question' in rawNode)
 }
 
 function isEmptyRule(rule: RuleNode): boolean {
@@ -195,61 +192,19 @@ function lexicalSubstitutionOfRefValue(
         node.nodeKind === 'reference' &&
         node.dottedName === constant.dottedName
       ) {
-        // TODO: needs to be extracted in a function checking if a node is a
-        // constant node.
-        // @ts-ignore
-        return constant.explanation.valeur.explanation.alors
+        if (constant.explanation.valeur.nodeKind === 'condition') {
+          return constant.explanation.valeur.explanation.alors
+        } else {
+          throw new Error(
+            `[lexicalSubstitutionOfRefValue]: constant node is expected to be a condition. Got ${constant.explanation.valeur.nodeKind} for the rule ${constant.dottedName}`,
+          )
+        }
       }
     }),
     parent,
   )
 
   return newNode as RuleNode
-  //
-  // const refName = reduceAST<ASTNode>((_, node: ASTNode) => {}, '', parent)
-  //
-  // const constValue = constant.rawNode.valeur
-  //
-  // // NOTE: here we directly replace the [rawNode] as it's what we get back with [getRawNodes]
-  // // at the end.
-  // // Instead, we could transform the complete parsed rule and serialize it at the end.
-  // //
-  // // If I continue to transform directly the [rawNode] then I can use directly the
-  // // rules given to the engine and no need to make a deep copy therefore. We simply
-  // // need to add the dottedName info in the rawRule.
-  // if ('formule' in parent.rawNode) {
-  //   if (typeof parent.rawNode.formule === 'string') {
-  //     const newFormule = replaceAllRefs(
-  //       parent.rawNode.formule,
-  //       refName,
-  //       constValue,
-  //       constant.dottedName,
-  //     )
-  //     parent.rawNode.formule = newFormule
-  //     return parent
-  //   } else if ('somme' in parent.rawNode.formule) {
-  //     // TODO: needs to be abstracted
-  //     parent.rawNode.formule.somme = (
-  //       parent.rawNode.formule.somme as (string | number)[]
-  //     ).map((expr: string | number) => {
-  //       return typeof expr === 'string'
-  //         ? replaceAllRefs(expr, refName, constValue, constant.dottedName)
-  //         : expr
-  //     })
-  //     return parent
-  //   }
-  // }
-  // // When a rule defined as an unique string: 'var * var2', it's parsed as a [valeur] attribute not a [formule].
-  // if (typeof parent.rawNode.valeur === 'string') {
-  //   parent.rawNode.formule = replaceAllRefs(
-  //     parent.rawNode.valeur,
-  //     refName,
-  //     constValue,
-  //     constant.dottedName,
-  //   )
-  //   delete parent.rawNode.valeur
-  //   return parent
-  // }
 }
 
 /** Replaces all references in parent refs of [ruleName] by its [rule.valeur] */
@@ -324,32 +279,29 @@ function updateRefCounting(
 }
 
 function replaceRuleWithEvaluatedNodeValue(
-  rule: ASTNode,
+  rule: RuleNode,
   nodeValue: number | boolean | string | Record<string, unknown>,
   unit: Unit | undefined,
 ) {
-  const constantNode = {
+  const constantNode: ASTNode = {
     nodeValue,
-    type: typeof nodeValue,
+    type:
+      typeof nodeValue === 'number'
+        ? 'number'
+        : typeof nodeValue === 'boolean'
+        ? 'boolean'
+        : typeof nodeValue === 'string'
+        ? 'string'
+        : undefined,
+
     nodeKind: 'constant',
     missingVariables: {},
     rawNode: {
       valeur: nodeValue,
     },
-    fullPrecision: true,
     isNullable: false,
-    isActive: true,
   }
-  //
-  // The engine parse all rules into a root condition:
-  //
-  // - si:
-  //   est non défini: <rule> . $SITUATION
-  // - alors: <rule>
-  // - sinon: <rule> . $SITUATION
-  //
-  // @ts-ignore
-  rule.explanation.valeur.explanation.alors =
+  const explanationThen: ASTNode =
     unit !== undefined
       ? {
           nodeKind: 'unité',
@@ -357,6 +309,53 @@ function replaceRuleWithEvaluatedNodeValue(
           explanation: constantNode,
         }
       : constantNode
+
+  if (rule.explanation.valeur.nodeKind === 'contexte') {
+    // We remove the contexte as it's now considered as a constant.
+    rule.explanation.valeur = rule.explanation.valeur.explanation.node
+  }
+
+  /*
+   * The engine parse all rules into a root condition:
+   *
+   * - si:
+   *   est non défini: <rule> . $SITUATION
+   * - alors: <rule>
+   * - sinon: <rule> . $SITUATION
+   */
+  if (rule.explanation.valeur.nodeKind === 'condition') {
+    rule.explanation.valeur.explanation.alors = explanationThen
+  } else if (
+    rule.explanation.valeur.nodeKind === 'unité' &&
+    rule.explanation.valeur.explanation.nodeKind === 'condition'
+  ) {
+    rule.explanation.valeur.explanation.explanation.alors = explanationThen
+  } else {
+    throw new Error(
+      `[replaceRuleWithEvaluatedNodeValue]: root rule are expected to be a condition. Got ${rule.explanation.valeur.nodeKind} for the rule ${rule.dottedName}`,
+    )
+  }
+}
+
+/**
+ * Subsitutes [parentRuleNode.formule] ref constant from [refs].
+ *
+ * @note It folds child rules in [refs] if possible.
+ */
+function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]) {
+  if (refs) {
+    for (const childName of refs) {
+      const childNode = ctx.parsedRules[childName]
+
+      if (
+        childNode &&
+        isFoldable(childNode, ctx.impactedByContexteRules) &&
+        !isAlreadyFolded(ctx.params, childNode)
+      ) {
+        fold(ctx, childName, childNode)
+      }
+    }
+  }
 }
 
 function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
@@ -406,11 +405,11 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
 
     return
   } else {
-    // // Try to replace internal refs if possible.
-    // const childs = ctx.refs.childs.get(ruleName)
-    // if (childs?.length > 0) {
-    //   replaceAllPossibleChildRefs(ctx, childs)
-    // }
+    // Try to replace internal refs if possible.
+    const childs = ctx.refs.childs.get(ruleName)
+    if (childs?.length > 0) {
+      replaceAllPossibleChildRefs(ctx, childs)
+    }
   }
 }
 
@@ -437,6 +436,7 @@ export function constantFolding(
 
   for (const ruleName in ctx.parsedRules) {
     const ruleNode = ctx.parsedRules[ruleName]
+
     if (
       isFoldable(ruleNode, ctx.impactedByContexteRules) &&
       !isAlreadyFolded(ctx.params, ruleNode)
