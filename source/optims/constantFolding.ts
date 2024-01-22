@@ -81,7 +81,8 @@ function initFoldingCtx(
   // We can't use the [referencesMap] from the engine's context because it
   // contains references to rules that are beyond the scope of the current
   // rule.
-  Object.entries(parsedRules).forEach(([ruleName, ruleNode]) => {
+  for (const ruleName in parsedRules) {
+    const ruleNode = parsedRules[ruleName]
     const reducedAST =
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
@@ -123,7 +124,7 @@ function initFoldingCtx(
         addMapEntry(refs.parents, traversedVar, [ruleName])
       })
     }
-  })
+  }
 
   // All childs of a rule impacted by a contexte rule are also impacted.
   //
@@ -145,7 +146,9 @@ function initFoldingCtx(
     refs,
     toKeep,
     impactedByContexteRules,
-    params: { isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized' },
+    params: {
+      isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized',
+    },
   }
 }
 
@@ -194,6 +197,11 @@ function lexicalSubstitutionOfRefValue(
       ) {
         if (constant.explanation.valeur.nodeKind === 'condition') {
           return constant.explanation.valeur.explanation.alors
+        } else if (
+          constant.explanation.valeur.nodeKind === 'unité' &&
+          constant.explanation.valeur.explanation.nodeKind === 'condition'
+        ) {
+          return constant.explanation.valeur.explanation.explanation.alors
         } else {
           throw new Error(
             `[lexicalSubstitutionOfRefValue]: constant node is expected to be a condition. Got ${constant.explanation.valeur.nodeKind} for the rule ${constant.dottedName}`,
@@ -223,7 +231,8 @@ function searchAndReplaceConstantValueInParentRefs(
         const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
         if (newRule !== undefined) {
           ctx.parsedRules[parentName] = newRule
-          ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] = true
+          ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] =
+            'partially'
           removeInMap(ctx.refs.parents, ruleName, parentName)
         }
       }
@@ -232,7 +241,11 @@ function searchAndReplaceConstantValueInParentRefs(
 }
 
 function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
-  return 'rawNode' in rule && params.isFoldedAttr in rule.rawNode
+  return (
+    'rawNode' in rule &&
+    params.isFoldedAttr in rule.rawNode &&
+    rule.rawNode[params.isFoldedAttr] === 'fully'
+  )
 }
 
 function removeInMap<K, V>(map: Map<K, Set<V>>, key: K, val: V) {
@@ -327,31 +340,16 @@ function replaceRuleWithEvaluatedNodeValue(
     rule.explanation.valeur.explanation.nodeKind === 'condition'
   ) {
     rule.explanation.valeur.explanation.explanation.alors = explanationThen
+  } else if (
+    rule.explanation.valeur.nodeKind === 'arrondi' &&
+    rule.explanation.valeur.explanation.valeur.nodeKind === 'condition'
+  ) {
+    rule.explanation.valeur.explanation.valeur.explanation.alors =
+      explanationThen
   } else {
     throw new Error(
       `[replaceRuleWithEvaluatedNodeValue]: root rule are expected to be a condition. Got ${rule.explanation.valeur.nodeKind} for the rule ${rule.dottedName}`,
     )
-  }
-}
-
-/**
- * Subsitutes [parentRuleNode.formule] ref constant from [refs].
- *
- * @note It folds child rules in [refs] if possible.
- */
-function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: Set<RuleName>) {
-  if (refs) {
-    for (const childName of refs) {
-      const childNode = ctx.parsedRules[childName]
-
-      if (
-        childNode &&
-        isFoldable(childNode, ctx.impactedByContexteRules) &&
-        !isAlreadyFolded(ctx.params, childNode)
-      ) {
-        fold(ctx, childName, childNode)
-      }
-    }
   }
 }
 
@@ -397,16 +395,10 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
     if (ctx.refs.parents.get(ruleName)?.size === 0) {
       deleteRule(ctx, ruleName)
     } else {
-      ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = true
+      ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = 'fully'
     }
 
     return
-  } else {
-    // Try to replace internal refs if possible.
-    const childs = ctx.refs.childs.get(ruleName)
-    if (childs?.size > 0) {
-      replaceAllPossibleChildRefs(ctx, childs)
-    }
   }
 }
 
@@ -425,34 +417,51 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
+  console.time('deepCopy')
   const parsedRules: ParsedRules<RuleName> =
     // PERF: could it be avoided?
     JSON.parse(JSON.stringify(engine.getParsedRules()))
+  console.timeEnd('deepCopy')
 
+  console.time('initFoldingCtx')
   let ctx = initFoldingCtx(engine, parsedRules, toKeep, params)
+  console.timeEnd('initFoldingCtx')
 
-  for (const ruleName in ctx.parsedRules) {
-    const ruleNode = ctx.parsedRules[ruleName]
+  let nbRules = Object.keys(ctx.parsedRules).length
+  let nbRulesBefore = undefined
 
-    if (
-      isFoldable(ruleNode, ctx.impactedByContexteRules) &&
-      !isAlreadyFolded(ctx.params, ruleNode)
-    ) {
-      fold(ctx, ruleName, ruleNode)
+  console.time(`fold`)
+  while (nbRules !== nbRulesBefore) {
+    for (const ruleName in ctx.parsedRules) {
+      const ruleNode = ctx.parsedRules[ruleName]
+
+      if (
+        isFoldable(ruleNode, ctx.impactedByContexteRules) &&
+        !isAlreadyFolded(ctx.params, ruleNode)
+      ) {
+        fold(ctx, ruleName, ruleNode)
+      }
     }
+    nbRulesBefore = nbRules
+    nbRules = Object.keys(ctx.parsedRules).length
   }
+  console.timeEnd(`fold`)
 
   if (toKeep) {
-    ctx.parsedRules = Object.fromEntries(
-      Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
-        const parents = ctx.refs.parents.get(ruleName)
-        return (
-          !isFoldable(ruleNode, ctx.impactedByContexteRules) ||
-          toKeep([ruleName, ruleNode]) ||
-          parents?.size > 0
-        )
-      }),
-    )
+    console.time('filter')
+    for (const ruleName in ctx.parsedRules) {
+      const ruleNode = ctx.parsedRules[ruleName]
+      const parents = ctx.refs.parents.get(ruleName)
+
+      if (
+        isFoldable(ruleNode, ctx.impactedByContexteRules) &&
+        !toKeep([ruleName, ruleNode]) &&
+        (!parents || parents?.size === 0)
+      ) {
+        delete ctx.parsedRules[ruleName]
+      }
+    }
+    console.timeEnd('filter')
   }
 
   return ctx.parsedRules
