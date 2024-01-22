@@ -8,11 +8,7 @@ import Engine, {
 import type { RuleNode, ASTNode } from 'publicodes'
 import { RuleName } from '../commons'
 
-type RefMap = Map<
-  RuleName,
-  // NOTE: It's an array but it's built from a Set, so no duplication
-  Set<RuleName> | undefined
->
+type RefMap = Map<RuleName, Set<RuleName> | undefined>
 
 type RefMaps = {
   parents: RefMap
@@ -45,14 +41,9 @@ type FoldingCtx = {
    *	    rule4: 20
    * ...
    * ```
-   * In this case, [rule2] should not be folded (and all its dependencies
-   * should not be folded!).
-   *
-   * TODO(@EmileRolley): currently, all childs of a rule with a [contexte]
-   * mechanism are not folded. However, it could be smarter to keep track of
-   * each contexte rules and fold the child rules that are not impacted by the
-   * contexte. For now we choose to keep it simple and to over-fold instead of
-   * taking the risk to alter the result.
+   * In this case, we don't want to fold [rule2] because it's evaluated with a
+   * modified situation (unless it's a constant). We also don't want to fold
+   * [rule3] and [rule4] because they are used in the contexte of [rule].
    */
   impactedByContexteRules: Set<RuleName>
 }
