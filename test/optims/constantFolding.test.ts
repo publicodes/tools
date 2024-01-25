@@ -853,20 +853,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
-      A: {
-        valeur: 'B',
-      },
-      'A . B': {
-        'applicable si': 'présent',
-        valeur: '7 * 10',
-        optimized: 'partially',
-      },
-      'A . B . présent': {
-        question: 'Is present?',
-        'par défaut': 'non',
-      },
-    })
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
   })
 
   it('should fold a constant within two degrees with an [applicable si] (set to true) mechanism', () => {
@@ -886,20 +873,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
-      A: {
-        valeur: 'B',
-      },
-      'A . B': {
-        'applicable si': 'présent',
-        valeur: '7 * 10',
-        optimized: 'partially',
-      },
-      'A . B . présent': {
-        question: 'Is present?',
-        'par défaut': 'oui',
-      },
-    })
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
   })
 
   it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊤)]', () => {
@@ -917,18 +891,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
-      root: {
-        'applicable si': {
-          'toutes ces conditions': ['unfoldable < 20'],
-        },
-        valeur: '20 * unfoldable',
-        optimized: 'partially',
-      },
-      'root . unfoldable': {
-        'par défaut': 10,
-      },
-    })
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
   })
 
   it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊥)] ', () => {
@@ -946,17 +909,66 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
-      root: {
-        'applicable si': {
-          'toutes ces conditions': ['unfoldable > 20'],
-        },
-        valeur: '20 * unfoldable',
-        optimized: 'partially',
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+  })
+
+  it('should not fold nullable rules evaluated to null in the default situation', () => {
+    const rawRules = {
+      A: {
+        valeur: 'B . C',
       },
-      'root . unfoldable': {
-        'par défaut': 10,
+      'A . B': {
+        'applicable si': 'présent',
+        valeur: 'C * 10',
       },
-    })
+      'A . B . présent': {
+        question: 'Is present?',
+        'par défaut': 'non',
+      },
+      // nullable rule
+      'A . B . C': {
+        valeur: 7,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+  })
+
+  it('should not fold nullable rules evaluated not to null in the default situation', () => {
+    const rawRules = {
+      A: {
+        valeur: 'B . C',
+      },
+      'A . B': {
+        'applicable si': 'présent',
+        valeur: 'C * 10',
+      },
+      'A . B . présent': {
+        question: 'Is present?',
+        'par défaut': 'oui',
+      },
+      // nullable rule
+      'A . B . C': {
+        valeur: 7,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+
+    // TODO: fine tune the conditional applicability fold
+    // {
+    //   A: {
+    //     'applicable si': 'A . B . présent',
+    //     valeur: 7,
+    //     optimized: 'partially',
+    //   },
+    //   'A . B': {
+    //     'applicable si': 'présent',
+    //     valeur: '7 * 10',
+    //     optimized: 'partially',
+    //   },
+    //   'A . B . présent': {
+    //     question: 'Is present?',
+    //     'par défaut': 'oui',
+    //   },
+    // }))
   })
 })

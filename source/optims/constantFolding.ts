@@ -4,6 +4,7 @@ import Engine, {
   transformAST,
   traverseASTNode,
   Unit,
+  EvaluatedNode,
 } from 'publicodes'
 import type { RuleNode, ASTNode } from 'publicodes'
 import { RuleName } from '../commons'
@@ -325,6 +326,26 @@ function replaceRuleWithEvaluatedNodeValue(
   }
 }
 
+function isNullable(node: ASTNode): boolean {
+  // @ts-ignore
+  if (node?.explanation?.nullableParent !== undefined) {
+    return true
+  }
+
+  return reduceAST(
+    (_, node) => {
+      //@ts-ignore
+      if (node?.explanation?.nullableParent !== undefined) {
+        return true
+      }
+    },
+    false,
+    // We expect a reference node here
+    // @ts-ignore
+    node?.explanation?.valeur,
+  )
+}
+
 function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   if (
     rule !== undefined &&
@@ -350,12 +371,18 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
     return
   }
 
-  const { missingVariables, nodeValue, unit } = ctx.engine.evaluateNode(rule)
-
+  const evaluation: ASTNode & EvaluatedNode = ctx.engine.evaluate(
+    rule.dottedName,
+  )
+  const { missingVariables, nodeValue, unit } = evaluation
   const missingVariablesNames = Object.keys(missingVariables)
 
-  // Constant leaf -> search and replace the constant in all its parents.
-  if (missingVariablesNames.length === 0) {
+  if (
+    missingVariablesNames.length === 0 &&
+    // We don't want to fold a rule which can be nullable with a different situation.
+    // For example, if its namespace is conditionnaly applicable.
+    !isNullable(evaluation)
+  ) {
     replaceRuleWithEvaluatedNodeValue(rule, nodeValue, unit)
 
     searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
