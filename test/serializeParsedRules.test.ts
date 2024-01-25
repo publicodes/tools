@@ -776,6 +776,23 @@ describe('API > mecanisms list', () => {
     })
   })
 
+  it('should serialize rule with [inversion]', () => {
+    const rules = {
+      bruts: {
+        unité: '€/an',
+        'par défaut': '0 €/an',
+        'inversion numérique': ["nets d'impôt"],
+      },
+      "nets d'impôt": {
+        valeur: '0 €/an',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
+
   // TODO
   // it('should serialize rule with [private rule]', () => {
   //   const rules = {

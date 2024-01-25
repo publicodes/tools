@@ -367,6 +367,12 @@ function serializeASTNode(node: ASTNode): SerializedRule {
             },
           }
         }
+        case 'inversion': {
+          return {
+            'inversion numérique':
+              node.explanation.inversionCandidates.map(serializeASTNode),
+          }
+        }
 
         default: {
           throw new Error(
@@ -413,6 +419,7 @@ export function serializeParsedRules(
     'le maximum de',
     'le minimum de',
     'remplace',
+    'par défaut',
   ]
   const rawRules = {}
 
