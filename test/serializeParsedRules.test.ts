@@ -677,6 +677,105 @@ describe('API > mecanisms list', () => {
     })
   })
 
+  it('should serialize rule with [remplacement]', () => {
+    const rules = {
+      'frais de repas': {
+        valeur: '5 €/repas',
+      },
+      'cafés-restaurants': {
+        valeur: 'oui',
+      },
+      'cafés-restaurants . frais de repas': {
+        remplace: {
+          'références à': 'frais de repas',
+        },
+        valeur: '6 €/repas',
+      },
+      'montant repas mensuels': {
+        valeur: '20 repas * frais de repas',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
+
+  it('should serialize rule with [remplacement] with a shorten rule ref', () => {
+    const rules = {
+      'cafés-restaurants': {
+        valeur: 'oui',
+      },
+      'cafés-restaurants . frais de repas': {
+        remplace: {
+          'références à': 'montant repas mensuels . frais de repas',
+        },
+        valeur: '6 €/repas',
+      },
+      'montant repas mensuels': {
+        valeur: '20 repas * frais de repas',
+      },
+      'montant repas mensuels . frais de repas': {
+        valeur: '5 €/repas',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual({
+      ...rules,
+      'montant repas mensuels': {
+        valeur: '20 repas * montant repas mensuels . frais de repas',
+      },
+    })
+  })
+
+  it('should serialize rule with [remplacement] in a specified context', () => {
+    const rules = {
+      foo: {
+        valeur: 0,
+      },
+      'foo remplacé dans résultat 1': {
+        remplace: {
+          'références à': 'foo',
+          priorité: 2,
+          dans: 'résultat 1',
+        },
+        valeur: 2,
+      },
+      'foo remplacé dans résultat 2': {
+        remplace: {
+          'références à': 'foo',
+          'sauf dans': 'résultat 1',
+        },
+        valeur: 3,
+      },
+      'résultat 1': { valeur: 'foo' },
+      'résultat 2': { valeur: 'foo' },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual({
+      ...rules,
+      'foo remplacé dans résultat 1': {
+        remplace: {
+          'références à': 'foo',
+          priorité: 2,
+          dans: ['résultat 1'],
+        },
+        valeur: 2,
+      },
+      'foo remplacé dans résultat 2': {
+        remplace: {
+          'références à': 'foo',
+          'sauf dans': ['résultat 1'],
+        },
+        valeur: 3,
+      },
+    })
+  })
+
   // TODO
   // it('should serialize rule with [private rule]', () => {
   //   const rules = {

@@ -98,6 +98,10 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
       }
     }
 
+    case 'variations': {
+      return serializeASTNode(node)
+    }
+
     default: {
       throw new Error(`[SERIALIZE_VALUE]: '${node.nodeKind}' not implemented`)
     }
@@ -124,6 +128,36 @@ function serializeASTNode(node: ASTNode): SerializedRule {
   return reduceAST<SerializedRule>(
     (_, node: ASTNode) => {
       switch (node?.nodeKind) {
+        case 'rule': {
+          const serializedValeur = serializeASTNode(node.explanation.valeur)
+
+          if (node.replacements.length > 0) {
+            let serializedRemplace = {
+              'références à': serializeValue(
+                node.replacements[0].replacedReference,
+              ),
+            }
+
+            if (node.replacements[0].whiteListedNames.length > 0) {
+              serializedRemplace['dans'] =
+                node.replacements[0].whiteListedNames.map(({ name }) => name)
+            }
+            if (node.replacements[0].blackListedNames.length > 0) {
+              serializedRemplace['sauf dans'] =
+                node.replacements[0].blackListedNames.map(({ name }) => name)
+            }
+            if (node.replacements[0].priority) {
+              serializedRemplace['priorité'] = node.replacements[0].priority
+            }
+            return {
+              remplace: serializedRemplace,
+              ...serializedRuleToRawRule(serializedValeur),
+            }
+          }
+
+          return serializedValeur
+        }
+
         case 'reference':
         case 'constant':
         case 'unité':
@@ -145,6 +179,11 @@ function serializeASTNode(node: ASTNode): SerializedRule {
         }
 
         case 'variations': {
+          // If the node is a replacement rule, we need to serialize the original ref
+          if (node?.sourceMap?.mecanismName === 'replacement') {
+            // @ts-ignore
+            return node.sourceMap.args.originalNode.dottedName
+          }
           return {
             variations: node.explanation.map(({ condition, consequence }) => {
               if (
@@ -288,7 +327,9 @@ function serializeASTNode(node: ASTNode): SerializedRule {
 
             default: {
               throw new Error(
-                `[SERIALIZE_AST_NODE]: mecanism '${mecanismName}' found in a '${node.nodeKind}`,
+                `[SERIALIZE_AST_NODE]: mecanism '${mecanismName}' found in a '${
+                  node.nodeKind
+                }Node:\n${JSON.stringify(node, null, 2)}`,
               )
             }
           }
@@ -371,6 +412,7 @@ export function serializeParsedRules(
     'texte',
     'le maximum de',
     'le minimum de',
+    'remplace',
   ]
   const rawRules = {}
 
@@ -381,9 +423,7 @@ export function serializeParsedRules(
       continue
     }
 
-    const serializedNode = serializedRuleToRawRule(
-      serializeASTNode(node.explanation.valeur),
-    )
+    const serializedNode = serializedRuleToRawRule(serializeASTNode(node))
 
     rawRules[rule] = { ...node.rawNode }
     syntaxicSugars.forEach((attr) => {
