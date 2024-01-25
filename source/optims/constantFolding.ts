@@ -148,41 +148,11 @@ function isEmptyRule(rule: RuleNode): boolean {
   return Object.keys(rule.rawNode).length === 0
 }
 
-function lexicalSubstitutionOfRefValue(
-  parent: RuleNode,
-  constant: RuleNode,
-): RuleNode | undefined {
-  const newNode = traverseASTNode(
-    transformAST((node, _) => {
-      if (
-        node.nodeKind === 'reference' &&
-        node.dottedName === constant.dottedName
-      ) {
-        if (constant.explanation.valeur.nodeKind === 'condition') {
-          return constant.explanation.valeur.explanation.alors
-        } else if (
-          constant.explanation.valeur.nodeKind === 'unité' &&
-          constant.explanation.valeur.explanation.nodeKind === 'condition'
-        ) {
-          return constant.explanation.valeur.explanation.explanation.alors
-        } else {
-          throw new Error(
-            `[lexicalSubstitutionOfRefValue]: constant node is expected to be a condition. Got ${constant.explanation.valeur.nodeKind} for the rule ${constant.dottedName}`,
-          )
-        }
-      }
-    }),
-    parent,
-  )
-
-  return newNode as RuleNode
-}
-
-/** Replaces all references in parent refs of [ruleName] by its [rule.valeur] */
+/** Replaces all references in parent refs of [ruleName] by its [constantNode] */
 function searchAndReplaceConstantValueInParentRefs(
   ctx: FoldingCtx,
   ruleName: RuleName,
-  rule: RuleNode,
+  constantNode: ASTNode,
 ): void {
   const refs = ctx.refs.parents.get(ruleName)
 
@@ -197,7 +167,15 @@ function searchAndReplaceConstantValueInParentRefs(
           ctx.impactedByContexteRules,
         )
       ) {
-        const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
+        const newRule = traverseASTNode(
+          transformAST((node, _) => {
+            if (node.nodeKind === 'reference' && node.dottedName === ruleName) {
+              return constantNode
+            }
+          }),
+          parentRule,
+        ) as RuleNode
+
         if (newRule !== undefined) {
           ctx.parsedRules[parentName] = newRule
           ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] =
@@ -265,7 +243,7 @@ function replaceRuleWithEvaluatedNodeValue(
   rule: RuleNode,
   nodeValue: number | boolean | string | Record<string, unknown>,
   unit: Unit | undefined,
-) {
+): ASTNode {
   const constantNode: ASTNode = {
     nodeValue,
     type:
@@ -298,32 +276,24 @@ function replaceRuleWithEvaluatedNodeValue(
     rule.explanation.valeur = rule.explanation.valeur.explanation.node
   }
 
-  /*
-   * The engine parse all rules into a root condition:
-   *
-   * - si:
-   *   est non défini: <rule> . $SITUATION
-   * - alors: <rule>
-   * - sinon: <rule> . $SITUATION
-   */
-  if (rule.explanation.valeur.nodeKind === 'condition') {
-    rule.explanation.valeur.explanation.alors = explanationThen
-  } else if (
-    rule.explanation.valeur.nodeKind === 'unité' &&
-    rule.explanation.valeur.explanation.nodeKind === 'condition'
-  ) {
-    rule.explanation.valeur.explanation.explanation.alors = explanationThen
-  } else if (
-    rule.explanation.valeur.nodeKind === 'arrondi' &&
-    rule.explanation.valeur.explanation.valeur.nodeKind === 'condition'
-  ) {
-    rule.explanation.valeur.explanation.valeur.explanation.alors =
-      explanationThen
-  } else {
-    throw new Error(
-      `[replaceRuleWithEvaluatedNodeValue]: root rule are expected to be a condition. Got ${rule.explanation.valeur.nodeKind} for the rule ${rule.dottedName}`,
-    )
-  }
+  rule.explanation.valeur = traverseASTNode(
+    transformAST((node, _) => {
+      if (node.nodeKind === 'condition') {
+        /* we found the first condition, which wrapped the rule in the form of:
+         *
+         * - si:
+         *   est non défini: <rule> . $SITUATION
+         * - alors: <rule>
+         * - sinon: <rule> . $SITUATION
+         */
+        node.explanation.alors = explanationThen
+        return node
+      }
+    }),
+    rule,
+  )
+
+  return explanationThen
 }
 
 function isNullable(node: ASTNode): boolean {
@@ -333,7 +303,12 @@ function isNullable(node: ASTNode): boolean {
   }
 
   return reduceAST(
+    // @ts-ignore
     (_, node) => {
+      if (!node) {
+        return false
+      }
+
       //@ts-ignore
       if (node?.explanation?.nullableParent !== undefined) {
         return true
@@ -383,9 +358,13 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
     // For example, if its namespace is conditionnaly applicable.
     !isNullable(evaluation)
   ) {
-    replaceRuleWithEvaluatedNodeValue(rule, nodeValue, unit)
+    const constantNode = replaceRuleWithEvaluatedNodeValue(
+      rule,
+      nodeValue,
+      unit,
+    )
 
-    searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
+    searchAndReplaceConstantValueInParentRefs(ctx, ruleName, constantNode)
     if (ctx.parsedRules[ruleName] === undefined) {
       return
     }
