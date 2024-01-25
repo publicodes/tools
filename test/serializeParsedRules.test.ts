@@ -562,7 +562,7 @@ describe('API > mecanisms list', () => {
         valeur: '50 €',
       },
       'prix TTC': {
-        assiette: 'prix HT * (100 % + TVA)',
+        valeur: 'prix HT * (100 % + TVA)',
       },
       TVA: {
         valeur: '50 %',
@@ -785,6 +785,19 @@ describe('API > mecanisms list', () => {
       },
       "nets d'impôt": {
         valeur: '0 €/an',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
+  })
+
+  it('should serialize rule with [résoudre la référence circulaire]', () => {
+    const rules = {
+      x: {
+        valeur: '(4 * x) - 5',
+        'résoudre la référence circulaire': 'oui',
       },
     }
     const serializedRules = serializeParsedRules(

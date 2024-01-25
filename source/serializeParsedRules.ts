@@ -373,6 +373,14 @@ function serializeASTNode(node: ASTNode): SerializedRule {
               node.explanation.inversionCandidates.map(serializeASTNode),
           }
         }
+        case 'résoudre référence circulaire': {
+          return {
+            'résoudre la référence circulaire': 'oui',
+            ...serializedRuleToRawRule(
+              serializeASTNode(node.explanation.valeur),
+            ),
+          }
+        }
 
         default: {
           throw new Error(
@@ -403,24 +411,7 @@ export function serializeParsedRules(
    * TODO: a way to keep the [avec] mecanism in the rawNode could be investigated but
    * for now it's not a priority.
    */
-  const syntaxicSugars = [
-    'avec',
-    'formule',
-    'valeur',
-    'contexte',
-    'somme',
-    'moyenne',
-    'produit',
-    'une de ces conditions',
-    'toutes ces conditions',
-    'est défini',
-    'est non défini',
-    'texte',
-    'le maximum de',
-    'le minimum de',
-    'remplace',
-    'par défaut',
-  ]
+  const syntaxicSugars = ['avec', 'formule', 'valeur', 'contexte']
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {
