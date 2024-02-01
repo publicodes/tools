@@ -30,8 +30,8 @@ type FoldingCtx = {
   toKeep?: PredicateOnRule
   params: FoldingParams
   /**
-   * The rules that are evaluated with a modified situation (in a [contexte] mechanism)
-   * and we don't want to be folded.
+   * The rules that are evaluated with a modified situation (in a [contexte]
+   * mechanism or with a [remplacement]) and we don't want to be folded.
    *
    * @example
    * ```
@@ -46,7 +46,7 @@ type FoldingCtx = {
    * modified situation (unless it's a constant). We also don't want to fold
    * [rule3] and [rule4] because they are used in the contexte of [rule].
    */
-  impactedByContexteRules: Set<RuleName>
+  unfoldableRules: Set<RuleName>
 }
 
 function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
@@ -67,7 +67,7 @@ function initFoldingCtx(
     parents: new Map(),
     childs: new Map(),
   }
-  const impactedByContexteRules = new Set<RuleName>()
+  const unfoldableRules = new Set<RuleName>()
 
   // NOTE: we need to traverse the AST to find all the references of a rule.
   // We can't use the [referencesMap] from the engine's context because it
@@ -75,6 +75,14 @@ function initFoldingCtx(
   // rule.
   for (const ruleName in parsedRules) {
     const ruleNode = parsedRules[ruleName]
+
+    if (ruleNode.replacements.length > 0) {
+      unfoldableRules.add(ruleName)
+      ruleNode.replacements.forEach((replacement) => {
+        unfoldableRules.add(replacement.replacedReference.name)
+      })
+    }
+
     const reducedAST =
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
@@ -83,10 +91,10 @@ function initFoldingCtx(
 
             // We can't fold it
             if (Object.keys(missingVariables).length !== 0) {
+              unfoldableRules.add(ruleName)
               node.explanation.contexte.forEach(([ref, _]) => {
-                impactedByContexteRules.add(ref.dottedName)
+                unfoldableRules.add(ref.dottedName)
               })
-              impactedByContexteRules.add(ruleName)
             }
           }
           if (
@@ -118,7 +126,7 @@ function initFoldingCtx(
     parsedRules,
     refs,
     toKeep,
-    impactedByContexteRules,
+    unfoldableRules,
     params: {
       isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized',
     },
@@ -164,7 +172,7 @@ function searchAndReplaceConstantValueInParentRefs(
         isFoldable(
           parentRule,
           ctx.refs.childs.get(parentName),
-          ctx.impactedByContexteRules,
+          ctx.unfoldableRules,
         )
       ) {
         const newRule = traverseASTNode(
@@ -211,11 +219,7 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
   const ruleNode = ctx.parsedRules[dottedName]
   if (
     (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
-    isFoldable(
-      ruleNode,
-      ctx.refs.childs.get(dottedName),
-      ctx.impactedByContexteRules,
-    )
+    isFoldable(ruleNode, ctx.refs.childs.get(dottedName), ctx.unfoldableRules)
   ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName)
     removeRuleFromRefs(ctx.refs.childs, dottedName)
@@ -324,11 +328,7 @@ function isNullable(node: ASTNode): boolean {
 function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   if (
     rule !== undefined &&
-    (!isFoldable(
-      rule,
-      ctx.refs.childs.get(ruleName),
-      ctx.impactedByContexteRules,
-    ) ||
+    (!isFoldable(rule, ctx.refs.childs.get(ruleName), ctx.unfoldableRules) ||
       isAlreadyFolded(ctx.params, rule) ||
       !(ruleName in ctx.parsedRules))
   ) {
@@ -416,7 +416,7 @@ export function constantFolding(
         isFoldable(
           ruleNode,
           ctx.refs.childs.get(ruleName),
-          ctx.impactedByContexteRules,
+          ctx.unfoldableRules,
         ) &&
         !isAlreadyFolded(ctx.params, ruleNode)
       ) {
@@ -436,7 +436,7 @@ export function constantFolding(
         isFoldable(
           ruleNode,
           ctx.refs.childs.get(ruleName),
-          ctx.impactedByContexteRules,
+          ctx.unfoldableRules,
         ) &&
         !toKeep([ruleName, ruleNode]) &&
         (!parents || parents?.size === 0)

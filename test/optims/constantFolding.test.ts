@@ -971,4 +971,57 @@ describe('Constant folding [base]', () => {
     //   },
     // }))
   })
+
+  it('should not fold rules used in a [remplacement]', () => {
+    const rawRules = {
+      'frais de repas': {
+        valeur: '5 €/repas',
+      },
+      'cafés-restaurants': {
+        valeur: 'oui',
+      },
+      'cafés-restaurants . frais de repas': {
+        remplace: {
+          'références à': 'frais de repas',
+        },
+        valeur: '6 €/repas',
+      },
+      'montant repas mensuels': {
+        valeur: '20 repas * frais de repas',
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      ...rawRules,
+      'cafés-restaurants': {
+        valeur: 'oui',
+        optimized: 'fully',
+      },
+    })
+  })
+
+  it('should not fold rules used in a [remplacement] with a specified context', () => {
+    const rawRules = {
+      foo: {
+        valeur: 0,
+      },
+      'foo remplacé dans résultat 1': {
+        remplace: {
+          'références à': 'foo',
+          priorité: 2,
+          dans: ['résultat 1'],
+        },
+        valeur: 2,
+      },
+      'foo remplacé dans résultat 2': {
+        remplace: {
+          'références à': 'foo',
+          'sauf dans': ['résultat 1'],
+        },
+        valeur: 3,
+      },
+      'résultat 1': { valeur: 'foo' },
+      'résultat 2': { valeur: 'foo' },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+  })
 })

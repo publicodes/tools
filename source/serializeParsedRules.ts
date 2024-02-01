@@ -382,10 +382,9 @@ function serializeASTNode(node: ASTNode): SerializedRule {
           }
         }
 
-        default: {
+        case 'replacementRule': {
           throw new Error(
-            `[SERIALIZE_AST_NODE]: '${node.nodeKind}' not implemented.
-		Node:\n${JSON.stringify(node, null, 2)}`,
+            `[SERIALIZE_AST_NODE]: 'replacementRule' should have been handled before`,
           )
         }
       }
