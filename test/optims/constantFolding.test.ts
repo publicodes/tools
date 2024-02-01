@@ -1013,6 +1013,7 @@ describe('Constant folding [base]', () => {
         valeur: 2,
       },
       'foo remplacé dans résultat 2': {
+        'applicable si': 'non',
         remplace: {
           'références à': 'foo',
           'sauf dans': ['résultat 1'],
@@ -1065,11 +1066,19 @@ describe('Constant folding [base]', () => {
           },
         },
       },
+      foo: {
+        privé: 'oui',
+        'par défaut': 10,
+      },
     }
     expect(constantFoldingWith(rawRules)).toStrictEqual({
       cotisation: {
         optimized: 'fully',
         valeur: '58.8 €',
+      },
+      foo: {
+        privé: 'oui',
+        'par défaut': 10,
       },
     })
   })

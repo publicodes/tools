@@ -5,6 +5,7 @@ import Engine, {
   traverseASTNode,
   Unit,
   EvaluatedNode,
+  utils,
 } from 'publicodes'
 import type { RuleNode, ASTNode } from 'publicodes'
 import { RuleName } from '../commons'
@@ -59,7 +60,6 @@ function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
 
 function initFoldingCtx(
   engine: Engine,
-  parsedRules: ParsedRules<RuleName>,
   toKeep?: PredicateOnRule,
   foldingParams?: FoldingParams,
 ): FoldingCtx {
@@ -68,6 +68,10 @@ function initFoldingCtx(
     childs: new Map(),
   }
   const unfoldableRules = new Set<RuleName>()
+  // // PERF: could it be avoided?
+  // JSON.parse(JSON.stringify(engine.baseContext.parsedRules))
+
+  const parsedRules = copyFullParsedRules(engine)
 
   // NOTE: we need to traverse the AST to find all the references of a rule.
   // We can't use the [referencesMap] from the engine's context because it
@@ -110,7 +114,7 @@ function initFoldingCtx(
       ) ?? new Set()
 
     const traversedVariables: RuleName[] = Array.from(reducedAST).filter(
-      (name) => !name.endsWith(' . $SITUATION'),
+      (name) => !name.endsWith('$SITUATION'),
     )
 
     if (traversedVariables.length > 0) {
@@ -133,22 +137,24 @@ function initFoldingCtx(
   }
 }
 
-function isFoldable(
-  rule: RuleNode | undefined,
-  childs: Set<RuleName> | undefined,
-  contextRules: Set<RuleName>,
-): boolean {
+const unfoldableAttr = ['par défaut', 'question']
+
+function isFoldable(ctx: FoldingCtx, rule: RuleNode): boolean {
   let childInContext = false
+  const childs = ctx.refs.childs.get(rule.dottedName)
 
   childs?.forEach((child) => {
-    if (contextRules.has(child)) {
+    if (ctx.unfoldableRules.has(child)) {
       childInContext = true
       return
     }
   })
 
   return (
-    rule !== undefined && !contextRules.has(rule.dottedName) && !childInContext
+    rule !== undefined &&
+    !unfoldableAttr.find((attr) => attr in rule.rawNode) &&
+    !ctx.unfoldableRules.has(rule.dottedName) &&
+    !childInContext
   )
 }
 
@@ -168,13 +174,7 @@ function searchAndReplaceConstantValueInParentRefs(
     for (const parentName of refs) {
       const parentRule = ctx.parsedRules[parentName]
 
-      if (
-        isFoldable(
-          parentRule,
-          ctx.refs.childs.get(parentName),
-          ctx.unfoldableRules,
-        )
-      ) {
+      if (isFoldable(ctx, parentRule)) {
         const newRule = traverseASTNode(
           transformAST((node, _) => {
             if (node.nodeKind === 'reference' && node.dottedName === ruleName) {
@@ -219,7 +219,7 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
   const ruleNode = ctx.parsedRules[dottedName]
   if (
     (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
-    isFoldable(ruleNode, ctx.refs.childs.get(dottedName), ctx.unfoldableRules)
+    isFoldable(ctx, ruleNode)
   ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName)
     removeRuleFromRefs(ctx.refs.childs, dottedName)
@@ -328,11 +328,11 @@ function isNullable(node: ASTNode): boolean {
 function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   if (
     rule !== undefined &&
-    (!isFoldable(rule, ctx.refs.childs.get(ruleName), ctx.unfoldableRules) ||
+    (!isFoldable(ctx, rule) ||
+      !utils.isAccessible(ctx.parsedRules, '', rule.dottedName) ||
       isAlreadyFolded(ctx.params, rule) ||
       !(ruleName in ctx.parsedRules))
   ) {
-    // Already managed rule
     return
   }
 
@@ -385,6 +385,24 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
 }
 
 /**
+ * Deep copies the private [parsedRules] field of [engine] (without the '$SITUATION'
+ * rules).
+ */
+function copyFullParsedRules(engine: Engine): ParsedRules<RuleName> {
+  const parsedRules: ParsedRules<RuleName> = {}
+
+  for (const ruleName in engine.baseContext.parsedRules) {
+    if (!ruleName.endsWith('$SITUATION')) {
+      parsedRules[ruleName] = structuredClone(
+        engine.baseContext.parsedRules[ruleName],
+      )
+    }
+  }
+
+  return parsedRules
+}
+
+/**
  * Applies a constant folding optimisation pass on parsed rules of [engine].
  *
  * @param engine The engine instantiated with the rules to fold.
@@ -399,11 +417,7 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
-  const parsedRules: ParsedRules<RuleName> =
-    // PERF: could it be avoided?
-    JSON.parse(JSON.stringify(engine.getParsedRules()))
-
-  let ctx = initFoldingCtx(engine, parsedRules, toKeep, params)
+  let ctx = initFoldingCtx(engine, toKeep, params)
 
   let nbRules = Object.keys(ctx.parsedRules).length
   let nbRulesBefore = undefined
@@ -412,14 +426,7 @@ export function constantFolding(
     for (const ruleName in ctx.parsedRules) {
       const ruleNode = ctx.parsedRules[ruleName]
 
-      if (
-        isFoldable(
-          ruleNode,
-          ctx.refs.childs.get(ruleName),
-          ctx.unfoldableRules,
-        ) &&
-        !isAlreadyFolded(ctx.params, ruleNode)
-      ) {
+      if (isFoldable(ctx, ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
         fold(ctx, ruleName, ruleNode)
       }
     }
@@ -433,11 +440,7 @@ export function constantFolding(
       const parents = ctx.refs.parents.get(ruleName)
 
       if (
-        isFoldable(
-          ruleNode,
-          ctx.refs.childs.get(ruleName),
-          ctx.unfoldableRules,
-        ) &&
+        isFoldable(ctx, ruleNode) &&
         !toKeep([ruleName, ruleNode]) &&
         (!parents || parents?.size === 0)
       ) {

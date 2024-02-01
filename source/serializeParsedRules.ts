@@ -426,7 +426,7 @@ export function serializeParsedRules(
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {
-    if (rule.endsWith(' . $SITUATION')) {
+    if (rule.endsWith('$SITUATION') || rule.includes('$INTERNAL')) {
       delete rawRules[rule]
       continue
     }
