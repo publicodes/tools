@@ -584,6 +584,13 @@ describe('API > mecanisms list', () => {
           réduction: '20 %',
         },
       },
+      test2: {
+        valeur: 'a + b',
+        avec: {
+          a: null,
+          b: null,
+        },
+      },
     }
     const serializedRules = serializeParsedRules(
       new Engine(rules).getParsedRules(),
@@ -598,6 +605,11 @@ describe('API > mecanisms list', () => {
       'prix final . réduction': {
         valeur: '20 %',
       },
+      test2: {
+        valeur: 'a + b',
+      },
+      'test2 . a': null,
+      'test2 . b': null,
     })
   })
 
@@ -806,31 +818,65 @@ describe('API > mecanisms list', () => {
     expect(serializedRules).toStrictEqual(rules)
   })
 
-  // TODO
-  // it('should serialize rule with [private rule]', () => {
-  //   const rules = {
-  //     'aide vélo': {
-  //       texte: `La région subventionne l’achat d’un vélo à hauteur de
-  //   {{ prise en charge }} et jusqu’à un plafond de {{ 500 € }}.
-  //   Les éventuelles aides locales déjà perçues sont déduites de
-  //   ce montant.
-  //
-  //   Par exemple, pour un vélo de {{ exemple }}, la région {{ 'Nouvelle Aquitaine' }}
-  //   vous versera {{ exemple * prise en charge }}`,
-  //     },
-  //     'aide vélo . prise en charge': {
-  //       valeur: '50 %',
-  //     },
-  //     'aide vélo . exemple': {
-  //       valeur: '250 €',
-  //     },
-  //   }
-  //   const serializedRules = serializeParsedRules(
-  //     new Engine(rules).getParsedRules(),
-  //   )
-  //   console.log(JSON.stringify(serializedRules, null, 2))
-  //   expect(serializedRules).toStrictEqual(rules)
-  // })
+  it('should serialize rule with [private rule]', () => {
+    const rules = {
+      assiette: {
+        valeur: '2100 €',
+      },
+      cotisation: {
+        produit: ['assiette', 'taux'],
+      },
+      '[privé] taux': {
+        valeur: '2.8 %',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).baseContext.parsedRules,
+    )
+    expect(serializedRules).toStrictEqual({
+      assiette: {
+        valeur: '2100 €',
+      },
+      cotisation: {
+        produit: ['assiette', 'taux'],
+      },
+      taux: {
+        privé: 'oui',
+        valeur: '2.8 %',
+      },
+    })
+  })
+
+  it('should serialize rule with [private rule] inside [avec]', () => {
+    const rules = {
+      assiette: {
+        valeur: '2100 €',
+      },
+      cotisation: {
+        produit: ['assiette', 'taux'],
+        avec: {
+          '[privé] taux': {
+            valeur: '2.8 %',
+          },
+        },
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).baseContext.parsedRules,
+    )
+    expect(serializedRules).toStrictEqual({
+      assiette: {
+        valeur: '2100 €',
+      },
+      cotisation: {
+        produit: ['assiette', 'taux'],
+      },
+      'cotisation . taux': {
+        privé: 'oui',
+        valeur: '2.8 %',
+      },
+    })
+  })
 })
 
 describe('More complexe cases', () => {
@@ -855,6 +901,7 @@ describe('More complexe cases', () => {
       serializeParsedRules(parsedRules),
     )
   })
+
   it('should correctly serialize [valeur] composed with other mecanisms', () => {
     const rules = {
       ex1: {
@@ -877,5 +924,18 @@ describe('More complexe cases', () => {
         valeur: '2 * 15.89 €',
       },
     })
+  })
+
+  it('should correclty serialize complexe [unité]', () => {
+    const rules = {
+      ex1: {
+        valeur: 10,
+        unité: '€/part/an',
+      },
+    }
+    const serializedRules = serializeParsedRules(
+      new Engine(rules).getParsedRules(),
+    )
+    expect(serializedRules).toStrictEqual(rules)
   })
 })

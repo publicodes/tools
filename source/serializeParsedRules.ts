@@ -414,6 +414,11 @@ export function serializeParsedRules(
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {
+    if (rule.endsWith(' . $SITUATION')) {
+      delete rawRules[rule]
+      continue
+    }
+
     if (Object.keys(node.rawNode).length === 0) {
       // Empty rule should be null not {}
       rawRules[rule] = null
@@ -432,6 +437,10 @@ export function serializeParsedRules(
     rawRules[rule] = {
       ...rawRules[rule],
       ...serializedNode,
+    }
+
+    if (node.private) {
+      rawRules[rule]['privé'] = 'oui'
     }
   }
 
