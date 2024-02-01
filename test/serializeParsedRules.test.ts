@@ -930,7 +930,7 @@ describe('More complexe cases', () => {
     const rules = {
       ex1: {
         valeur: 10,
-        unité: '€/part/an',
+        unité: '€/part.an',
       },
     }
     const serializedRules = serializeParsedRules(

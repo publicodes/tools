@@ -410,7 +410,19 @@ export function serializeParsedRules(
    * TODO: a way to keep the [avec] mecanism in the rawNode could be investigated but
    * for now it's not a priority.
    */
-  const syntaxicSugars = ['avec', 'formule', 'valeur', 'contexte']
+  const syntaxicSugars = [
+    'avec',
+    'formule',
+    'valeur',
+    'contexte',
+    'somme',
+    'moyenne',
+    'produit',
+    'une de ces conditions',
+    'toutes ces conditions',
+    'est défini',
+    'est applicable',
+  ]
   const rawRules = {}
 
   for (const [rule, node] of Object.entries(parsedRules)) {

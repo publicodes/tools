@@ -1024,4 +1024,53 @@ describe('Constant folding [base]', () => {
     }
     expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
   })
+
+  it('should fully fold a rule with [syntaxic sugar]', () => {
+    const rawRules = {
+      foo: {
+        somme: ['bar', 'baz'],
+      },
+      'foo 2': {
+        produit: ['bar', 'baz'],
+      },
+      bar: {
+        valeur: 10,
+      },
+      baz: {
+        valeur: 20,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      foo: {
+        valeur: 30,
+        optimized: 'fully',
+      },
+      'foo 2': {
+        valeur: 200,
+        optimized: 'fully',
+      },
+    })
+  })
+
+  it('should fold [private rule]', () => {
+    const rawRules = {
+      assiette: {
+        valeur: '2100 €',
+      },
+      cotisation: {
+        produit: ['assiette', 'taux'],
+        avec: {
+          '[privé] taux': {
+            valeur: '2.8 %',
+          },
+        },
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual({
+      cotisation: {
+        optimized: 'fully',
+        valeur: '58.8 €',
+      },
+    })
+  })
 })
