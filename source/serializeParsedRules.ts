@@ -244,9 +244,7 @@ function serializeASTNode(node: ASTNode): SerializedRule {
           )
 
           if (serializedMultiplicateur !== 1) {
-            serializedNode['multiplicateur'] = serializeASTNode(
-              node.explanation.multiplicateur,
-            )
+            serializedNode['multiplicateur'] = serializedMultiplicateur
           }
 
           return { [node.nodeKind]: serializedNode }
