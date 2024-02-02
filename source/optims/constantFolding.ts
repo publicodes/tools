@@ -68,9 +68,6 @@ function initFoldingCtx(
     childs: new Map(),
   }
   const unfoldableRules = new Set<RuleName>()
-  // // PERF: could it be avoided?
-  // JSON.parse(JSON.stringify(engine.baseContext.parsedRules))
-
   const parsedRules = copyFullParsedRules(engine)
 
   // NOTE: we need to traverse the AST to find all the references of a rule.
@@ -83,6 +80,10 @@ function initFoldingCtx(
     if (ruleNode.replacements.length > 0) {
       unfoldableRules.add(ruleName)
       ruleNode.replacements.forEach((replacement) => {
+        // TODO: we could use white-listed and black-listed rules to be more
+        // precise about which rules we want to fold. But for now, we
+        // consider that all rules that are replaced are not foldable in
+        // all cases.
         unfoldableRules.add(replacement.replacedReference.name)
       })
     }
@@ -173,23 +174,20 @@ function searchAndReplaceConstantValueInParentRefs(
   if (refs) {
     for (const parentName of refs) {
       const parentRule = ctx.parsedRules[parentName]
+      const newRule = traverseASTNode(
+        transformAST((node, _) => {
+          if (node.nodeKind === 'reference' && node.dottedName === ruleName) {
+            return constantNode
+          }
+        }),
+        parentRule,
+      ) as RuleNode
 
-      if (isFoldable(ctx, parentRule)) {
-        const newRule = traverseASTNode(
-          transformAST((node, _) => {
-            if (node.nodeKind === 'reference' && node.dottedName === ruleName) {
-              return constantNode
-            }
-          }),
-          parentRule,
-        ) as RuleNode
-
-        if (newRule !== undefined) {
-          ctx.parsedRules[parentName] = newRule
-          ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] =
-            'partially'
-          removeInMap(ctx.refs.parents, ruleName, parentName)
-        }
+      if (newRule !== undefined) {
+        ctx.parsedRules[parentName] = newRule
+        ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] =
+          'partially'
+        removeInMap(ctx.refs.parents, ruleName, parentName)
       }
     }
   }
@@ -379,7 +377,10 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
     updateRefCounting(ctx, ruleName, childs)
     delete ctx.parsedRules[ruleName].rawNode.formule
 
-    if (ctx.refs.parents.get(ruleName)?.size === 0) {
+    const parents = ctx.refs.parents.get(ruleName)
+    // NOTE(@EmileRolley): if the rule has no parent ([parents === undefined])
+    // we assume it's a root rule and we don't want to delete it.
+    if (parents !== undefined && parents.size === 0) {
       if (tryToDeleteRule(ctx, ruleName)) {
         return
       }
