@@ -570,23 +570,6 @@ describe('Constant folding [base]', () => {
         },
       },
       'rule to recompute': {
-        valeur: 'constant * 2 * question',
-      },
-      question: {
-        question: 'Question ?',
-      },
-      constant: {
-        valeur: 10,
-      },
-    }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
-      root: {
-        valeur: 'rule to recompute',
-        contexte: {
-          constant: 20,
-        },
-      },
-      'rule to recompute': {
         valeur: '(constant * 2) * question',
       },
       question: {
@@ -595,7 +578,8 @@ describe('Constant folding [base]', () => {
       constant: {
         valeur: 10,
       },
-    })
+    }
+    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
   })
 
   it('should fold rules impacted by a [contexte] with multiple contexte rules', () => {
@@ -617,9 +601,15 @@ describe('Constant folding [base]', () => {
         valeur: 15,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(
+      constantFoldingWith(rawRules, ['root', 'rule to recompute']),
+    ).toStrictEqual({
       root: {
         valeur: 200,
+        optimized: 'fully',
+      },
+      'rule to recompute': {
+        valeur: 35,
         optimized: 'fully',
       },
     })

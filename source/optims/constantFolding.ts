@@ -215,8 +215,9 @@ function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
   }
 }
 
-function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
+function tryToDeleteRule(ctx: FoldingCtx, dottedName: RuleName): boolean {
   const ruleNode = ctx.parsedRules[dottedName]
+
   if (
     (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
     isFoldable(ctx, ruleNode)
@@ -226,7 +227,11 @@ function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
     delete ctx.parsedRules[dottedName]
     ctx.refs.parents.delete(dottedName)
     ctx.refs.childs.delete(dottedName)
+
+    return true
   }
+
+  return false
 }
 
 /** Removes the [parentRuleName] as a parent dependency of each [childRuleNamesToUpdate]. */
@@ -238,7 +243,7 @@ function updateRefCounting(
   for (const ruleNameToUpdate of ruleNamesToUpdate) {
     removeInMap(ctx.refs.parents, ruleNameToUpdate, parentRuleName)
     if (ctx.refs.parents.get(ruleNameToUpdate)?.size === 0) {
-      deleteRule(ctx, ruleNameToUpdate)
+      tryToDeleteRule(ctx, ruleNameToUpdate)
     }
   }
 }
@@ -342,7 +347,7 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
     (ruleParents === undefined || ruleParents?.size === 0)
   ) {
     // Empty rule with no parent
-    deleteRule(ctx, ruleName)
+    tryToDeleteRule(ctx, ruleName)
     return
   }
 
@@ -375,10 +380,12 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
     delete ctx.parsedRules[ruleName].rawNode.formule
 
     if (ctx.refs.parents.get(ruleName)?.size === 0) {
-      deleteRule(ctx, ruleName)
-    } else {
-      ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = 'fully'
+      if (tryToDeleteRule(ctx, ruleName)) {
+        return
+      }
     }
+
+    ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = 'fully'
 
     return
   }
