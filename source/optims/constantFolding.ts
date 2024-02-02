@@ -50,12 +50,10 @@ type FoldingCtx = {
   unfoldableRules: Set<RuleName>
 }
 
-function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
-  let vals = map.get(key)
-  if (vals) {
-    values.forEach((val) => vals.add(val))
-  }
-  map.set(key, vals || new Set(values))
+function addMapEntry(map: RefMap, key: RuleName, values: Set<RuleName>) {
+  const vals = map.get(key) ?? new Set()
+  values.forEach((val) => vals.add(val))
+  map.set(key, vals)
 }
 
 function initFoldingCtx(
@@ -70,10 +68,6 @@ function initFoldingCtx(
   const unfoldableRules = new Set<RuleName>()
   const parsedRules = copyFullParsedRules(engine)
 
-  // NOTE: we need to traverse the AST to find all the references of a rule.
-  // We can't use the [referencesMap] from the engine's context because it
-  // contains references to rules that are beyond the scope of the current
-  // rule.
   for (const ruleName in parsedRules) {
     const ruleNode = parsedRules[ruleName]
 
@@ -88,24 +82,42 @@ function initFoldingCtx(
       })
     }
 
-    const reducedAST =
+    if (ruleNode.explanation.valeur.nodeKind === 'contexte') {
+      engine.cache.traversedVariablesStack = []
+      const evaluation = engine.evaluate(ruleName)
+
+      // We don't want to fold a rule which can be nullable with a different situation
+      // For example, if its namespace is conditionnaly applicable.
+      //
+      // TODO(@EmileRolley): for now, all ref nodes inside a contexte are considered
+      // as not foldable. We could be more precise by associating a ref node with
+      // the rules that are used in its contexte therefore we could fold the ref node
+      // in all other cases.
+      if (
+        Object.keys(evaluation.missingVariables).length !== 0 ||
+        isNullable(evaluation)
+      ) {
+        unfoldableRules.add(ruleName)
+        ruleNode.explanation.valeur.explanation.contexte.forEach(([ref, _]) => {
+          unfoldableRules.add(ref.dottedName)
+        })
+      }
+    }
+
+    const traversedRefs: Set<RuleName> =
+      // We need to traverse the AST to find all the references used inside a rule.
+      //
+      // NOTE: We can't use the [referencesMap] from the engine's context because it
+      // contains references to rules that are beyond the scope of the current
+      // rule and we only want to consider the references that are used inside the
+      // current rule.
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
-          if (node.nodeKind === 'contexte') {
-            const { missingVariables } = engine.evaluateNode(node)
-
-            // We can't fold it
-            if (Object.keys(missingVariables).length !== 0) {
-              unfoldableRules.add(ruleName)
-              node.explanation.contexte.forEach(([ref, _]) => {
-                unfoldableRules.add(ref.dottedName)
-              })
-            }
-          }
           if (
             node.nodeKind === 'reference' &&
             'dottedName' in node &&
-            node.dottedName !== ruleName
+            node.dottedName !== ruleName &&
+            !node.dottedName.endsWith('$SITUATION')
           ) {
             return acc.add(node.dottedName)
           }
@@ -114,14 +126,10 @@ function initFoldingCtx(
         ruleNode.explanation.valeur,
       ) ?? new Set()
 
-    const traversedVariables: RuleName[] = Array.from(reducedAST).filter(
-      (name) => !name.endsWith('$SITUATION'),
-    )
-
-    if (traversedVariables.length > 0) {
-      addMapEntry(refs.childs, ruleName, traversedVariables)
-      traversedVariables.forEach((traversedVar) => {
-        addMapEntry(refs.parents, traversedVar, [ruleName])
+    if (traversedRefs.size > 0) {
+      addMapEntry(refs.childs, ruleName, traversedRefs)
+      traversedRefs.forEach((traversedVar) => {
+        addMapEntry(refs.parents, traversedVar, new Set([ruleName]))
       })
     }
   }
@@ -163,12 +171,14 @@ function isEmptyRule(rule: RuleNode): boolean {
   return Object.keys(rule.rawNode).length === 0
 }
 
-/** Replaces all references in parent refs of [ruleName] by its [constantNode] */
+/**
+ * Replaces all references in parent refs of [ruleName] by its [constantNode]
+ */
 function searchAndReplaceConstantValueInParentRefs(
   ctx: FoldingCtx,
   ruleName: RuleName,
   constantNode: ASTNode,
-): void {
+) {
   const refs = ctx.refs.parents.get(ruleName)
 
   if (refs) {
@@ -366,11 +376,7 @@ function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
       nodeValue,
       unit,
     )
-
     searchAndReplaceConstantValueInParentRefs(ctx, ruleName, constantNode)
-    if (ctx.parsedRules[ruleName] === undefined) {
-      return
-    }
 
     const childs = ctx.refs.childs.get(ruleName) ?? new Set()
 

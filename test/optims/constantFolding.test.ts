@@ -582,7 +582,48 @@ describe('Constant folding [base]', () => {
     expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
-  it('should fold rules impacted by a [contexte] with multiple contexte rules', () => {
+  it('should fold constant rules used in a [contexte]', () => {
+    const rawRules = {
+      root: {
+        valeur: 'rule to recompute',
+        contexte: {
+          'rule to replace': 'constant',
+        },
+      },
+      'rule to recompute': {
+        valeur: '(rule to replace * 2) * question',
+      },
+      'rule to replace': {
+        valeur: 0,
+      },
+      question: {
+        question: 'Question ?',
+      },
+      constant: {
+        valeur: 10,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toEqual({
+      root: {
+        valeur: 'rule to recompute',
+        contexte: {
+          'rule to replace': 10,
+        },
+        optimized: 'partially',
+      },
+      'rule to recompute': {
+        valeur: '(rule to replace * 2) * question',
+      },
+      'rule to replace': {
+        valeur: 0,
+      },
+      question: {
+        question: 'Question ?',
+      },
+    })
+  })
+
+  it('should fold rules impacted by a [] with multiple contexte rules', () => {
     const rawRules = {
       root: {
         valeur: 'rule to recompute',
@@ -648,25 +689,6 @@ describe('Constant folding [base]', () => {
   it('should not fold rules impacted by a [contexte] with nested mechanisms in the formula', () => {
     const rawRules = {
       root: {
-        valeur: {
-          somme: ['rule to recompute', 'question', 10],
-        },
-        contexte: {
-          constant: 20,
-        },
-      },
-      'rule to recompute': {
-        valeur: 'constant * 2',
-      },
-      question: {
-        question: 'Question ?',
-      },
-      constant: {
-        valeur: 10,
-      },
-    }
-    expect(constantFoldingWith(rawRules)).toEqual({
-      root: {
         somme: ['rule to recompute', 'question', 10],
         contexte: {
           constant: 20,
@@ -681,7 +703,8 @@ describe('Constant folding [base]', () => {
       constant: {
         valeur: 10,
       },
-    })
+    }
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should fold rules impacted by a [contexte] with nested mechanisms in the formula', () => {
@@ -753,6 +776,34 @@ describe('Constant folding [base]', () => {
         optimized: 'fully',
       },
     })
+  })
+
+  it('should not fold a nullable constant [contexte] rule', () => {
+    const rawRules = {
+      root: {
+        'applicable si': 'présent',
+      },
+      'root . présent': {
+        question: 'Is present?',
+        'par défaut': 'non',
+      },
+      'root . a': {
+        valeur: 'rule to recompute',
+        contexte: {
+          constant: 15,
+        },
+      },
+      'rule to recompute': {
+        valeur: 'constant * 2',
+      },
+      'rule to fold': {
+        valeur: 'constant * 4',
+      },
+      constant: {
+        valeur: 10,
+      },
+    }
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('replaceAllRefs bug #3', () => {
