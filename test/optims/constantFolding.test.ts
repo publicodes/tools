@@ -16,6 +16,8 @@ function constantFoldingWith(rawRules: any, targets?: RuleName[]): RawRules {
   return serializeParsedRules(res)
 }
 
+// NOTE(@EmileRolley): I modified `toStrictEqual` to `toEqual` when using `structuredClone`
+// instead of `JSON.parse(JSON.stringify())`.
 describe('Constant folding [meta]', () => {
   it('should not modify the original rules', () => {
     const rawRules = {
@@ -44,8 +46,8 @@ describe('Constant folding [meta]', () => {
       shouldNotBeModifiedRules,
     )
 
-    expect(baseParsedRules).toStrictEqual(shouldNotBeModifiedRules)
-    expect(serializedBaseParsedRules).toStrictEqual(
+    expect(baseParsedRules).toEqual(shouldNotBeModifiedRules)
+    expect(serializedBaseParsedRules).toEqual(
       serializedShouldNotBeModifiedRules,
     )
   })
@@ -53,7 +55,7 @@ describe('Constant folding [meta]', () => {
 
 describe('Constant folding [base]', () => {
   it('∅ -> ∅', () => {
-    expect(constantFoldingWith({})).toStrictEqual({})
+    expect(constantFoldingWith({})).toEqual({})
   })
 
   it('should remove empty nodes', () => {
@@ -63,7 +65,7 @@ describe('Constant folding [base]', () => {
           valeur: '10 * 10',
         },
       }),
-    ).toStrictEqual({
+    ).toEqual({
       ruleB: {
         valeur: 100,
         optimized: 'fully',
@@ -81,7 +83,7 @@ describe('Constant folding [base]', () => {
         valeur: '10',
       },
     }
-    expect(constantFoldingWith(rawRules, ['ruleA'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['ruleA'])).toEqual({
       ruleA: {
         titre: 'Rule A',
         valeur: 30,
@@ -103,7 +105,7 @@ describe('Constant folding [base]', () => {
         valeur: '3',
       },
     }
-    expect(constantFoldingWith(rawRules, ['ruleA'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['ruleA'])).toEqual({
       ruleA: {
         titre: 'Rule A',
         valeur: 30,
@@ -125,7 +127,7 @@ describe('Constant folding [base]', () => {
         valeur: '10',
       },
     }
-    expect(constantFoldingWith(rawRules, ['ruleA'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['ruleA'])).toEqual({
       ruleA: {
         titre: 'Rule A',
         valeur: '10 * D',
@@ -153,7 +155,7 @@ describe('Constant folding [base]', () => {
         valeur: '10',
       },
     }
-    expect(constantFoldingWith(rawRules, ['ruleA'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['ruleA'])).toEqual({
       ruleA: {
         titre: 'Rule A',
         valeur: '10 * D',
@@ -181,7 +183,7 @@ describe('Constant folding [base]', () => {
         valeur: '10',
       },
     }
-    expect(constantFoldingWith(rawRules, ['ruleA'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['ruleA'])).toEqual({
       ruleA: {
         titre: 'Rule A',
         valeur: '10 * D',
@@ -205,7 +207,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules, ['A'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['A'])).toEqual({
       A: {
         valeur: 70,
         optimized: 'fully',
@@ -231,7 +233,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules, ['B'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['B'])).toEqual({
       B: {
         valeur: '70 * D',
         optimized: 'partially',
@@ -257,7 +259,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules, ['ruleA'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['ruleA'])).toEqual({
       ruleA: {
         valeur: 174,
         optimized: 'fully',
@@ -285,7 +287,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules, ['ruleA'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['ruleA'])).toEqual({
       ruleA: {
         valeur: 'ruleB',
       },
@@ -357,7 +359,7 @@ describe('Constant folding [base]', () => {
         valeur: 0.95,
       },
     }
-    expect(constantFoldingWith(rawRules, ['omr'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['omr'])).toEqual({
       omr: {
         valeur: '0.69068 kgCO2e',
         optimized: 'fully',
@@ -381,7 +383,7 @@ describe('Constant folding [base]', () => {
         question: 'The user needs to provide a value.',
       },
     }
-    expect(constantFoldingWith(rawRules, ['biogaz'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['biogaz'])).toEqual({
       biogaz: {
         valeur: '(20 * 10) + not foldable',
         optimized: 'partially',
@@ -408,7 +410,7 @@ describe('Constant folding [base]', () => {
         question: 'The user needs to provide a value.',
       },
     }
-    expect(constantFoldingWith(rawRules, ['biogaz'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['biogaz'])).toEqual({
       biogaz: {
         valeur: '(10 * 20) + not foldable',
         optimized: 'partially',
@@ -431,7 +433,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules, ['boisson'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['boisson'])).toEqual({
       boisson: {
         valeur: '20 * nombre',
         optimized: 'partially',
@@ -452,7 +454,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules, ['boisson'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['boisson'])).toEqual({
       boisson: {
         valeur: '20 * nombre',
         optimized: 'partially',
@@ -473,7 +475,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules, ['boisson'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['boisson'])).toEqual({
       boisson: {
         valeur: '2 % * nombre',
         optimized: 'partially',
@@ -497,7 +499,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 0,
       },
     }
-    expect(constantFoldingWith(rawRules, ['chocolat chaud'])).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['chocolat chaud'])).toEqual({
       'chocolat chaud': {
         valeur: '20.3 * nombre',
         optimized: 'partially',
@@ -520,9 +522,7 @@ describe('Constant folding [base]', () => {
       'piscine . nombre': { question: 'Combien ?', 'par défaut': 2 },
       'piscine . équipés': { valeur: 45 },
     }
-    expect(
-      constantFoldingWith(rawRules, ['piscine . empreinte']),
-    ).toStrictEqual({
+    expect(constantFoldingWith(rawRules, ['piscine . empreinte'])).toEqual({
       'piscine . empreinte': {
         somme: ['((45 * nombre) * 45) * 45'],
         optimized: 'partially',
@@ -548,7 +548,7 @@ describe('Constant folding [base]', () => {
       constantFoldingWith(rawRules, [
         'divers . ameublement . meubles . armoire . empreinte amortie',
       ]),
-    ).toStrictEqual({
+    ).toEqual({
       'divers . ameublement . meubles . armoire . empreinte amortie': {
         titre: 'Empreinte armoire amortie',
         valeur: 'armoire . empreinte / (10 * 45)',
@@ -579,7 +579,7 @@ describe('Constant folding [base]', () => {
         valeur: 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should fold rules impacted by a [contexte] with multiple contexte rules', () => {
@@ -603,7 +603,7 @@ describe('Constant folding [base]', () => {
     }
     expect(
       constantFoldingWith(rawRules, ['root', 'rule to recompute']),
-    ).toStrictEqual({
+    ).toEqual({
       root: {
         valeur: 200,
         optimized: 'fully',
@@ -642,7 +642,7 @@ describe('Constant folding [base]', () => {
         valeur: 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should not fold rules impacted by a [contexte] with nested mechanisms in the formula', () => {
@@ -665,7 +665,7 @@ describe('Constant folding [base]', () => {
         valeur: 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       root: {
         somme: ['rule to recompute', 'question', 10],
         contexte: {
@@ -705,7 +705,7 @@ describe('Constant folding [base]', () => {
         valeur: 15,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       root: {
         somme: ['rule to recompute', 'question', 10],
         contexte: {
@@ -743,7 +743,7 @@ describe('Constant folding [base]', () => {
         valeur: 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       root: {
         valeur: 30,
         optimized: 'fully',
@@ -767,7 +767,7 @@ describe('Constant folding [base]', () => {
         question: '?',
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       boisson: {
         valeur: 'tasse de café * 20',
         optimized: 'partially',
@@ -790,7 +790,7 @@ describe('Constant folding [base]', () => {
         unité: 'kgCO2e/repas',
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       root: {
         valeur: '10.99 kgCO2e/semaine',
         unité: 'kgCO2e/semaine',
@@ -816,7 +816,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should fold a constant within two degrees with an [applicable si] (set to true) mechanism', () => {
@@ -836,7 +836,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊤)]', () => {
@@ -854,7 +854,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should not delete leaf used in [applicable si > toutes ces conditions (evaluated to ⊥)] ', () => {
@@ -872,7 +872,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should not fold nullable rules evaluated to null in the default situation', () => {
@@ -893,7 +893,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
   })
 
   it('should not fold nullable rules evaluated not to null in the default situation', () => {
@@ -914,7 +914,7 @@ describe('Constant folding [base]', () => {
         valeur: 7,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual(rawRules)
 
     // TODO: fine tune the conditional applicability fold
     // {
@@ -953,7 +953,7 @@ describe('Constant folding [base]', () => {
         valeur: '20 repas * frais de repas',
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       ...rawRules,
       'cafés-restaurants': {
         valeur: 'oui',
@@ -986,7 +986,7 @@ describe('Constant folding [base]', () => {
       'résultat 1': { valeur: 'foo' },
       'résultat 2': { valeur: 'foo' },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual(rawRules)
+    expect(constantFoldingWith(rawRules)).toEqual({ ...rawRules })
   })
 
   it('should fully fold a rule with [syntaxic sugar]', () => {
@@ -1004,7 +1004,7 @@ describe('Constant folding [base]', () => {
         valeur: 20,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       foo: {
         valeur: 30,
         optimized: 'fully',
@@ -1034,7 +1034,7 @@ describe('Constant folding [base]', () => {
         'par défaut': 10,
       },
     }
-    expect(constantFoldingWith(rawRules)).toStrictEqual({
+    expect(constantFoldingWith(rawRules)).toEqual({
       cotisation: {
         optimized: 'fully',
         valeur: '58.8 €',
