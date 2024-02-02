@@ -12,12 +12,12 @@
     "allowJs": true,
     "lib": ["es2021"],
     "sourceMap": true,
-    "declaration": true
+    "declaration": true,
   },
   "ts-node": {
     "transpileOnly": true,
-    "files": true
+    "files": true,
   },
   "include": ["source/**/*.ts"],
-  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"]
+  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"],
 }
