@@ -162,21 +162,6 @@ ${importedRule.description}`
   }
 }
 
-/**
- * @throws {Error} If the `nom` attribute is different from the `ruleNameToCheck`.
- */
-function removeRawNodeNom(
-  rawNode: Rule,
-  ruleNameToCheck: string,
-): Omit<Rule, 'nom'> {
-  const { nom, ...rest } = rawNode
-  if (nom !== ruleNameToCheck)
-    throw Error(
-      `Imported rule's publicode raw node "nom" attribute is different from the resolveImport script ruleName. Please investigate`,
-    )
-  return rest
-}
-
 function appearsMoreThanOnce(
   rulesToImport: RuleToImport[],
   ruleName: RuleName,
@@ -218,7 +203,7 @@ export function resolveImports(
   let neededNamespaces = new Set<string>()
   const resolvedRules = Object.entries(rules).reduce((acc, [name, value]) => {
     if (name === IMPORT_KEYWORD) {
-      const importMacro: ImportMacro = value
+      const importMacro = value as ImportMacro
       const engine = getEngine(filePath, importMacro, verbose)
       const rulesToImport: RuleToImport[] =
         importMacro['les règles']?.map(getRuleToImportInfos)
@@ -252,10 +237,7 @@ export function resolveImports(
           utils
             .ruleParents(ruleName)
             .forEach((rule) => neededNamespaces.add(`${namespace} . ${rule}`))
-          return [
-            `${namespace} . ${ruleName}`,
-            removeRawNodeNom(ruleWithUpdatedDescription, ruleName),
-          ]
+          return [`${namespace} . ${ruleName}`, ruleWithUpdatedDescription]
         }
 
         const ruleWithOverridenAttributes = { ...rule.rawNode, ...attrs }

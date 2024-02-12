@@ -1,13 +1,5 @@
 import { basename } from 'path'
-import {
-  Rule,
-  ParsedRules,
-  Logger,
-  ExprAST,
-  RuleNode,
-  reduceAST,
-  ASTNode,
-} from 'publicodes'
+import { Rule, Logger, ExprAST, reduceAST, ASTNode } from 'publicodes'
 import yaml from 'yaml'
 
 /**
@@ -67,38 +59,12 @@ export type ImportMacro = {
 /**
  * Represents a non-parsed NGC rule.
  */
-export type RawRule = Omit<Rule, 'nom'> & ImportMacro
+export type RawRule = Omit<Rule, 'nom'> | ImportMacro
 
 /**
  * Represents a non-parsed NGC model.
  */
 export type RawRules = Record<RuleName, RawRule>
-
-/**
- * Returns the raw nodes of a parsed rules object.
- *
- * @param parsedRules - The parsed rules object.
- *
- * @returns The raw nodes of the parsed rules object.
- */
-export function getRawNodes(parsedRules: ParsedRules<RuleName>): RawRules {
-  return Object.fromEntries(
-    Object.values(parsedRules).reduce((acc, rule) => {
-      const { nom, ...rawNode } = rule.rawNode
-      // We don't want to keep the `avec` attribute in the raw node
-      // as they are already resolved in the [parsedRules] object.
-      delete rawNode['avec']
-
-      acc.push([
-        rule.dottedName,
-        // If the rule only contained the 'nom' attribute, we don't want to
-        // keep an empty object in the raw node.
-        Object.keys(rawNode).length === 0 ? null : rawNode,
-      ])
-      return acc
-    }, []),
-  ) as RawRules
-}
 
 function consumeMsg(_: string): void {}
 
@@ -115,7 +81,7 @@ export const disabledLogger: Logger = {
  *
  * @returns The references.
  */
-export function getAllRefsInNode(node: RuleNode): RuleName[] {
+export function getAllRefsInNode(node: ASTNode): RuleName[] {
   return reduceAST<RuleName[]>(
     (refs: RuleName[], node: ASTNode) => {
       if (node === undefined) {

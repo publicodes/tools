@@ -1,16 +1,16 @@
-import Engine, { reduceAST, ParsedRules, parseExpression } from 'publicodes'
-import type { RuleNode, ASTNode, Unit } from 'publicodes'
-import {
-  RuleName,
-  serializeParsedExprAST,
-  substituteInParsedExpr,
-} from '../commons'
+import Engine, {
+  reduceAST,
+  ParsedRules,
+  transformAST,
+  traverseASTNode,
+  Unit,
+  EvaluatedNode,
+  utils,
+} from 'publicodes'
+import type { RuleNode, ASTNode } from 'publicodes'
+import { RuleName } from '../commons'
 
-type RefMap = Map<
-  RuleName,
-  // NOTE: It's an array but it's built from a Set, so no duplication
-  RuleName[] | undefined
->
+type RefMap = Map<RuleName, Set<RuleName> | undefined>
 
 type RefMaps = {
   parents: RefMap
@@ -31,35 +31,33 @@ type FoldingCtx = {
   toKeep?: PredicateOnRule
   params: FoldingParams
   /**
-   * The rules that are evaluated with a modified situation (in a [recalcul] mechanism)
-   * and we don't want to be folded.
+   * The rules that are evaluated with a modified situation (in a [contexte]
+   * mechanism or with a [remplacement]) and we don't want to be folded.
    *
    * @example
    * ```
    * rule:
-   *   recalcul:
-   *	    règle: rule2
-   *	    avec:
-   *	      rule3: 10
-   *	      rule4: 20
+   *	  valeur: rule2
+   *	  contexte:
+   *	    rule3: 10
+   *	    rule4: 20
    * ...
    * ```
-   * In this case, [rule2] should not be folded.
+   * In this case, we don't want to fold [rule2] because it's evaluated with a
+   * modified situation (unless it's a constant). We also don't want to fold
+   * [rule3] and [rule4] because they are used in the contexte of [rule].
    */
-  recalculRules: Set<RuleName>
+  unfoldableRules: Set<RuleName>
 }
 
-function addMapEntry(map: RefMap, key: RuleName, values: RuleName[]) {
-  let vals = map.get(key)
-  if (vals) {
-    vals = vals.concat(values)
-  }
-  map.set(key, vals || values)
+function addMapEntry(map: RefMap, key: RuleName, values: Set<RuleName>) {
+  const vals = map.get(key) ?? new Set()
+  values.forEach((val) => vals.add(val))
+  map.set(key, vals)
 }
 
 function initFoldingCtx(
   engine: Engine,
-  parsedRules: ParsedRules<RuleName>,
   toKeep?: PredicateOnRule,
   foldingParams?: FoldingParams,
 ): FoldingCtx {
@@ -67,22 +65,59 @@ function initFoldingCtx(
     parents: new Map(),
     childs: new Map(),
   }
-  const recalculRules = new Set<RuleName>()
+  const unfoldableRules = new Set<RuleName>()
+  const parsedRules = copyFullParsedRules(engine)
 
-  Object.entries(parsedRules).forEach(([ruleName, ruleNode]) => {
-    const reducedAST =
+  for (const ruleName in parsedRules) {
+    const ruleNode = parsedRules[ruleName]
+
+    if (ruleNode.replacements.length > 0) {
+      unfoldableRules.add(ruleName)
+      ruleNode.replacements.forEach((replacement) => {
+        // TODO: we could use white-listed and black-listed rules to be more
+        // precise about which rules we want to fold. But for now, we
+        // consider that all rules that are replaced are not foldable in
+        // all cases.
+        unfoldableRules.add(replacement.replacedReference.name)
+      })
+    }
+
+    if (ruleNode.explanation.valeur.nodeKind === 'contexte') {
+      engine.cache.traversedVariablesStack = []
+      const evaluation = engine.evaluate(ruleName)
+
+      // We don't want to fold a rule which can be nullable with a different situation
+      // For example, if its namespace is conditionnaly applicable.
+      //
+      // TODO(@EmileRolley): for now, all ref nodes inside a contexte are considered
+      // as not foldable. We could be more precise by associating a ref node with
+      // the rules that are used in its contexte therefore we could fold the ref node
+      // in all other cases.
+      if (
+        Object.keys(evaluation.missingVariables).length !== 0 ||
+        isNullable(evaluation)
+      ) {
+        unfoldableRules.add(ruleName)
+        ruleNode.explanation.valeur.explanation.contexte.forEach(([ref, _]) => {
+          unfoldableRules.add(ref.dottedName)
+        })
+      }
+    }
+
+    const traversedRefs: Set<RuleName> =
+      // We need to traverse the AST to find all the references used inside a rule.
+      //
+      // NOTE: We can't use the [referencesMap] from the engine's context because it
+      // contains references to rules that are beyond the scope of the current
+      // rule and we only want to consider the references that are used inside the
+      // current rule.
       reduceAST(
         (acc: Set<RuleName>, node: ASTNode) => {
           if (
-            node.nodeKind === 'recalcul' &&
-            'dottedName' in node.explanation.recalculNode
-          ) {
-            recalculRules.add(node.explanation.recalculNode.dottedName)
-          }
-          if (
             node.nodeKind === 'reference' &&
             'dottedName' in node &&
-            node.dottedName !== ruleName
+            node.dottedName !== ruleName &&
+            !node.dottedName.endsWith('$SITUATION')
           ) {
             return acc.add(node.dottedName)
           }
@@ -90,331 +125,295 @@ function initFoldingCtx(
         new Set(),
         ruleNode.explanation.valeur,
       ) ?? new Set()
-    const traversedVariables: RuleName[] = Array.from(reducedAST).filter(
-      (name) => !name.endsWith(' . $SITUATION'),
-    )
 
-    if (traversedVariables.length > 0) {
-      addMapEntry(refs.childs, ruleName, traversedVariables)
-      traversedVariables.forEach((traversedVar) => {
-        addMapEntry(refs.parents, traversedVar, [ruleName])
+    if (traversedRefs.size > 0) {
+      addMapEntry(refs.childs, ruleName, traversedRefs)
+      traversedRefs.forEach((traversedVar) => {
+        addMapEntry(refs.parents, traversedVar, new Set([ruleName]))
       })
     }
-  })
+  }
 
   return {
     engine,
     parsedRules,
     refs,
     toKeep,
-    recalculRules,
-    params: { isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized' },
+    unfoldableRules,
+    params: {
+      isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized',
+    },
   }
 }
 
-function isFoldable(
-  rule: RuleNode | undefined,
-  recalculRules: Set<RuleName>,
-): boolean {
-  if (!rule) {
-    return false
-  }
+const unfoldableAttr = ['par défaut', 'question']
 
-  const rawNode = rule.rawNode
-  return !(
-    recalculRules.has(rule.dottedName) ||
-    'question' in rawNode ||
-    // NOTE(@EmileRolley): I assume that a rule can have a [par défaut] attribute without a [question] one.
-    // The behavior could be specified.
-    'par défaut' in rawNode ||
-    'applicable si' in rawNode ||
-    'non applicable si' in rawNode
+function isFoldable(ctx: FoldingCtx, rule: RuleNode): boolean {
+  let childInContext = false
+  const childs = ctx.refs.childs.get(rule.dottedName)
+
+  childs?.forEach((child) => {
+    if (ctx.unfoldableRules.has(child)) {
+      childInContext = true
+      return
+    }
+  })
+
+  return (
+    rule !== undefined &&
+    !unfoldableAttr.find((attr) => attr in rule.rawNode) &&
+    !ctx.unfoldableRules.has(rule.dottedName) &&
+    !childInContext
   )
 }
 
 function isEmptyRule(rule: RuleNode): boolean {
-  // There is always a 'nom' attribute.
-  return Object.keys(rule.rawNode).length <= 1
+  return Object.keys(rule.rawNode).length === 0
 }
 
-function formatPublicodesUnit(unit?: Unit): string {
-  if (
-    unit !== undefined &&
-    unit.numerators.length === 1 &&
-    unit.numerators[0] === '%'
-  ) {
-    return '%'
-  }
-  return ''
-}
-
-// Replaces boolean values by their string representation in French.
-function formatToPulicodesValue(value: any, unit?: Unit) {
-  if (typeof value === 'boolean') {
-    return value ? 'oui' : 'non'
-  }
-
-  return value + formatPublicodesUnit(unit)
-}
-
-function replaceAllRefs(
-  str: string,
-  refName: string,
-  constantValue: any,
-  currentRuleName: string,
-): string {
-  const parsedExpression = parseExpression(str, currentRuleName)
-  const newParsedExpression = substituteInParsedExpr(
-    parsedExpression,
-    refName,
-    constantValue,
-  )
-  return serializeParsedExprAST(newParsedExpression)
-}
-
-function lexicalSubstitutionOfRefValue(
-  parent: RuleNode,
-  constant: RuleNode,
-): RuleNode | undefined {
-  // Retrieves the name form used in the rule. For exemple, the rule 'root . a
-  // . b' could have the name 'b', 'a . b' or 'root . a . b'.
-  const refName = reduceAST<string>(
-    (_, node: ASTNode) => {
-      if (
-        node.nodeKind === 'reference' &&
-        node.dottedName === constant.dottedName
-      ) {
-        return node.name
-      }
-    },
-    '',
-    parent,
-  )
-
-  const constValue = formatToPulicodesValue(constant.rawNode.valeur)
-
-  if ('formule' in parent.rawNode) {
-    if (typeof parent.rawNode.formule === 'string') {
-      const newFormule = replaceAllRefs(
-        parent.rawNode.formule,
-        refName,
-        constValue,
-        constant.dottedName,
-      )
-      parent.rawNode.formule = newFormule
-      return parent
-    } else if ('somme' in parent.rawNode.formule) {
-      // TODO: needs to be abstracted
-      parent.rawNode.formule.somme = (
-        parent.rawNode.formule.somme as (string | number)[]
-      ).map((expr: string | number) => {
-        return typeof expr === 'string'
-          ? replaceAllRefs(expr, refName, constValue, constant.dottedName)
-          : expr
-      })
-      return parent
-    }
-  }
-  // When a rule defined as an unique string: 'var * var2', it's parsed as a [valeur] attribute not a [formule].
-  if (typeof parent.rawNode.valeur === 'string') {
-    parent.rawNode.formule = replaceAllRefs(
-      parent.rawNode.valeur,
-      refName,
-      constValue,
-      constant.dottedName,
-    )
-    delete parent.rawNode.valeur
-    return parent
-  }
-}
-
-/** Replaces all references in parent refs of [ruleName] by its [rule.valeur] */
+/**
+ * Replaces all references in parent refs of [ruleName] by its [constantNode]
+ */
 function searchAndReplaceConstantValueInParentRefs(
   ctx: FoldingCtx,
   ruleName: RuleName,
-  rule: RuleNode,
-): void {
+  constantNode: ASTNode,
+) {
   const refs = ctx.refs.parents.get(ruleName)
 
   if (refs) {
     for (const parentName of refs) {
-      let parentRule = ctx.parsedRules[parentName]
+      const parentRule = ctx.parsedRules[parentName]
+      const newRule = traverseASTNode(
+        transformAST((node, _) => {
+          if (node.nodeKind === 'reference' && node.dottedName === ruleName) {
+            return constantNode
+          }
+        }),
+        parentRule,
+      ) as RuleNode
 
-      if (isFoldable(parentRule, ctx.recalculRules)) {
-        const newRule = lexicalSubstitutionOfRefValue(parentRule, rule)
-        if (newRule !== undefined) {
-          parentRule = newRule
-          parentRule.rawNode[ctx.params.isFoldedAttr] = true
-          removeInMap(ctx.refs.parents, ruleName, parentName)
-        }
+      if (newRule !== undefined) {
+        ctx.parsedRules[parentName] = newRule
+        ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] =
+          'partially'
+        removeInMap(ctx.refs.parents, ruleName, parentName)
       }
     }
   }
 }
 
 function isAlreadyFolded(params: FoldingParams, rule: RuleNode): boolean {
-  return 'rawNode' in rule && params.isFoldedAttr in rule.rawNode
-}
-
-/**
- * Subsitutes [parentRuleNode.formule] ref constant from [refs].
- *
- * @note It folds child rules in [refs] if possible.
- */
-function replaceAllPossibleChildRefs(ctx: FoldingCtx, refs: RuleName[]): void {
-  if (refs) {
-    for (const childName of refs) {
-      const childNode = ctx.parsedRules[childName]
-
-      if (
-        childNode &&
-        isFoldable(childNode, ctx.recalculRules) &&
-        !isAlreadyFolded(ctx.params, childNode)
-      ) {
-        tryToFoldRule(ctx, childName, childNode)
-      }
-    }
-  }
-}
-
-export function removeInMap<K, V>(
-  map: Map<K, V[]>,
-  key: K,
-  val: V,
-): Map<K, V[]> {
-  return map.set(
-    key,
-    (map.get(key) ?? []).filter((v) => v !== val),
+  return (
+    'rawNode' in rule &&
+    params.isFoldedAttr in rule.rawNode &&
+    rule.rawNode[params.isFoldedAttr] === 'fully'
   )
 }
 
-function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
-  ref.forEach((_, rule) => {
-    removeInMap(ref, rule, ruleName)
-  })
+function removeInMap<K, V>(map: Map<K, Set<V>>, key: K, val: V) {
+  if (map.has(key)) {
+    map.get(key).delete(val)
+  }
 }
 
-function deleteRule(ctx: FoldingCtx, dottedName: RuleName): void {
+function removeRuleFromRefs(ref: RefMap, ruleName: RuleName) {
+  for (const rule of ref.keys()) {
+    removeInMap(ref, rule, ruleName)
+  }
+}
+
+function tryToDeleteRule(ctx: FoldingCtx, dottedName: RuleName): boolean {
   const ruleNode = ctx.parsedRules[dottedName]
+
   if (
     (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
-    isFoldable(ruleNode, ctx.recalculRules)
+    isFoldable(ctx, ruleNode)
   ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName)
     removeRuleFromRefs(ctx.refs.childs, dottedName)
     delete ctx.parsedRules[dottedName]
     ctx.refs.parents.delete(dottedName)
     ctx.refs.childs.delete(dottedName)
+
+    return true
   }
+
+  return false
 }
 
 /** Removes the [parentRuleName] as a parent dependency of each [childRuleNamesToUpdate]. */
 function updateRefCounting(
   ctx: FoldingCtx,
   parentRuleName: RuleName,
-  ruleNamesToUpdate: RuleName[],
-): void {
-  ruleNamesToUpdate.forEach((ruleNameToUpdate) => {
+  ruleNamesToUpdate: Set<RuleName>,
+) {
+  for (const ruleNameToUpdate of ruleNamesToUpdate) {
     removeInMap(ctx.refs.parents, ruleNameToUpdate, parentRuleName)
-    if (ctx.refs.parents.get(ruleNameToUpdate)?.length === 0) {
-      deleteRule(ctx, ruleNameToUpdate)
+    if (ctx.refs.parents.get(ruleNameToUpdate)?.size === 0) {
+      tryToDeleteRule(ctx, ruleNameToUpdate)
     }
-  })
+  }
 }
 
-function tryToFoldRule(
-  ctx: FoldingCtx,
-  ruleName: RuleName,
+function replaceRuleWithEvaluatedNodeValue(
   rule: RuleNode,
-): void {
+  nodeValue: number | boolean | string | Record<string, unknown>,
+  unit: Unit | undefined,
+): ASTNode {
+  const constantNode: ASTNode = {
+    nodeValue,
+    type:
+      typeof nodeValue === 'number'
+        ? 'number'
+        : typeof nodeValue === 'boolean'
+          ? 'boolean'
+          : typeof nodeValue === 'string'
+            ? 'string'
+            : undefined,
+
+    nodeKind: 'constant',
+    missingVariables: {},
+    rawNode: {
+      valeur: nodeValue,
+    },
+    isNullable: false,
+  }
+  const explanationThen: ASTNode =
+    unit !== undefined
+      ? {
+          nodeKind: 'unité',
+          unit,
+          explanation: constantNode,
+        }
+      : constantNode
+
+  if (rule.explanation.valeur.nodeKind === 'contexte') {
+    // We remove the contexte as it's now considered as a constant.
+    rule.explanation.valeur = rule.explanation.valeur.explanation.node
+  }
+
+  rule.explanation.valeur = traverseASTNode(
+    transformAST((node, _) => {
+      if (node.nodeKind === 'condition') {
+        /* we found the first condition, which wrapped the rule in the form of:
+         *
+         * - si:
+         *   est non défini: <rule> . $SITUATION
+         * - alors: <rule>
+         * - sinon: <rule> . $SITUATION
+         */
+        node.explanation.alors = explanationThen
+        return node
+      }
+    }),
+    rule,
+  )
+
+  return explanationThen
+}
+
+function isNullable(node: ASTNode): boolean {
+  // @ts-ignore
+  if (node?.explanation?.nullableParent !== undefined) {
+    return true
+  }
+
+  return reduceAST(
+    // @ts-ignore
+    (_, node) => {
+      if (!node) {
+        return false
+      }
+
+      //@ts-ignore
+      if (node?.explanation?.nullableParent !== undefined) {
+        return true
+      }
+    },
+    false,
+    // We expect a reference node here
+    // @ts-ignore
+    node?.explanation?.valeur,
+  )
+}
+
+function fold(ctx: FoldingCtx, ruleName: RuleName, rule: RuleNode): void {
   if (
     rule !== undefined &&
-    (!isFoldable(rule, ctx.recalculRules) ||
+    (!isFoldable(ctx, rule) ||
+      !utils.isAccessible(ctx.parsedRules, '', rule.dottedName) ||
       isAlreadyFolded(ctx.params, rule) ||
       !(ruleName in ctx.parsedRules))
   ) {
-    // Already managed rule
     return
   }
 
   const ruleParents = ctx.refs.parents.get(ruleName)
   if (
     isEmptyRule(rule) &&
-    (ruleParents === undefined || ruleParents?.length === 0)
+    (ruleParents === undefined || ruleParents?.size === 0)
   ) {
     // Empty rule with no parent
-    deleteRule(ctx, ruleName)
+    tryToDeleteRule(ctx, ruleName)
     return
   }
 
-  const { nodeValue, missingVariables, traversedVariables, unit } =
-    ctx.engine.evaluateNode(rule)
-
-  const traversedVariablesWithoutSelf = traversedVariables.filter(
-    (dottedName) => dottedName !== ruleName,
+  const evaluation: ASTNode & EvaluatedNode = ctx.engine.evaluate(
+    rule.dottedName,
   )
-
-  // NOTE(@EmileRolley): we need to evaluate due to possible standalone rule [formule]
-  // parsed as a [valeur].
-  if ('valeur' in rule.rawNode && traversedVariablesWithoutSelf?.length > 0) {
-    rule.rawNode.formule = rule.rawNode.valeur
-    delete rule.rawNode.valeur
-  }
-
+  const { missingVariables, nodeValue, unit } = evaluation
   const missingVariablesNames = Object.keys(missingVariables)
 
-  // Constant leaf -> search and replace the constant in all its parents.
   if (
-    'valeur' in rule.rawNode ||
-    ('formule' in rule.rawNode && missingVariablesNames.length === 0)
+    missingVariablesNames.length === 0 &&
+    // We don't want to fold a rule which can be nullable with a different situation.
+    // For example, if its namespace is conditionnaly applicable.
+    !isNullable(evaluation)
   ) {
-    if ('formule' in rule.rawNode) {
-      ctx.parsedRules[ruleName].rawNode.valeur = formatToPulicodesValue(
-        nodeValue,
-        unit,
-      )
+    const constantNode = replaceRuleWithEvaluatedNodeValue(
+      rule,
+      nodeValue,
+      unit,
+    )
+    searchAndReplaceConstantValueInParentRefs(ctx, ruleName, constantNode)
+
+    const childs = ctx.refs.childs.get(ruleName) ?? new Set()
+
+    updateRefCounting(ctx, ruleName, childs)
+    delete ctx.parsedRules[ruleName].rawNode.formule
+
+    const parents = ctx.refs.parents.get(ruleName)
+    // NOTE(@EmileRolley): if the rule has no parent ([parents === undefined])
+    // we assume it's a root rule and we don't want to delete it.
+    if (parents !== undefined && parents.size === 0) {
+      if (tryToDeleteRule(ctx, ruleName)) {
+        return
+      }
     }
 
-    searchAndReplaceConstantValueInParentRefs(ctx, ruleName, rule)
-    if (ctx.parsedRules[ruleName] === undefined) {
-      return
-    }
-
-    if ('formule' in rule.rawNode) {
-      // The rule do not depends on any other rule anymore, so we need to remove
-      // it from the [refs].
-      const childs = ctx.refs.childs.get(ruleName) ?? []
-
-      updateRefCounting(
-        ctx,
-        ruleName,
-        // NOTE(@EmileRolley): for some reason, the [traversedVariables] are not always
-        // depencies of the rule. Consequently, we need to keep only the ones that are
-        // in the [childs] list in order to avoid removing rules that are not dependencies.
-        traversedVariablesWithoutSelf?.filter((v: RuleName) =>
-          childs.includes(v),
-        ) ?? [],
-      )
-      delete ctx.parsedRules[ruleName].rawNode.formule
-    }
-
-    if (ctx.refs.parents.get(ruleName)?.length === 0) {
-      // NOTE(@EmileRolley): temporary work around until all mechanisms are supported.
-      // Indeed, when replacing a leaf ref by its value in all its parents,
-      // it should always be removed.
-      deleteRule(ctx, ruleName)
-    } else {
-      ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = true
-    }
+    ctx.parsedRules[ruleName].rawNode[ctx.params.isFoldedAttr] = 'fully'
 
     return
-  } else if ('formule' in rule.rawNode) {
-    // Try to replace internal refs if possible.
-    const childs = ctx.refs.childs.get(ruleName)
-    if (childs?.length > 0) {
-      replaceAllPossibleChildRefs(ctx, childs)
+  }
+}
+
+/**
+ * Deep copies the private [parsedRules] field of [engine] (without the '$SITUATION'
+ * rules).
+ */
+function copyFullParsedRules(engine: Engine): ParsedRules<RuleName> {
+  const parsedRules: ParsedRules<RuleName> = {}
+
+  for (const ruleName in engine.baseContext.parsedRules) {
+    if (!ruleName.endsWith('$SITUATION')) {
+      parsedRules[ruleName] = structuredClone(
+        engine.baseContext.parsedRules[ruleName],
+      )
     }
   }
+
+  return parsedRules
 }
 
 /**
@@ -432,32 +431,36 @@ export function constantFolding(
   toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
-  const parsedRules: ParsedRules<RuleName> =
-    // PERF: could it be avoided?
-    JSON.parse(JSON.stringify(engine.getParsedRules()))
+  let ctx = initFoldingCtx(engine, toKeep, params)
 
-  let ctx: FoldingCtx = initFoldingCtx(engine, parsedRules, toKeep, params)
+  let nbRules = Object.keys(ctx.parsedRules).length
+  let nbRulesBefore = undefined
 
-  Object.entries(ctx.parsedRules).forEach(([ruleName, ruleNode]) => {
-    if (
-      isFoldable(ruleNode, ctx.recalculRules) &&
-      !isAlreadyFolded(ctx.params, ruleNode)
-    ) {
-      tryToFoldRule(ctx, ruleName, ruleNode)
+  while (nbRules !== nbRulesBefore) {
+    for (const ruleName in ctx.parsedRules) {
+      const ruleNode = ctx.parsedRules[ruleName]
+
+      if (isFoldable(ctx, ruleNode) && !isAlreadyFolded(ctx.params, ruleNode)) {
+        fold(ctx, ruleName, ruleNode)
+      }
     }
-  })
+    nbRulesBefore = nbRules
+    nbRules = Object.keys(ctx.parsedRules).length
+  }
 
   if (toKeep) {
-    ctx.parsedRules = Object.fromEntries(
-      Object.entries(ctx.parsedRules).filter(([ruleName, ruleNode]) => {
-        const parents = ctx.refs.parents.get(ruleName)
-        return (
-          !isFoldable(ruleNode, ctx.recalculRules) ||
-          toKeep([ruleName, ruleNode]) ||
-          parents?.length > 0
-        )
-      }),
-    )
+    for (const ruleName in ctx.parsedRules) {
+      const ruleNode = ctx.parsedRules[ruleName]
+      const parents = ctx.refs.parents.get(ruleName)
+
+      if (
+        isFoldable(ctx, ruleNode) &&
+        !toKeep([ruleName, ruleNode]) &&
+        (!parents || parents?.size === 0)
+      ) {
+        delete ctx.parsedRules[ruleName]
+      }
+    }
   }
 
   return ctx.parsedRules

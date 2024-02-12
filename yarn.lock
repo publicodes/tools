@@ -2221,11 +2221,6 @@ minimatch@^9.0.0, minimatch@^9.0.1:
   resolved "https://registry.yarnpkg.com/minipass/-/minipass-7.0.4.tgz#dbce03740f50a4786ba994c1fb908844d27b038c"
   integrity sha512-jYofLM5Dam9279rdkWzqHozUo4ybjdZmCsDHePy5V/PbBcVMiSZR97gmAy45aqi8CK1lG2ECd356FU86avfwUQ==
 
-mitata@^0.1.6:
-  version "0.1.8"
-  resolved "https://registry.yarnpkg.com/mitata/-/mitata-0.1.8.tgz#bc000a5945b7f977567089ce55d4a29cf6e31f42"
-  integrity sha512-q+tTmAMdyT69SfwvOkMMCCzLhqoPY9OmbZ2nTDwFopTYMKl9HLRA+XfDXydGaRzVEYehkyfP1pFYoXzE6jVRKw==
-
 ms@2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
@@ -2407,10 +2402,10 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-publicodes@1.0.0-beta.77:
-  version "1.0.0-beta.77"
-  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.0.0-beta.77.tgz#45e3c4d2a46bfadcc932e1405ea037e659c28134"
-  integrity sha512-F8U3WGUWMo3/rxhWYS1gWIiG20g1Yy/+PpXdHM99d6ZHKWnnyh/4txVEuyVE75glgDs+mTjwZPnmoKWsTMXluA==
+publicodes@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.0.1.tgz#07c1e5d94b3609a2fe09b531490969c9f4960086"
+  integrity sha512-vrgnLCKeu3orxmBhyjll8/rxnL3k2EYtIYa7D7GiJVYWmOE08J5S6c/1j15LnC3cQkYqYgOJR5JnX5gxooQGLA==
 
 punycode@^2.1.0:
   version "2.3.1"
@@ -2740,7 +2735,7 @@ ts-jest@^29.0.4:
     semver "^7.5.3"
     yargs-parser "^21.0.1"
 
-ts-node@^10.9.1:
+ts-node@^10.9.2:
   version "10.9.2"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.9.2.tgz#70f021c9e185bccdca820e26dc413805c101c71f"
   integrity sha512-f0FFpIdcHgn8zcPSbf1dRevwt047YMnaiJM3u2w2RewrB+fob/zePZcrOyQoLMMO7aBIddLcQIEK5dYjkLnGrQ==
