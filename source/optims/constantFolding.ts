@@ -267,10 +267,10 @@ function replaceRuleWithEvaluatedNodeValue(
       typeof nodeValue === 'number'
         ? 'number'
         : typeof nodeValue === 'boolean'
-        ? 'boolean'
-        : typeof nodeValue === 'string'
-        ? 'string'
-        : undefined,
+          ? 'boolean'
+          : typeof nodeValue === 'string'
+            ? 'string'
+            : undefined,
 
     nodeKind: 'constant',
     missingVariables: {},
