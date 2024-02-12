@@ -1,6 +1,6 @@
 {
   "name": "@publicodes/tools",
-  "version": "1.0.0-0",
+  "version": "1.0.0-rc.0",
   "description": "A set of utility functions to build tools around Publicodes models",
   "scripts": {
     "build": "tsup",
