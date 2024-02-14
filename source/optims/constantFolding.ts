@@ -17,10 +17,20 @@ type RefMaps = {
   childs: RefMap
 }
 
-export type PredicateOnRule = (rule: [RuleName, RuleNode]) => boolean
+export type PredicateOnRule = (rule: RuleNode) => boolean
 
+/**
+ * Parameters for the constant folding optimization pass.
+ *
+ * @field toAvoid A predicate that returns true if the rule should be avoided to be folded,
+ * if not present, all rules will be folded.
+ * @field toKeep A predicate that returns true if the rule should be kept AFTER being folded,
+ * if not present, all folded rules will be kept.
+ * @field isFoldedAttr The attribute name to use to mark a rule as folded, default to 'optimized'.
+ */
 export type FoldingParams = {
-  // The attribute name to use to mark a rule as folded, default to 'optimized'.
+  toAvoid?: PredicateOnRule
+  toKeep?: PredicateOnRule
   isFoldedAttr?: string
 }
 
@@ -58,7 +68,6 @@ function addMapEntry(map: RefMap, key: RuleName, values: Set<RuleName>) {
 
 function initFoldingCtx(
   engine: Engine,
-  toKeep?: PredicateOnRule,
   foldingParams?: FoldingParams,
 ): FoldingCtx {
   const refs: RefMaps = {
@@ -138,9 +147,9 @@ function initFoldingCtx(
     engine,
     parsedRules,
     refs,
-    toKeep,
     unfoldableRules,
     params: {
+      ...foldingParams,
       isFoldedAttr: foldingParams?.isFoldedAttr ?? 'optimized',
     },
   }
@@ -161,6 +170,7 @@ function isFoldable(ctx: FoldingCtx, rule: RuleNode): boolean {
 
   return (
     rule !== undefined &&
+    !ctx.params.toAvoid?.(rule) &&
     !unfoldableAttr.find((attr) => attr in rule.rawNode) &&
     !ctx.unfoldableRules.has(rule.dottedName) &&
     !childInContext
@@ -184,20 +194,23 @@ function searchAndReplaceConstantValueInParentRefs(
   if (refs) {
     for (const parentName of refs) {
       const parentRule = ctx.parsedRules[parentName]
-      const newRule = traverseASTNode(
-        transformAST((node, _) => {
-          if (node.nodeKind === 'reference' && node.dottedName === ruleName) {
-            return constantNode
-          }
-        }),
-        parentRule,
-      ) as RuleNode
 
-      if (newRule !== undefined) {
-        ctx.parsedRules[parentName] = newRule
-        ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] =
-          'partially'
-        removeInMap(ctx.refs.parents, ruleName, parentName)
+      if (!ctx.params.toAvoid?.(parentRule)) {
+        const newRule = traverseASTNode(
+          transformAST((node, _) => {
+            if (node.nodeKind === 'reference' && node.dottedName === ruleName) {
+              return constantNode
+            }
+          }),
+          parentRule,
+        ) as RuleNode
+
+        if (newRule !== undefined) {
+          ctx.parsedRules[parentName] = newRule
+          ctx.parsedRules[parentName].rawNode[ctx.params.isFoldedAttr] =
+            'partially'
+          removeInMap(ctx.refs.parents, ruleName, parentName)
+        }
       }
     }
   }
@@ -227,7 +240,7 @@ function tryToDeleteRule(ctx: FoldingCtx, dottedName: RuleName): boolean {
   const ruleNode = ctx.parsedRules[dottedName]
 
   if (
-    (ctx.toKeep === undefined || !ctx.toKeep([dottedName, ruleNode])) &&
+    (ctx.params.toKeep === undefined || !ctx.params.toKeep(ruleNode)) &&
     isFoldable(ctx, ruleNode)
   ) {
     removeRuleFromRefs(ctx.refs.parents, dottedName)
@@ -420,18 +433,15 @@ function copyFullParsedRules(engine: Engine): ParsedRules<RuleName> {
  * Applies a constant folding optimisation pass on parsed rules of [engine].
  *
  * @param engine The engine instantiated with the rules to fold.
- * @param toKeep A predicate that returns true if the rule should be kept, if not present,
- * all folded rules will be kept.
  * @param params The folding parameters.
  *
  * @returns The parsed rules with constant folded rules.
  */
 export function constantFolding(
   engine: Engine,
-  toKeep?: PredicateOnRule,
   params?: FoldingParams,
 ): ParsedRules<RuleName> {
-  let ctx = initFoldingCtx(engine, toKeep, params)
+  let ctx = initFoldingCtx(engine, params)
 
   let nbRules = Object.keys(ctx.parsedRules).length
   let nbRulesBefore = undefined
@@ -448,14 +458,14 @@ export function constantFolding(
     nbRules = Object.keys(ctx.parsedRules).length
   }
 
-  if (toKeep) {
+  if (ctx.params.toKeep) {
     for (const ruleName in ctx.parsedRules) {
       const ruleNode = ctx.parsedRules[ruleName]
       const parents = ctx.refs.parents.get(ruleName)
 
       if (
         isFoldable(ctx, ruleNode) &&
-        !toKeep([ruleName, ruleNode]) &&
+        !ctx.params.toKeep(ruleNode) &&
         (!parents || parents?.size === 0)
       ) {
         delete ctx.parsedRules[ruleName]

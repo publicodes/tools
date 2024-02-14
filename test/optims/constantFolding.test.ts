@@ -1,4 +1,4 @@
-import Engine from 'publicodes'
+import Engine, { RuleNode } from 'publicodes'
 import { serializeParsedRules } from '../../source'
 import { RuleName, RawRules, disabledLogger } from '../../source/commons'
 import { constantFolding } from '../../source/optims/'
@@ -7,10 +7,11 @@ import { callWithEngine } from '../utils.test'
 function constantFoldingWith(rawRules: any, targets?: RuleName[]): RawRules {
   const res = callWithEngine(
     (engine) =>
-      constantFolding(
-        engine,
-        targets ? ([ruleName, _]) => targets.includes(ruleName) : undefined,
-      ),
+      constantFolding(engine, {
+        toKeep: targets
+          ? (rule: RuleNode) => targets.includes(rule.dottedName)
+          : undefined,
+      }),
     rawRules,
   )
   return serializeParsedRules(res)
@@ -39,7 +40,7 @@ describe('Constant folding [meta]', () => {
     const baseParsedRules = engine.getParsedRules()
     const serializedBaseParsedRules = serializeParsedRules(baseParsedRules)
 
-    constantFolding(engine, ([ruleName, _]) => ruleName === 'ruleA')
+    constantFolding(engine, { toKeep: (rule) => rule.dottedName === 'ruleA' })
 
     const shouldNotBeModifiedRules = engine.getParsedRules()
     const serializedShouldNotBeModifiedRules = serializeParsedRules(
@@ -50,6 +51,45 @@ describe('Constant folding [meta]', () => {
     expect(serializedBaseParsedRules).toEqual(
       serializedShouldNotBeModifiedRules,
     )
+  })
+
+  it('should not fold a rule specified in the [toAvoid] option', () => {
+    const rawRules = {
+      ruleA: {
+        titre: 'Rule A',
+        valeur: 'B . C * D',
+      },
+      ruleB: {
+        valeur: 'ruleA . B . C * 3',
+      },
+      'ruleA . D': {
+        question: "What's the value of D?",
+      },
+      'ruleA . B . C': {
+        valeur: '10',
+      },
+    }
+    const engine = new Engine(rawRules, {
+      logger: disabledLogger,
+      allowOrphanRules: true,
+    })
+    const foldedRules = serializeParsedRules(
+      constantFolding(engine, {
+        toAvoid: (rule) => rule.dottedName === 'ruleB',
+      }),
+    )
+    expect(foldedRules).toEqual({
+      ...rawRules,
+      ruleA: {
+        optimized: 'partially',
+        titre: 'Rule A',
+        valeur: '10 * D',
+      },
+      'ruleA . B . C': {
+        optimized: 'fully',
+        valeur: 10,
+      },
+    })
   })
 })
 
