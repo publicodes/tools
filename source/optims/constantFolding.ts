@@ -303,7 +303,7 @@ function replaceRuleWithEvaluatedNodeValue(
 
   if (rule.explanation.valeur.nodeKind === 'contexte') {
     // We remove the contexte as it's now considered as a constant.
-    rule.explanation.valeur = rule.explanation.valeur.explanation.node
+    rule.explanation.valeur = rule.explanation.valeur.explanation.valeur
   }
 
   rule.explanation.valeur = traverseASTNode(

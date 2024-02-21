@@ -259,7 +259,7 @@ function serializeASTNode(node: ASTNode): SerializedRule {
             {},
           )
           const serializedExplanationNode = serializedRuleToRawRule(
-            serializeASTNode(node.explanation.node),
+            serializeASTNode(node.explanation.valeur),
           )
           return {
             ...serializedExplanationNode,
