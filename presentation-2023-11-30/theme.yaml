@@ -2,15 +2,15 @@ default:
   margin:
     percent: 8
   colors:
-    foreground: "e6e6e6"
-    background: "040312"
+    foreground: 'e6e6e6'
+    background: '040312'
 
 slide_title:
   alignment: center
   # padding_bottom: 1
   # padding_top: 1
   colors:
-    foreground: "ee9322"
+    foreground: 'ee9322'
 
 code:
   alignment: left
@@ -24,11 +24,11 @@ code:
 
 execution_output:
   colors:
-    background: "2d2d2d"
+    background: '2d2d2d'
 
 inline_code:
   colors:
-    foreground: "f78ca2"
+    foreground: 'f78ca2'
 
 intro_slide:
   title:
@@ -36,53 +36,53 @@ intro_slide:
       percent: 50
     alignment: center
     colors:
-      foreground: "b4ccff"
+      foreground: 'b4ccff'
   subtitle:
     alignment: center
     margin:
       percent: 50
     colors:
-      foreground: "a5d7e8"
+      foreground: 'a5d7e8'
   author:
     alignment: center
     colors:
-      foreground: "b6eada"
+      foreground: 'b6eada'
     positioning: page_bottom
 
 headings:
   h1:
-    prefix: "██"
+    prefix: '██'
     colors:
-      foreground: "3085c3"
+      foreground: '3085c3'
   h2:
-    prefix: "███"
+    prefix: '███'
     colors:
-      foreground: "a8df8e"
+      foreground: 'a8df8e'
   h3:
-    prefix: "██████"
+    prefix: '██████'
     colors:
-      foreground: "f78ca2"
+      foreground: 'f78ca2'
   h4:
-    prefix: "████████"
+    prefix: '████████'
     colors:
-      foreground: "d2d2d2"
+      foreground: 'd2d2d2'
   h5:
-    prefix: "░░░░░░"
+    prefix: '░░░░░░'
     colors:
-      foreground: "d2d2d2"
+      foreground: 'd2d2d2'
   h6:
-    prefix: "░░░░░░░"
+    prefix: '░░░░░░░'
     colors:
-      foreground: "d2d2d2"
+      foreground: 'd2d2d2'
 
 block_quote:
-  prefix: "▍ "
+  prefix: '▍ '
   colors:
-    foreground: "f0f0f0"
-    background: "292e42"
+    foreground: 'f0f0f0'
+    background: '292e42'
 
 footer:
   style: template
-  left: "Emile Rolley - 30 novembre 2023"
-  center: "Publicodes Café"
-  right: "{current_slide} / {total_slides}"
+  left: 'Emile Rolley - 30 novembre 2023'
+  center: 'Publicodes Café'
+  right: '{current_slide} / {total_slides}'

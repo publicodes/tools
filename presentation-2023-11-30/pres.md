@@ -4,11 +4,10 @@ sub_title: Comment gérer de grosses bases de règles avec @publicodes/tools ?
 author: Emile Rolley
 # date: 2023-11-30
 theme:
-    path: ./theme.yaml
+  path: ./theme.yaml
 ---
 
-Introduction
----
+## Introduction
 
 # (Rappel) Nos Gestes Climat
 
@@ -17,18 +16,22 @@ Introduction
 C'est le simulateur d'empreinte carbone individuelle de l'ADEME.
 
 <!-- pause -->
+
 ## Comment ça marche ?
 
 <!-- pause -->
+
 1. Vous répondez à un questionnaire sur votre mode de vie
 2. Vous obtenez votre empreinte carbone individuelle annuelle totale (et par
    grandes catégories)
 3. Vous obtenez des actions personnalisées en fonction de vos réponses
 
 <!-- pause -->
+
 ## Techniquement
 
 <!-- pause -->
+
 Il y a deux grandes parties :
 
 <!-- column_layout: [2, 2] -->
@@ -36,6 +39,7 @@ Il y a deux grandes parties :
 <!-- column: 0 -->
 
 <!-- pause -->
+
 **Le modèle de calcul**
 
 Il décrit dans un ensemble de fichiers (écrits en Publicodes), les règles de
@@ -43,6 +47,7 @@ calcul de l'empreinte carbone.
 
 <!-- column: 1 -->
 <!-- pause -->
+
 **Le simulateur**
 
 Une application React qui utilise le moteur de Publicodes pour évaluer les
@@ -51,13 +56,13 @@ règles du modèle en fonction des réponses de l'utilisateur·ice.
 <!-- reset_layout -->
 <!-- pause -->
 
-_Si vous ne l'avez pas encore fait, je vous invite à aller faire le test : 
+_Si vous ne l'avez pas encore fait, je vous invite à aller faire le test :
 [](https://nosgestesclimat.fr)_
 
 <!-- end_slide -->
 
-Introduction
----
+## Introduction
+
 # (Rappel) Publicodes
 
 <!-- column_layout: [2, 3] -->
@@ -129,8 +134,7 @@ divers . animaux domestiques . empreinte . chats . empreinte:
 
 <!-- end_slide -->
 
-Introduction
----
+## Introduction
 
 # A mon arrivé
 
@@ -145,18 +149,18 @@ Il y avait un seul modèle de calcul :
 
 **Stats**
 
-| Nb. règles       | Nb. fichiers       | Nb. lignes       | Poids           |
-| ---------------: | ------------------ | ---------------- | --------------- |
-| 898              | 31                 | 6 527            | 273 Ko          |
+| Nb. règles | Nb. fichiers | Nb. lignes | Poids  |
+| ---------: | ------------ | ---------- | ------ |
+|        898 | 31           | 6 527      | 273 Ko |
 
 <!-- column: 1 -->
 <!-- pause -->
 
 **Perfs**
 
-|             | Temps de parsing   | Temps d'évaluation |
-| ---         | ------------------ | ------------------ |
-| local (Bun) | ~340 _ms_          | ~55 _ms_           |
+|             | Temps de parsing | Temps d'évaluation |
+| ----------- | ---------------- | ------------------ |
+| local (Bun) | ~340 _ms_        | ~55 _ms_           |
 
 <!-- reset_layout -->
 
@@ -166,18 +170,19 @@ Il y avait un seul modèle de calcul :
 
 ![](./compilation-ngc.png)
 
-‎ 
+‎
 
 _Toutes les règles du modèles doivent être **compilées** dans un seul fichier
 JSON afin de pouvoir être **évaluées par le moteur dans le navigateur**._
 
 <!-- end_slide -->
 
-Introduction
----
+## Introduction
+
 # Aujourd'hui
 
 <!-- pause -->
+
 Il y a **36** modèles compilés (17 _régions_ et 2 _langues_) :
 
 <!-- column_layout: [2, 2] -->
@@ -187,20 +192,20 @@ Il y a **36** modèles compilés (17 _régions_ et 2 _langues_) :
 
 **Stats** (modèle de _base_)
 
-| Nb. règles       | Nb. fichiers       | Nb. lignes       | Poids           |
-| ---------------: | ------------------ | ---------------- | --------------- |
-| 1720             | 85                 | 16 129           | ~800 Ko         |
+| Nb. règles | Nb. fichiers | Nb. lignes | Poids   |
+| ---------: | ------------ | ---------- | ------- |
+|       1720 | 85           | 16 129     | ~800 Ko |
 
 <!-- column: 1 -->
 <!-- pause -->
 
 **Perfs** (modèle de _base_)
 
-|                          | Temps de parsing   | Temps d'évaluation |
-| ------------------------ | ------------------ | ------------------ |
-| local (Node)             | ~660 _ms_          | ~200 _ms_          |
-| local (Bun)              | ~700 _ms_          | ~125 _ms_          |
-| preview Vercel           | ~1200 _ms_         | ~120 _ms_          |
+|                | Temps de parsing | Temps d'évaluation |
+| -------------- | ---------------- | ------------------ |
+| local (Node)   | ~660 _ms_        | ~200 _ms_          |
+| local (Bun)    | ~700 _ms_        | ~125 _ms_          |
+| preview Vercel | ~1200 _ms_       | ~120 _ms_          |
 
 <!-- reset_layout -->
 
@@ -208,12 +213,11 @@ Il y a **36** modèles compilés (17 _régions_ et 2 _langues_) :
 
 **Workflow**
 
-![](./compilation-steps-ngc(1).png)
+![](<./compilation-steps-ngc(1).png>)
 
 <!-- end_slide -->
 
-Introduction
----
+## Introduction
 
 # Problématiques
 
@@ -221,7 +225,8 @@ Dans un contexte où le nombre de modèles de calcul augmente, plusieurs
 questions s'imposent.
 
 <!-- pause -->
-‎ 
+
+‎
 
 ## 1. Une question de performance
 
@@ -230,7 +235,8 @@ navigateur`, afin de pouvoir servir une page interactive le plus rapidement
 possible ?
 
 <!-- pause -->
-‎ 
+
+‎
 
 ## 2. Une question de maintenabilité
 
@@ -239,22 +245,22 @@ d'autres modèles et charger uniquement les règles nécessaires ?
 
 <!-- end_slide -->
 
-1\. Optimisation des modèles
----
+## 1\. Optimisation des modèles
 
 # Optimisation des modèles
 
 <!-- pause -->
+
 ## L'idée
 
 On souhaite continuer à avoir la même granularité du modèle pour des raisons de
-transparence. 
+transparence.
 En revanche, pour le test en lui-même, on a **uniquement besoin des questions** (des règles
 dont la valeur dépends de l'utilisateur·ice).
 
 <!-- pause -->
 
-On alors dit  que l'on pourrait `calculer à la compilation toutes les règles qui
+On alors dit que l'on pourrait `calculer à la compilation toutes les règles qui
 ne dépendent pas de l'utilisateur·ice` (des **constantes**).
 
 <!-- pause -->
@@ -263,8 +269,7 @@ ne dépendent pas de l'utilisateur·ice` (des **constantes**).
 
 <!-- end_slide -->
 
-1\. Optimisation des modèles
----
+## 1\. Optimisation des modèles
 
 ## Exemple
 
@@ -276,7 +281,7 @@ Par exemple, reprenons les règles de calcul de l'empreinte des animaux domestiq
 
 <!-- column: 0 -->
 
-```yaml 
+```yaml
 chats:
   icônes: 🐱
   titre: Chat
@@ -314,6 +319,7 @@ chats . alimentation . empreinte nourriture:
   formule: 2.5
   unité: kgCO2e/kg
 ```
+
 <!-- pause -->
 
 La règle `empreinte nourriture` est une
@@ -329,10 +335,10 @@ chats . alimentation:
     * 2.5
   unité: kgCO2e
 ```
+
 <!-- end_slide -->
 
-1\. Optimisation des modèles
----
+## 1\. Optimisation des modèles
 
 ## Exemple
 
@@ -354,12 +360,14 @@ chats . alimentation:
 ```
 
 <!-- pause -->
+
 On ne peut pas aller plus loin, car la règle `besoin journalier nourriture`
-dépend du niveau d'activité du chat. 
+dépend du niveau d'activité du chat.
 
 <!-- column: 1 -->
 
 <!-- pause -->
+
 En revanche, peut faire la même chose pour la règle `litière` :
 
 <!-- pause -->
@@ -400,8 +408,7 @@ chats . litière:
 
 <!-- end_slide -->
 
-1\. Optimisation des modèles
----
+## 1\. Optimisation des modèles
 
 ## Exemple
 
@@ -413,10 +420,10 @@ chats . litière:
 Au final, pour la règle `chats . empreinte` on obtient :
 
 ```yaml
-chats . empreinte: 
+chats . empreinte:
   titre: Empreinte d'un chat de taille moyenne
   description: |
-      On considère un chat de taille moyenne (4kg).
+    On considère un chat de taille moyenne (4kg).
   formule:
     somme:
       - alimentation
@@ -461,8 +468,8 @@ lieu 16**.
 <!-- reset_layout -->
 
 <!-- end_slide -->
-1\. Optimisation des modèles
----
+
+## 1\. Optimisation des modèles
 
 # Les résultats
 
@@ -470,10 +477,10 @@ lieu 16**.
 
 ## Réduction du nombre de règles
 
-|                     | Nb. règles     | Poids          |
-| ----------------:   | ----------     | -------------- |
-| _Règles de base_    | 1720           | 793 Ko         |
-| _Règles optimisées_ | **951 (-44%)** | 476 Ko (-40%)  |
+|                     | Nb. règles     | Poids         |
+| ------------------: | -------------- | ------------- |
+|    _Règles de base_ | 1720           | 793 Ko        |
+| _Règles optimisées_ | **951 (-44%)** | 476 Ko (-40%) |
 
 > Diminution de ~40% du nombre de règles et du poids du modèle
 
@@ -486,6 +493,7 @@ lieu 16**.
 <!-- column: 0 -->
 
 <!-- pause -->
+
 **perf-base.js**
 
 ```js
@@ -497,6 +505,7 @@ new Engine(base)
 <!-- column: 1 -->
 
 <!-- pause -->
+
 **perf-optim.js**
 
 ```js
@@ -508,19 +517,19 @@ new Engine(optim)
 <!-- reset_layout -->
 
 <!-- pause -->
+
 | Commande                |    Moyenne [ms] | Min [ms] | Max [ms] |       Ratio |
-|:------------------------|----------------:|---------:|---------:|------------:|
+| :---------------------- | --------------: | -------: | -------: | ----------: |
 | _bun run perf-base.js_  |    765.6 ± 28.2 |    731.2 |    832.4 | 1.64 ± 0.07 |
 | _bun run perf-optim.js_ | **466.5** ± 7.5 |    459.1 |    477.2 |        1.00 |
 
-> Gain de ~40% sur le temps d'instanciation du moteur 
+> Gain de ~40% sur le temps d'instanciation du moteur
 
 <!-- end_slide -->
 
-2\. Système d'import
----
+## 2\. Système d'import
 
-‎ 
+‎
 
 # Le besoin
 
@@ -533,10 +542,10 @@ Pouvoir `réutiliser des règles` dans plusieurs modèles de calcul.
 En particulier, on souhaitait rajouter les règles permettant de calculer
 l'empreinte des trajets en ferry et de la piscine. Or, **le calcul avait déjà
 été implémenté** dans le modèle de [](https://futur.eco).
- 
+
 <!-- pause -->
 
-‎ 
+‎
 
 # La solution
 
@@ -544,20 +553,21 @@ On a donc créé un système d'import de règles, qui permet de `charger des rè
 depuis un autre modèle`.
 
 <!-- pause -->
+
 Pour cela, on a besoin de deux choses :
 
 <!-- pause -->
+
 1. Publier le modèle sur NPM
 <!-- pause -->
 2. Ajouter une macro (`importer!`) qui permet de récupérer les règles de puis
    un paquet NPM
 
-‎ 
+‎
 
 <!-- end_slide -->
 
-2\. Système d'import
----
+## 2\. Système d'import
 
 # 1. Publier le modèle sur NPM
 
@@ -569,9 +579,10 @@ l'ajouter dans le `package.json`.
 ```json
 {
   "name": "myModel",
-  "files": [ "myModel.model.json" ],
+  "files": ["myModel.model.json"]
 }
 ```
+
 <!-- pause -->
 
 ## Template GitHub
@@ -584,10 +595,11 @@ Le workflow a été automatisé dans un template GitHub :
 Il permet de pouvoir très rapidement publier un modèle sur NPM avec :
 
 <!-- pause -->
+
 - un fichier `index.js` qui exporte le modèle compilé
 - un fichier `index.d.ts` qui exporte les types du modèle (l'ensemble des règles disponibles)
 <!-- pause -->
-- une documentation générée avec `@publicodes/react-ui` est déployée avec GitHub Pages 
+- une documentation générée avec `@publicodes/react-ui` est déployée avec GitHub Pages
 <!-- pause -->
 - _(bientôt)_ le code d'un serveur exposant l'API REST du modèle avec
 `@publicodes/rest-api`
@@ -603,8 +615,7 @@ Exemple de paquet utilisant le template :
 
 <!-- end_slide -->
 
-2\. Système d'import
----
+## 2\. Système d'import
 
 # 2. Utiliser la macro `importer!`
 
@@ -644,8 +655,7 @@ alimentation . petit déjeuner annuel:
 
 <!-- end_slide -->
 
-2\. Système d'import
----
+## 2\. Système d'import
 
 # Techniquement
 
@@ -654,6 +664,7 @@ alimentation . petit déjeuner annuel:
 Pour chacune des règles importées :
 
 <!-- pause -->
+
 1. On récupère le modèle depuis le paquet NPM
 <!-- pause -->
 2. On récupère toutes les dépendances de cette règle
@@ -681,8 +692,7 @@ importer!:
 
 <!-- end_slide -->
 
-2\. Système d'import
----
+## 2\. Système d'import
 
 ## Exemple
 
@@ -718,40 +728,40 @@ On obtient les règles suivantes dans le modèle compilé :
 "futureco-data . transport . ferry": null,
 "futureco-data . transport": null,
 ```
+
 <!-- end_slide -->
 
-Conclusion
----
+## Conclusion
 
 # Conclusion
+
 ## Le réel workflow de NGC
 
 ![](./compilation-steps-with-optim-npm.png)
 
-<!-- pause -->
----
+## <!-- pause -->
 
 Au total, aujourd'hui en production :
 
 <!-- pause -->
-- c'est `72 modèles` JSON compilés 
+
+- c'est `72 modèles` JSON compilés
 <!-- pause -->
 - dont `36 modèles` optimisés avec `@publicodes/tools/optims`
 <!-- pause -->
 - avec des règles importées depuis `2 paquets NPM` différents
-(`publicodes-commun` et `futureco-data`)
-
+  (`publicodes-commun` et `futureco-data`)
 
 <!-- end_slide -->
 
-Conclusion
----
+## Conclusion
 
 # Conclusion
 
 ## Pour Nos Gestes Climat
 
 <!-- pause -->
+
 - Gain de performance sur le temps d'instanciation du moteur (~40%)
 <!-- pause -->
 - Réutilisation de règles du modèle `futureco-data` pour l'ajout de l'empreinte
@@ -763,11 +773,12 @@ des trajets en ferry et de la piscine
 et `publicodes-negaoctet`)
 <!-- pause -->
 
-‎ 
+‎
 
 ## Pour Publicodes
 
 <!-- pause -->
+
 ### @publicodes/tools
 
 <!-- column_layout: [1, 1] -->
@@ -780,6 +791,7 @@ et `publicodes-negaoctet`)
 
 Uniformisation du processus de compilation des modèles avec la fonction
 `getModelFromSource`
+
 <!-- pause -->
 
 Ajout de la macro `importer!` pour charger des règles depuis un paquet NPM ou
@@ -805,22 +817,22 @@ des modèles Publicodes avec le template GitHub.
 
 <!-- end_slide -->
 
-Pour aller plus loin
----
+## Pour aller plus loin
 
 # La suite
 
 <!-- pause -->
+
 - Il y a encore de la place pour améliorer l'optimisation des modèles
 <!-- pause -->
 - Reprendre le travail sur l'implémentation du LSP pour VSCode (`@publicodes/language-server`)
 <!-- pause -->
 - _(Un jour peut-être)_ compiler directement les modèles en JS/WebAssembly pour
-ne pas avoir à charger le moteur dans le navigateur
+  ne pas avoir à charger le moteur dans le navigateur
 
 <!-- pause -->
 
-‎ 
+‎
 
 # Les ressources
 
@@ -828,13 +840,14 @@ ne pas avoir à charger le moteur dans le navigateur
 - La documentation de l'API : [](https://publicodes.github.io/tools/index.html)
 - Le dépôt du template GitHub : [](https://github.com/publicodes/model-template)
 - Des exemples d'utilisation de `@publicodes/tools`
-    - `nosgestesclimat` : [](https://github.com/incubateur-ademe/nosgestesclimat)
-    - `publicodes-commun` : [](https://github.com/incubateur-ademe/publicodes-commun)
-    - `publicodes-negaoctet` : [](https://github.com/incubateur-ademe/publicodes-negaoctet)
-    - `publicodes-impact-livraison` : [](https://github.com/incubateur-ademe/publicodes-negaoctet)
+  - `nosgestesclimat` : [](https://github.com/incubateur-ademe/nosgestesclimat)
+  - `publicodes-commun` : [](https://github.com/incubateur-ademe/publicodes-commun)
+  - `publicodes-negaoctet` : [](https://github.com/incubateur-ademe/publicodes-negaoctet)
+  - `publicodes-impact-livraison` : [](https://github.com/incubateur-ademe/publicodes-negaoctet)
 - Slides : [](quelquepart)
 
-‎ 
+‎
+
 <!-- pause -->
 
 Merci de votre attention :)
