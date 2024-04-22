@@ -2,6 +2,7 @@
   "name": "@publicodes/tools",
   "version": "1.0.7",
   "description": "A set of utility functions to build tools around Publicodes models",
+  "type": "module",
   "scripts": {
     "build": "tsup",
     "watch": "tsup --watch",
@@ -78,7 +79,9 @@
     "allowJs": true,
     "sourceMap": true,
     "dts": true,
-    "clean": true
+    "clean": true,
+    "target": "es2020",
+    "skipNodeModulesBundle": true
   },
   "publishConfig": {
     "access": "public"
