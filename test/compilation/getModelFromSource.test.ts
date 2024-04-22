@@ -167,7 +167,21 @@ Ajout d'une description`,
     expect(() => {
       getModelFromSource(path)
     }).toThrow(
-      `Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${path}`,
+      `[Erreur dans la macro 'importer!']
+Le nom du package est manquant dans la macro 'importer!' dans le fichier: no-name-import.publicodes.
+
+[Solution]
+Ajoutez le nom du package dans la macro 'importer!'.
+
+[Exemple]
+importer!:
+  depuis:
+    nom: package-name
+  les règles:
+    - ruleA
+    - ruleB
+    ...
+`,
     )
   })
 
