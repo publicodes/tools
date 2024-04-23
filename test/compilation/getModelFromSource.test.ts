@@ -1,4 +1,4 @@
-import { getModelFromSource } from '../../source/compilation/getModelFromSource'
+import { getModelFromSource } from '../../src/compilation/getModelFromSource'
 import { join, resolve } from 'path'
 
 const testDataDir = resolve('./test/compilation/data/')

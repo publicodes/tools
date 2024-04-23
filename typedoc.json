@@ -1,12 +1,7 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "name": "@publicodes/tools API",
-  "entryPoints": [
-    "./source",
-    "./source/optims/",
-    "./source/compilation/",
-    "./source/migration"
-  ],
+  "entryPoints": ["./src", "./src/optims/", "./src/compilation/"],
   "navigationLinks": {
     "GitHub": "https://github.com/publicodes/tools"
   },

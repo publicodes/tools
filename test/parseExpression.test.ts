@@ -1,7 +1,4 @@
-import {
-  serializeParsedExprAST,
-  substituteInParsedExpr,
-} from '../source/commons'
+import { serializeParsedExprAST, substituteInParsedExpr } from '../src/commons'
 
 describe('substituteInParsedExpr', () => {
   it('should return the same parsed expression if no occurence of the variable is found', () => {

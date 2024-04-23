@@ -1,4 +1,4 @@
-import { RuleName, disabledLogger } from '../source/commons'
+import { RuleName, disabledLogger } from '../src/commons'
 import Engine from 'publicodes'
 import type { ParsedRules } from 'publicodes'
 
