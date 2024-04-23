@@ -41,7 +41,7 @@ function getEngine(
   { depuis }: ImportMacro,
   verbose: boolean,
 ): Engine {
-  const packageName = depuis.nom
+  const packageName = depuis?.nom
   const fileDirPath = dirname(filePath)
 
   if (packageName === undefined) {
@@ -85,16 +85,20 @@ importer!:
       }
       enginesCache[packageName] = engine
     } catch (e) {
-      throw e
-      //       throw new Error(`[Erreur dans la macro 'importer!']
-      // ${e}
-      // Le package '${packageName}' n'a pas pu être trouvé. (Le fichier '${modelPath}' est introuvable).
-      //
-      // [Solution]
-      // - Assurez-vous que le package existe et qu'il est correctement installé dans vos 'node_modules'.
-      // - Assurez-vous que le fichier '${packageName}.model.json' existe à la racine du package. Sinon,
-      // précisez le chemin du fichier dans la macro 'importer!' grâce à l'attribut 'source'.
-      // `)
+      throw new Error(`[Erreur dans la macro 'importer!']
+Le package '${packageName}' n'a pas pu être trouvé. (Le fichier '${modelPath}' est introuvable).
+
+[Solution]
+- Assurez-vous que le package existe et qu'il est correctement installé dans vos 'node_modules'.
+- Assurez-vous que le fichier '${packageName}.model.json' existe à la racine du package. Sinon,
+précisez le chemin du fichier dans la macro 'importer!' grâce à l'attribut 'source'.
+
+[Exemple]
+importer!:
+  depuis:
+    nom: package-name
+    source: ../custom-package/path/package-name.model.json
+      `)
     }
   }
 
@@ -254,11 +258,11 @@ Supprimez une des deux définitions de la règle '${ruleName}' dans la macro 'im
           rule = engine.getRule(ruleName)
         } catch (e) {
           throw new Error(`[Erreur dans la macro 'importer!']
-La règle '${ruleName}' n'existe pas dans ${importMacro.depuis.nom}
+La règle '${ruleName}' n'existe pas dans '${importMacro.depuis.nom}'.
 
 [Solution]
 - Vérifiez que le nom de la règle est correct.
-- Assurez-vous que la règle '${ruleName}' existe dans le package.
+- Assurez-vous que la règle '${ruleName}' existe dans '${importMacro.depuis.nom}'.
 `)
         }
 
