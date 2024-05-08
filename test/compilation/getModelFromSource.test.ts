@@ -158,13 +158,12 @@ Ajout d'une description`,
     expect(() => {
       getModelFromSource(join(testDataDir, 'unknown-import.publicodes'))
     }).toThrow(
-      `[Erreur dans la macro 'importer!']
+      `[ Erreur dans la macro 'importer!' ]
 La règle 'root . unknown' n'existe pas dans 'my-external-package'.
 
-[Solution]
+[ Solution ]
 - Vérifiez que le nom de la règle est correct.
-- Assurez-vous que la règle 'root . unknown' existe dans 'my-external-package'.
-`,
+- Assurez-vous que la règle 'root . unknown' existe dans 'my-external-package'.`,
     )
   })
 
@@ -173,21 +172,20 @@ La règle 'root . unknown' n'existe pas dans 'my-external-package'.
     expect(() => {
       getModelFromSource(path)
     }).toThrow(
-      `[Erreur dans la macro 'importer!']
+      `[ Erreur dans la macro 'importer!' ]
 Le nom du package est manquant dans la macro 'importer!' dans le fichier: no-name-import.publicodes.
 
-[Solution]
+[ Solution ]
 Ajoutez le nom du package dans la macro 'importer!'.
 
-[Exemple]
+[ Exemple ]
 importer!:
   depuis:
     nom: package-name
   les règles:
     - ruleA
     - ruleB
-    ...
-`,
+    ...`,
     )
   })
 

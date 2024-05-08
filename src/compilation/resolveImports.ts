@@ -46,13 +46,13 @@ function getEngine(
 
   if (packageName === undefined) {
     throw new Error(
-      `[Erreur dans la macro 'importer!']
+      `[ Erreur dans la macro 'importer!' ]
 Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${basename(filePath)}.
 
-[Solution]
+[ Solution ]
 Ajoutez le nom du package dans la macro 'importer!'.
 
-[Exemple]
+[ Exemple ]
 importer!:
   depuis:
     nom: package-name
@@ -64,13 +64,13 @@ importer!:
     )
   }
 
-  if (!enginesCache[packageName]) {
-    let modelPath = ''
+  const modelPath =
+    depuis.source !== undefined
+      ? join(fileDirPath, depuis.source)
+      : packageModelPath(packageName)
+
+  if (!enginesCache[modelPath]) {
     try {
-      modelPath =
-        depuis.source !== undefined
-          ? join(fileDirPath, depuis.source)
-          : packageModelPath(packageName)
       const model = JSON.parse(readFileSync(modelPath, 'utf-8'))
       const engine = new Engine(model, {
         logger: {
@@ -83,17 +83,17 @@ importer!:
       if (verbose) {
         console.debug(`📦 ${packageName} loaded`)
       }
-      enginesCache[packageName] = engine
+      enginesCache[modelPath] = engine
     } catch (e) {
-      throw new Error(`[Erreur dans la macro 'importer!']
+      throw new Error(`[ Erreur dans la macro 'importer!' ]
 Le package '${packageName}' n'a pas pu être trouvé. (Le fichier '${modelPath}' est introuvable).
 
-[Solution]
+[ Solution ]
 - Assurez-vous que le package existe et qu'il est correctement installé dans vos 'node_modules'.
 - Assurez-vous que le fichier '${packageName}.model.json' existe à la racine du package. Sinon,
 précisez le chemin du fichier dans la macro 'importer!' grâce à l'attribut 'source'.
 
-[Exemple]
+[ Exemple ]
 importer!:
   depuis:
     nom: package-name
@@ -102,7 +102,7 @@ importer!:
     }
   }
 
-  return enginesCache[packageName]
+  return enginesCache[modelPath]
 }
 
 function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
@@ -242,10 +242,10 @@ export function resolveImports(
       rulesToImport?.forEach(({ ruleName, attrs }) => {
         if (appearsMoreThanOnce(rulesToImport, ruleName)) {
           throw new Error(
-            `[Erreur dans la macro 'importer!']
+            `[ Erreur dans la macro 'importer!' ]
 La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}
 
-[Solution]
+[ Solution ]
 Supprimez une des deux définitions de la règle '${ruleName}' dans la macro 'importer!'`,
           )
         }
@@ -257,13 +257,12 @@ Supprimez une des deux définitions de la règle '${ruleName}' dans la macro 'im
         try {
           rule = engine.getRule(ruleName)
         } catch (e) {
-          throw new Error(`[Erreur dans la macro 'importer!']
+          throw new Error(`[ Erreur dans la macro 'importer!' ]
 La règle '${ruleName}' n'existe pas dans '${importMacro.depuis.nom}'.
 
-[Solution]
+[ Solution ]
 - Vérifiez que le nom de la règle est correct.
-- Assurez-vous que la règle '${ruleName}' existe dans '${importMacro.depuis.nom}'.
-`)
+- Assurez-vous que la règle '${ruleName}' existe dans '${importMacro.depuis.nom}'.`)
         }
 
         const getUpdatedRule = (ruleName: RuleName, rule: Rule) => {
