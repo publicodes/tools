@@ -18,13 +18,11 @@ export function migrateSituation({
   let foldedStepsMigrated = [...foldedSteps]
 
   Object.entries(situationMigrated).map(([ruleName, nodeValue]) => {
-    const situationUpdated = handleSpecialCases({
+    situationMigrated = handleSpecialCases({
       ruleName,
       nodeValue,
       situation: situationMigrated,
     })
-
-    situationMigrated = situationUpdated
 
     // We check if the non supported ruleName is a key to migrate.
     // Ex: "logement . chauffage . bois . type . bûche . consommation": "xxx" which is now ""logement . chauffage . bois . type . bûches . consommation": "xxx"
