@@ -60,7 +60,7 @@ export function handleSituationValuesMigration({
   situation,
   foldedSteps,
   migrationInstructions,
-}: Props) {
+}: Props): { situationMigrated: Situation; foldedStepsMigrated: DottedName[] } {
   if (!migrationInstructions.valuesToMigrate[ruleName]) {
     return
   }

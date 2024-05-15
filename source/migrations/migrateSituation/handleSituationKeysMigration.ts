@@ -45,7 +45,7 @@ export function handleSituationKeysMigration({
   situation,
   foldedSteps,
   migrationInstructions,
-}: Props) {
+}: Props): { situationMigrated: Situation; foldedStepsMigrated: DottedName[] } {
   const situationMigrated = { ...situation }
   const foldedStepsMigrated = [...foldedSteps]
 
