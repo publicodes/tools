@@ -14,6 +14,14 @@ type Props = {
   migrationInstructions: MigrationType
 }
 
+/**
+ * Updates a key in the situation object and foldedSteps.
+ * @param ruleName - The name of the rule to update.
+ * @param nodeValue - The new value for the rule.
+ * @param situation - The situation object.
+ * @param foldedSteps - The array of foldedSteps.
+ * @param migrationInstructions - The migration instructions.
+ */
 function updateKeyInSituationAndFoldedSteps({
   ruleName,
   nodeValue,
@@ -39,6 +47,19 @@ function updateKeyInSituationAndFoldedSteps({
   }
 }
 
+/**
+ * Updates a key in the situation and foldedSteps based on migration instructions.
+ * If the key is not a key to migrate but a key to delete, it will be removed from the situation and foldedSteps.
+ * If the key is renamed and needs to be migrated, it will be updated in the situation and foldedSteps.
+ *
+ * @param ruleName - The name of the rule/key to update.
+ * @param nodeValue - The new value for the rule/key.
+ * @param situation - The current situation object.
+ * @param foldedSteps - The current foldedSteps array.
+ * @param migrationInstructions - The migration instructions object.
+ *
+ * @returns An object containing the migrated situation and foldedSteps.
+ */
 export function handleSituationKeysMigration({
   ruleName,
   nodeValue,

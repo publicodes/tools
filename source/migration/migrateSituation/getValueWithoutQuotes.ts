@@ -1,5 +1,11 @@
 import { NodeValue } from '../../../types/types'
 
+/**
+ * Returns the value without quotes if it is a string.
+ * @param value - The value to parse.
+ *
+ * @returns The value without quotes if it is a string, null otherwise.
+ */
 export function getValueWithoutQuotes(value: NodeValue) {
   if (
     typeof value !== 'string' ||

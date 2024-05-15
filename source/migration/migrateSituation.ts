@@ -17,6 +17,7 @@ type Props = {
  * @param foldedSteps - In case of form app, an array containing answered questions.
  * @param migrationInstructions - An object containing keys and values to migrate formatted as follows:
  * @example
+ * ```
  * {
   keysToMigrate: {
     oldKey: newKey
@@ -26,7 +27,8 @@ type Props = {
       oldValue: newValue
   }
   }
- * An example can be found in [nosgestesclimat repository](https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml).
+  ```
+ * An example can be found in {@link https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml | nosgestesclimat repository}.
  * @returns The migrated situation (and foldedSteps if specified)
  */
 export function migrateSituation({

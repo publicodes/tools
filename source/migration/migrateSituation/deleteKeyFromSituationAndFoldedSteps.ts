@@ -1,5 +1,11 @@
 import { DottedName, Situation } from '../../../types/types'
 
+/**
+ * Delete a key from the situation and from the foldedSteps if it exists.
+ * @param ruleName - The rulename to delete.
+ * @param situation - The situation object.
+ * @param foldedSteps - The foldedSteps array.
+ */
 export function deleteKeyFromSituationAndFoldedSteps({
   ruleName,
   situation,

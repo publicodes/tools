@@ -5,6 +5,19 @@ type Props = {
 }
 
 // Handle migration of old value format : an object { valeur: number, unité: string }
+/**
+ * Handles special cases during the migration of old value formats.
+ *
+ * @example
+ * ````
+{ valeur: number, unité: string }
+```
+ *
+ * @param ruleName - The name of the rule.
+ * @param nodeValue - The node value.
+ * @param situation - The situation object.
+ * @returns - The updated situation object.
+ */
 export function handleSpecialCases({ ruleName, nodeValue, situation }: Props) {
   const situationUpdated = { ...situation }
 

@@ -14,6 +14,13 @@ type Props = {
   migrationInstructions: MigrationType
 }
 
+/**
+ * Get the migrated value.
+ *
+ * @param ruleName - The name of the rule to update.
+ * @param nodeValue - The new value for the rule.
+ * @param migrationInstructions - The migration instructions.
+ */
 function getMigratedValue({
   ruleName,
   nodeValue,
@@ -54,6 +61,17 @@ function getMigratedValue({
   ] as string | number
 }
 
+/**
+ * Handles the migration of situation values based on the provided migration instructions.
+ *
+ * @param ruleName - The name of the rule/key to update.
+ * @param nodeValue - The new value for the rule/key.
+ * @param situation - The current situation object.
+ * @param foldedSteps - The current foldedSteps array.
+ * @param migrationInstructions - The migration instructions object.
+ *
+ * @returns An object containing the migrated situation and foldedSteps.
+ */
 export function handleSituationValuesMigration({
   ruleName,
   nodeValue,
