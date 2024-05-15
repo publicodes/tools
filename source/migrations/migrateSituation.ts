@@ -1,4 +1,5 @@
 import { DottedName, MigrationType, Situation } from '../../types/types'
+import { getValueWithoutQuotes } from './migrateSituation/getValueWithoutQuotes'
 import { handleSituationKeysMigration } from './migrateSituation/handleSituationKeysMigration'
 import { handleSituationValuesMigration } from './migrateSituation/handleSituationValuesMigration'
 import { handleSpecialCases } from './migrateSituation/handleSpecialCases'
@@ -47,12 +48,7 @@ export function migrateSituation({
       ]
 
     const formattedNodeValue =
-      typeof nodeValue === 'string' &&
-      nodeValue.startsWith("'") &&
-      nodeValue !== 'oui' &&
-      nodeValue !== 'non'
-        ? nodeValue.slice(1, -1)
-        : (nodeValue as string)
+      getValueWithoutQuotes(nodeValue) || (nodeValue as string)
 
     if (
       // We check if the value of the non supported ruleName value is a value to migrate.
