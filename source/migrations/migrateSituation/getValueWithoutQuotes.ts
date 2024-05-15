@@ -1,4 +1,6 @@
-export function getValueWithoutQuotes(value: string | number) {
+import { NodeValue } from '../../../types/types'
+
+export function getValueWithoutQuotes(value: NodeValue) {
   if (
     typeof value !== 'string' ||
     !value.startsWith("'") ||

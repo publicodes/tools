@@ -22,7 +22,7 @@ function getMigratedValue({
   ruleName: DottedName
   nodeValue: NodeValue
   migrationInstructions: MigrationType
-}): string | number {
+}): NodeValue {
   if (
     typeof migrationInstructions.valuesToMigrate[ruleName][
       nodeValue as string
