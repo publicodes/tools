@@ -1,9 +1,8 @@
-import { DottedName, Situation } from '../migrateSituation'
+import { DottedName, NodeValue, Situation } from '../migrateSituation'
 
 type Props = {
   ruleName: DottedName
-  // Should be fixed
-  nodeValue: any
+  nodeValue: NodeValue
   situation: Situation
 }
 
@@ -35,21 +34,21 @@ export function handleSpecialCases({ ruleName, nodeValue, situation }: Props) {
 
   // Special case : wrong value format, legacy from previous publicodes version
   // handle the case where valeur is a string "2.33"
-  if (nodeValue && nodeValue.valeur !== undefined) {
+  if (nodeValue && nodeValue['valeur'] !== undefined) {
     situationUpdated[ruleName] =
-      typeof nodeValue.valeur === 'string' &&
-      !isNaN(parseFloat(nodeValue.valeur))
-        ? parseFloat(nodeValue.valeur)
-        : (nodeValue.valeur as number)
+      typeof nodeValue['valeur'] === 'string' &&
+      !isNaN(parseFloat(nodeValue['valeur']))
+        ? parseFloat(nodeValue['valeur'])
+        : (nodeValue['valeur'] as number)
   }
   // Special case : other wrong value format, legacy from previous publicodes version
   // handle the case where nodeValue is a string "2.33"
-  if (nodeValue && nodeValue.nodeValue !== undefined) {
+  if (nodeValue && nodeValue['valeur'] !== undefined) {
     situationUpdated[ruleName] =
-      typeof nodeValue.nodeValue === 'string' &&
-      !isNaN(parseFloat(nodeValue.nodeValue))
-        ? parseFloat(nodeValue.nodeValue)
-        : (nodeValue.nodeValue as number)
+      typeof nodeValue['valeur'] === 'string' &&
+      !isNaN(parseFloat(nodeValue['valeur']))
+        ? parseFloat(nodeValue['valeur'])
+        : (nodeValue['valeur'] as number)
   }
 
   return situationUpdated
