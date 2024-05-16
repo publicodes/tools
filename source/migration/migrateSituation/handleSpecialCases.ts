@@ -1,7 +1,10 @@
+import { DottedName, Situation } from '../migrateSituation'
+
 type Props = {
-  ruleName: string
+  ruleName: DottedName
+  // Should be fixed
   nodeValue: any
-  situation: any
+  situation: Situation
 }
 
 // Handle migration of old value format : an object { valeur: number, unité: string }

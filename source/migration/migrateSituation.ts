@@ -1,8 +1,21 @@
-import { DottedName, MigrationType, Situation } from './types'
 import { getValueWithoutQuotes } from './migrateSituation/getValueWithoutQuotes'
 import { handleSituationKeysMigration } from './migrateSituation/handleSituationKeysMigration'
 import { handleSituationValuesMigration } from './migrateSituation/handleSituationValuesMigration'
 import { handleSpecialCases } from './migrateSituation/handleSpecialCases'
+import { Evaluation } from 'publicodes'
+
+export type NodeValue = Evaluation
+
+export type Situation = {
+  [key: string]: NodeValue
+}
+
+export type DottedName = string
+
+export type MigrationType = {
+  keysToMigrate: Record<DottedName, DottedName>
+  valuesToMigrate: Record<DottedName, Record<string, NodeValue>>
+}
 
 /**
  * Migrate rules and answers from a situation which used to work with an old version of a model to a new version according to the migration instructions.

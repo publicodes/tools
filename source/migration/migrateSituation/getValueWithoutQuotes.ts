@@ -1,4 +1,4 @@
-import { NodeValue } from '../types'
+import { NodeValue } from '../migrateSituation'
 
 /**
  * Returns the value without quotes if it is a string.

@@ -1,4 +1,4 @@
-import { DottedName, Situation } from '../types'
+import { DottedName, Situation } from '../migrateSituation'
 
 /**
  * Delete a key from the situation and from the foldedSteps if it exists.
