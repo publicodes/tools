@@ -1,4 +1,4 @@
-import { NodeValue } from '../../../types/types'
+import { NodeValue } from '../types'
 
 /**
  * Returns the value without quotes if it is a string.

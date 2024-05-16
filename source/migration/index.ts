@@ -44,3 +44,4 @@ Then, calling `migrateSituation` with the situation and the migration instructio
 */
 
 export * from './migrateSituation'
+export * from './types'

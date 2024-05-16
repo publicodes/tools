@@ -1,41 +1,41 @@
-import { DottedName, MigrationType, Situation } from '../../types/types'
+import { DottedName, MigrationType, Situation } from './types'
 import { getValueWithoutQuotes } from './migrateSituation/getValueWithoutQuotes'
 import { handleSituationKeysMigration } from './migrateSituation/handleSituationKeysMigration'
 import { handleSituationValuesMigration } from './migrateSituation/handleSituationValuesMigration'
 import { handleSpecialCases } from './migrateSituation/handleSpecialCases'
 
-type Props = {
-  situation: Situation
-  foldedSteps?: DottedName[]
-  migrationInstructions: MigrationType
-}
-
 /**
  * Migrate rules and answers from a situation which used to work with an old version of a model to a new version according to the migration instructions.
  *
- * @param situation - The `situation` as Publicodes object containing all answers for a given simulation.
- * @param foldedSteps - In case of form app, an array containing answered questions.
- * @param migrationInstructions - An object containing keys and values to migrate formatted as follows:
+ * @param {Object} options - The options object.
+ * @param {Situation} options.situation - The `situation` as Publicodes object containing all answers for a given simulation.
+ * @param {DottedName[]} [options.foldedSteps=[]] - In case of form app, an array containing answered questions.
+ * @param {MigrationType} options.migrationInstructions - An object containing keys and values to migrate formatted as follows:
+ *
  * @example
  * ```
  * {
-  keysToMigrate: {
-    oldKey: newKey
-  }
-  valuesToMigrate: {
-    key: {
-      oldValue: newValue
-  }
-  }
-  ```
+ * keysToMigrate: {
+ * oldKey: newKey
+ * }
+ * valuesToMigrate: {
+ *   key: {
+ *      oldValue: newValue
+ * }
+ * }
+ * ```
  * An example can be found in {@link https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml | nosgestesclimat repository}.
- * @returns The migrated situation (and foldedSteps if specified)
+ * @returns {Object} The migrated situation (and foldedSteps if specified).
  */
 export function migrateSituation({
   situation,
   foldedSteps = [],
   migrationInstructions,
-}: Props) {
+}: {
+  situation: Situation
+  foldedSteps?: DottedName[]
+  migrationInstructions: MigrationType
+}) {
   let situationMigrated = { ...situation }
   let foldedStepsMigrated = [...foldedSteps]
 

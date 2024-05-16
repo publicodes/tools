@@ -1,9 +1,4 @@
-import {
-  DottedName,
-  MigrationType,
-  NodeValue,
-  Situation,
-} from '../../../types/types'
+import { DottedName, MigrationType, NodeValue, Situation } from '../types'
 import { deleteKeyFromSituationAndFoldedSteps } from './deleteKeyFromSituationAndFoldedSteps'
 
 type Props = {
