@@ -43,12 +43,12 @@ export function handleSpecialCases({ ruleName, nodeValue, situation }: Props) {
   }
   // Special case : other wrong value format, legacy from previous publicodes version
   // handle the case where nodeValue is a string "2.33"
-  if (nodeValue && nodeValue['valeur'] !== undefined) {
+  if (nodeValue && nodeValue['nodeValue'] !== undefined) {
     situationUpdated[ruleName] =
-      typeof nodeValue['valeur'] === 'string' &&
-      !isNaN(parseFloat(nodeValue['valeur']))
-        ? parseFloat(nodeValue['valeur'])
-        : (nodeValue['valeur'] as number)
+      typeof nodeValue['nodeValue'] === 'string' &&
+      !isNaN(parseFloat(nodeValue['nodeValue']))
+        ? parseFloat(nodeValue['nodeValue'])
+        : (nodeValue['nodeValue'] as number)
   }
 
   return situationUpdated
