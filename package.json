@@ -30,6 +30,11 @@
       "import": "./dist/compilation/index.js",
       "require": "./dist/compilation/index.cjs",
       "types": "./dist/compilation/index.d.ts"
+    },
+    "./migration": {
+      "import": "./dist/migration/index.js",
+      "require": "./dist/migration/index.cjs",
+      "types": "./dist/migration/index.d.ts"
     }
   },
   "files": [
@@ -70,7 +75,8 @@
     "entry": [
       "source/index.ts",
       "source/optims/index.ts",
-      "source/compilation/index.ts"
+      "source/compilation/index.ts",
+      "source/migration/index.ts"
     ],
     "format": [
       "cjs",

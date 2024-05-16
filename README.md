@@ -26,6 +26,7 @@ by the nosgestesclimat.fr team.</i> :warning:
 - 🏗️ Compiles your set of Publicodes files into a standalone JSON file - [[doc](https://publicodes.github.io/tools/modules/compilation.html#md:compile-a-model-from-a-source)]
 - 📦 Resolves import from external Publicodes models, from source and from published [NPM packages](https://www.npmjs.com/package/futureco-data) - [[doc](https://publicodes.github.io/tools/modules/compilation.html#md:import-rules-from-a-npm-package)]
 - 🪶 Pre-computes your model at compile time and reduces [the number of rules by ~65%](https://github.com/incubateur-ademe/nosgestesclimat/pull/1697) - [[doc](https://publicodes.github.io/tools/modules/optims.html)]
+- ➡️ Use a migration function for user situation to deal with breaking changes in your models - [[doc](https://publicodes.github.io/tools/modules/migration.html)]
 
 ## Installation
 
