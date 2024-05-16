@@ -51,10 +51,31 @@ describe('migrateSituation', () => {
         situationMigrated: {},
       })
     }),
-    it('should support old situations', () => {
+    it('should support old situations (1)', () => {
       expect(
         migrateSituation({
           situation: { âge: { valeur: 27, unité: 'an' } },
+          foldedSteps: ['âge'],
+          migrationInstructions,
+        }),
+      ).toEqual({
+        foldedStepsMigrated: ['âge'],
+        situationMigrated: { âge: 27 },
+      })
+    }),
+    it('should support old situations (2)', () => {
+      expect(
+        migrateSituation({
+          situation: {
+            âge: {
+              type: 'number',
+              fullPrecision: true,
+              isNullable: false,
+              nodeValue: 27,
+              nodeKind: 'constant',
+              rawNode: 27,
+            },
+          },
           foldedSteps: ['âge'],
           migrationInstructions,
         }),
