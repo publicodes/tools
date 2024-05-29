@@ -1,4 +1,4 @@
-import { migrateSituation } from '../../source/migration/migrateSituation'
+import { migrateSituation } from '../../src/migration/migrateSituation'
 
 const migrationInstructions = {
   keysToMigrate: { age: 'âge', 'année de naissance': '' },

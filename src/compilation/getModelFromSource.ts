@@ -1,6 +1,6 @@
+import { readFileSync, statSync } from 'fs'
 import glob from 'glob'
 import yaml from 'yaml'
-import { readFileSync, statSync } from 'fs'
 import { getDoubleDefError, RawRules } from '../commons'
 import { resolveImports } from './resolveImports'
 

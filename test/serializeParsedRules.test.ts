@@ -1,5 +1,5 @@
 import Engine from 'publicodes'
-import { serializeParsedRules } from '../source/index'
+import { serializeParsedRules } from '../src/index'
 
 describe('API > mecanisms list', () => {
   it('should serialize empty rules', () => {

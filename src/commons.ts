@@ -13,7 +13,7 @@ import yaml from 'yaml'
  */
 
 /**
- * Represents a rule name, i.e. 'rule . A. B'
+ * Represents a rule name, i.e. 'rule . A . B'
  */
 export type RuleName = string
 

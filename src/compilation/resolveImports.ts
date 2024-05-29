@@ -9,7 +9,7 @@ import {
   getDoubleDefError,
 } from '../commons'
 import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
+import { dirname, join, basename } from 'path'
 
 /**
  * @param {string} packageName - The package name.
@@ -33,6 +33,7 @@ const enginesCache = {}
  * @param filePath - The path to the file containing the rules in a JSON format.
  * @param opts - Options.
  *
+ * @throws {Error} If the package is not found.
  * @throws {Error} If the package name is missing in the macro.
  */
 function getEngine(
@@ -40,21 +41,36 @@ function getEngine(
   { depuis }: ImportMacro,
   verbose: boolean,
 ): Engine {
-  const packageName = depuis.nom
+  const packageName = depuis?.nom
   const fileDirPath = dirname(filePath)
 
   if (packageName === undefined) {
     throw new Error(
-      `Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${filePath}`,
+      `[ Erreur dans la macro 'importer!' ]
+Le nom du package est manquant dans la macro 'importer!' dans le fichier: ${basename(filePath)}.
+
+[ Solution ]
+Ajoutez le nom du package dans la macro 'importer!'.
+
+[ Exemple ]
+importer!:
+  depuis:
+    nom: package-name
+  les règles:
+    - ruleA
+    - ruleB
+    ...
+`,
     )
   }
 
-  if (!enginesCache[packageName]) {
+  const modelPath =
+    depuis.source !== undefined
+      ? join(fileDirPath, depuis.source)
+      : packageModelPath(packageName)
+
+  if (!enginesCache[modelPath]) {
     try {
-      const modelPath =
-        depuis.source !== undefined
-          ? join(fileDirPath, depuis.source)
-          : packageModelPath(packageName)
       const model = JSON.parse(readFileSync(modelPath, 'utf-8'))
       const engine = new Engine(model, {
         logger: {
@@ -67,13 +83,26 @@ function getEngine(
       if (verbose) {
         console.debug(`📦 ${packageName} loaded`)
       }
-      enginesCache[packageName] = engine
+      enginesCache[modelPath] = engine
     } catch (e) {
-      console.error(`Error when loading '${packageName}': ${e}`)
+      throw new Error(`[ Erreur dans la macro 'importer!' ]
+Le package '${packageName}' n'a pas pu être trouvé. (Le fichier '${modelPath}' est introuvable).
+
+[ Solution ]
+- Assurez-vous que le package existe et qu'il est correctement installé dans vos 'node_modules'.
+- Assurez-vous que le fichier '${packageName}.model.json' existe à la racine du package. Sinon,
+précisez le chemin du fichier dans la macro 'importer!' grâce à l'attribut 'source'.
+
+[ Exemple ]
+importer!:
+  depuis:
+    nom: package-name
+    source: ../custom-package/path/package-name.model.json
+      `)
     }
   }
 
-  return enginesCache[packageName]
+  return enginesCache[modelPath]
 }
 
 function getDependencies(engine: Engine, rule: RuleNode, acc = []) {
@@ -213,7 +242,11 @@ export function resolveImports(
       rulesToImport?.forEach(({ ruleName, attrs }) => {
         if (appearsMoreThanOnce(rulesToImport, ruleName)) {
           throw new Error(
-            `La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}`,
+            `[ Erreur dans la macro 'importer!' ]
+La règle '${ruleName}' est définie deux fois dans ${importMacro.depuis.nom}
+
+[ Solution ]
+Supprimez une des deux définitions de la règle '${ruleName}' dans la macro 'importer!'`,
           )
         }
         if (accFind(acc, ruleName)) {
@@ -224,9 +257,12 @@ export function resolveImports(
         try {
           rule = engine.getRule(ruleName)
         } catch (e) {
-          throw new Error(
-            `La règle '${ruleName}' n'existe pas dans ${importMacro.depuis.nom}`,
-          )
+          throw new Error(`[ Erreur dans la macro 'importer!' ]
+La règle '${ruleName}' n'existe pas dans '${importMacro.depuis.nom}'.
+
+[ Solution ]
+- Vérifiez que le nom de la règle est correct.
+- Assurez-vous que la règle '${ruleName}' existe dans '${importMacro.depuis.nom}'.`)
         }
 
         const getUpdatedRule = (ruleName: RuleName, rule: Rule) => {
