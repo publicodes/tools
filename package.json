@@ -79,7 +79,8 @@
     "entry": [
       "src/index.ts",
       "src/optims/index.ts",
-      "src/compilation/index.ts"
+      "src/compilation/index.ts",
+      "src/migration/index.ts"
     ],
     "cjsInterop": true,
     "format": [
