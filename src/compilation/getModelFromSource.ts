@@ -1,6 +1,6 @@
+import { readFileSync, statSync } from 'fs'
 import glob from 'glob'
 import yaml from 'yaml'
-import fs from 'fs'
 import { getDoubleDefError, RawRules } from '../commons'
 import { resolveImports } from './resolveImports'
 
@@ -41,7 +41,7 @@ export function getModelFromSource(
   opts?: GetModelFromSourceOptions,
 ): RawRules {
   try {
-    if (fs.statSync(sourcePath).isDirectory()) {
+    if (statSync(sourcePath).isDirectory()) {
       sourcePath = sourcePath + '/**/*.publicodes'
     }
   } catch (e) {}
@@ -49,7 +49,7 @@ export function getModelFromSource(
     .sync(sourcePath, { ignore: opts?.ignore })
     .reduce(
       ({ jsonModel, namespaces }, filePath: string) => {
-        const rules: RawRules = yaml.parse(fs.readFileSync(filePath, 'utf-8'))
+        const rules: RawRules = yaml.parse(readFileSync(filePath, 'utf-8'))
         if (rules == null) {
           console.warn(`⚠️ ${filePath} is empty, skipping...`)
           return jsonModel
