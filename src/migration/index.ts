@@ -12,7 +12,7 @@ This is where the sitation migration comes in.
 
 ### Usage
 
-{@link migrateSituation | `migrateSituation`} allows to migrate a siuation from
+{@link migrateSituation | `migrateSituation`} allows to migrate a situation from
 an old version of a model to a new version according to the provided _migration
 instructions_.
 
@@ -20,27 +20,28 @@ instructions_.
 ```typescript
 import { migrateSituation } from '@publicodes/tools/migration'
 
-const oldSituation = {
-  "age": 25
+const situation = {
+  "age": 25,
   "job": "developer",
+  "city": "Paris"
 }
 
-// In the new model version, the rule `age` has been renamed to `âge` and the
-// value `developer` has been translated to `développeur`.
-const migrationInstructions = {
-  keysToMigrate: { age: 'âge' }
+const instructions = {
+  keysToMigrate: {
+    // The rule `age` has been renamed to `âge`.
+    age: 'âge',
+    // The rule `city` has been removed.
+    city: ''
+  },
   valuesToMigrate: {
-    job: { developer: 'développeur' }
+    job: {
+      // The value `developer` has been translated to `développeur`.
+      developer: 'développeur'
+    }
   }
 }
 
-console.log(migrateSituation(oldSituation, migrationInstructions))
-
-// Output:
-// {
-//  "âge": 25,
-//  "job": "développeur"
-// }
+migrateSituation(situation, instructions) // { "âge": 25, "job": "'développeur'" }
 ```
 */
 

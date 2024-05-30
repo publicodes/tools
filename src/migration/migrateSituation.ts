@@ -15,7 +15,7 @@ export type ValueMigration = Record<string, string>
  * Migration instructions. It contains the rules and values to migrate.
  */
 export type Migration = {
-  rulesToMigrate: Record<RuleName, RuleName>
+  keysToMigrate: Record<RuleName, RuleName>
   valuesToMigrate: Record<RuleName, ValueMigration>
 }
 
@@ -28,9 +28,35 @@ export type Migration = {
  *
  * @returns The migrated situation (and foldedSteps if specified).
  *
- * TODO: exemple of instructions (empty string for deletion, new key name for renaming, new value for updating)
+ * @example
+ * ```typescript
+ * import { migrateSituation } from '@publicodes/tools/migration'
  *
- * An example of instructions can be found {@link https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml | here}.
+ * const situation = {
+ *  "age": 25
+ *  "job": "developer",
+ *  "city": "Paris"
+ * }
+ *
+ * const instructions = {
+ *  keysToMigrate: {
+ *    // The rule `age` will be renamed to `âge`.
+ *    age: 'âge',
+ *    // The rule `city` will be removed.
+ *    city: ''
+ *  },
+ *  valuesToMigrate: {
+ *    job: {
+ *      // The value `developer` will be translated to `développeur`.
+ *      developer: 'développeur'
+ *    }
+ *  }
+ * }
+ *
+ * migrateSituation(situation, instructions) // { "âge": 25, "job": "'développeur'" }
+ * ```
+ *
+ * @note An example of instructions can be found {@link https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml | here}.
  */
 export function migrateSituation(
   situation: Situation,
@@ -44,7 +70,7 @@ export function migrateSituation(
     handleSpecialCases(rule, value, newSituation)
 
     if (currentRules.includes(rule)) {
-      updateKey(rule, value, newSituation, instructions.rulesToMigrate[rule])
+      updateKey(rule, value, newSituation, instructions.keysToMigrate[rule])
     }
 
     const formattedValue = getValueWithoutQuotes(value) ?? (value as string)
@@ -54,13 +80,7 @@ export function migrateSituation(
       ] ?? {}
     const oldValuesName = Object.keys(valuesMigration)
 
-    if (
-      // We check if the value of the non supported ruleName value is a value to migrate.
-      // Ex: answer "logement . chauffage . bois . type": "bûche" changed to "bûches"
-      // If a value is specified but empty, we consider it to be deleted (we need to ask the question again)
-      // Ex: answer "transport . boulot . commun . type": "vélo"
-      oldValuesName.includes(formattedValue)
-    ) {
+    if (oldValuesName.includes(formattedValue)) {
       updateValue(rule, valuesMigration[formattedValue], newSituation)
     }
   })
@@ -68,19 +88,13 @@ export function migrateSituation(
   return newSituation
 }
 
-// Handle migration of old value format : an object { valeur: number, unité: string }
 /**
- * Handles special cases during the migration of old value formats.
+ * Handle migration of old value format : an object { valeur: number, unité: string }.
  *
  * @example
- * ````
-{ valeur: number, unité: string }
-```
- *
- * @param rule - The name of the rule.
- * @param oldValue - The node value.
- * @param situation - The situation object.
- * @returns - The updated situation object.
+ * ```json
+ * { valeur: number, unité: string }
+ * ```
  */
 function handleSpecialCases(
   rule: RuleName,
@@ -116,8 +130,6 @@ function handleSpecialCases(
   }
 }
 
-/**
- */
 function updateKey(
   rule: RuleName,
   oldValue: Evaluation,
@@ -136,9 +148,7 @@ function updateKey(
   }
 }
 
-/**
- */
-export function updateValue(
+function updateValue(
   rule: RuleName,
   value: string,
   situation: Situation,
@@ -148,31 +158,9 @@ export function updateValue(
     delete situation[rule]
   } else {
     // The value is renamed and needs to be migrated
-    situation[rule] = getMigratedValue(value)
+    situation[rule] =
+      typeof value === 'string' && value !== 'oui' && value !== 'non'
+        ? `'${value}'`
+        : value
   }
-}
-
-function getMigratedValue(value: string): string {
-  if (typeof value === 'string' && value !== 'oui' && value !== 'non') {
-    return `'${value}'`
-  }
-
-  // FIXME: I'm not sure if it's necessary to check if the value is a number,
-  // as valuesToMigrate is a ValueMigration object (Record<string, string>).
-  // Is it possible to have objects in valuesToMigrate?
-  // if (
-  //   (
-  //     value as unknown as {
-  //       valeur: number
-  //     }
-  //   )?.valeur !== undefined
-  // ) {
-  //   return (
-  //     value as unknown as {
-  //       valeur: number
-  //     }
-  //   ).valeur as unknown as string
-  // }
-
-  return value
 }
