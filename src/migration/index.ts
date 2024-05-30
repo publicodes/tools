@@ -1,45 +1,46 @@
 /** @packageDocumentation
 
-## Migrate a situation
+## Situation migration
 
-{@link migrateSituation | `migrateSituation`} allows to migrate situation and foldedSteps based on migration instructions. It's useful in forms when a model is updated and we want old answers to be kept and taken into account in the new model.
+### Why?
+
+In time, the `publicodes` models evolve. When a model is updated (e.g. a rule
+is renamed, a value is changed, a new rule is added, etc.), we want to ensure
+that the previous situations (i.e. answers to questions) are still valid.
+
+This is where the sitation migration comes in.
 
 ### Usage
 
-For instance, we have a simple set of rules:
+{@link migrateSituation | `migrateSituation`} allows to migrate a siuation from
+an old version of a model to a new version according to the provided _migration
+instructions_.
 
-```yaml
-age:
-    question: "Quel est votre âge ?"
-````
 
-and the following situation:
-```json
-{
-    age: 25
+```typescript
+import { migrateSituation } from '@publicodes/tools/migration'
+
+const oldSituation = {
+  "age": 25
+  "job": "developer",
 }
-```
 
-If I change my model because I want to fix the accent to:
-
-```yaml
-âge:
-    question: "Quel est votre âge ?"
-```
-
-I don't want to lose the previous answer, so I can use `migrateSituation` with the following migration instructions:
-
-```yaml
-keysToMigrate:
-    age: âge
-```
-
-Then, calling `migrateSituation` with the situation and the migration instructions will return:
-
-```json
-{
-    âge: 25
+// In the new model version, the rule `age` has been renamed to `âge` and the
+// value `developer` has been translated to `développeur`.
+const migrationInstructions = {
+  keysToMigrate: { age: 'âge' }
+  valuesToMigrate: {
+    job: { developer: 'développeur' }
+  }
 }
+
+console.log(migrateSituation(oldSituation, migrationInstructions))
+
+// Output:
+// {
+//  "âge": 25,
+//  "job": "développeur"
+// }
 ```
 */
 
