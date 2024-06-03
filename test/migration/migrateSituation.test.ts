@@ -1,7 +1,8 @@
+import { Situation } from 'publicodes'
+import { RuleName } from '../../src'
 import {
   migrateSituation,
   Migration,
-  Situation,
 } from '../../src/migration/migrateSituation'
 
 const instructions: Migration = {
@@ -9,7 +10,7 @@ const instructions: Migration = {
   valuesToMigrate: { prénom: { jean: 'Jean avec un J', michel: '' } },
 }
 
-const migrateSituationWithInstructions = (situation: Situation) =>
+const migrateSituationWithInstructions = (situation: Situation<RuleName>) =>
   migrateSituation(situation, instructions)
 
 describe('migrateSituation', () => {
