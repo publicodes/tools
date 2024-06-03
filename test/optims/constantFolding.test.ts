@@ -35,7 +35,7 @@ describe('Constant folding [meta]', () => {
     }
     const engine = new Engine(rawRules, {
       logger: disabledLogger,
-      allowOrphanRules: true,
+      strict: { noOrphanRule: false },
     })
     const baseParsedRules = engine.getParsedRules()
     const serializedBaseParsedRules = serializeParsedRules(baseParsedRules)
@@ -71,7 +71,7 @@ describe('Constant folding [meta]', () => {
     }
     const engine = new Engine(rawRules, {
       logger: disabledLogger,
-      allowOrphanRules: true,
+      strict: { noOrphanRule: false },
     })
     const foldedRules = serializeParsedRules(
       constantFolding(engine, {

@@ -1,5 +1,5 @@
 /** @packageDocumentation
- 
+
 ## The constant folding pass
 
 Currently, only one optimisation pass is available: the constant folding one.
@@ -43,7 +43,7 @@ alimentation . déchets . niveau moyen:
     somme:
       - 96.0151712
       - 48.512508999999994
-      - 49.9611611 
+      - 49.9611611
       - gestes
   description: |
     Ce niveau correspond à la moyenne française.

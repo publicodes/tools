@@ -1,113 +1,161 @@
-import { getValueWithoutQuotes } from './migrateSituation/getValueWithoutQuotes'
-import { handleSituationKeysMigration } from './migrateSituation/handleSituationKeysMigration'
-import { handleSituationValuesMigration } from './migrateSituation/handleSituationValuesMigration'
-import { handleSpecialCases } from './migrateSituation/handleSpecialCases'
-import { Evaluation } from 'publicodes'
+import { Evaluation, Situation } from 'publicodes'
+import { getValueWithoutQuotes, RuleName } from '../commons'
 
-export type NodeValue = Evaluation
+/**
+ * Associate a old value to a new value.
+ */
+export type ValueMigration = Record<string, string>
 
-export type Situation = {
-  [key: string]: NodeValue
-}
-
-export type DottedName = string
-
-export type MigrationType = {
-  keysToMigrate: Record<DottedName, DottedName>
-  valuesToMigrate: Record<DottedName, Record<string, NodeValue>>
+/**
+ * Migration instructions. It contains the rules and values to migrate.
+ */
+export type Migration = {
+  keysToMigrate: Record<RuleName, RuleName>
+  valuesToMigrate: Record<RuleName, ValueMigration>
 }
 
 /**
- * Migrate rules and answers from a situation which used to work with an old version of a model to a new version according to the migration instructions.
+ * Migrate a situation from an old version of a model to a new version
+ * according to the provided migration instructions.
  *
- * @param {Object} options - The options object.
- * @param {Situation} options.situation - The `situation` as Publicodes object containing all answers for a given simulation.
- * @param {DottedName[]} [options.foldedSteps=[]] - In case of form app, an array containing answered questions.
- * @param {MigrationType} options.migrationInstructions - An object containing keys and values to migrate formatted as follows:
+ * @param situation - The situation object containing all answers for a given simulation.
+ * @param instructions - The migration instructions object.
+ *
+ * @returns The migrated situation (and foldedSteps if specified).
  *
  * @example
+ * ```typescript
+ * import { migrateSituation } from '@publicodes/tools/migration'
+ *
+ * const situation = {
+ *  "age": 25
+ *  "job": "developer",
+ *  "city": "Paris"
+ * }
+ *
+ * const instructions = {
+ *  keysToMigrate: {
+ *    // The rule `age` will be renamed to `âge`.
+ *    age: 'âge',
+ *    // The rule `city` will be removed.
+ *    city: ''
+ *  },
+ *  valuesToMigrate: {
+ *    job: {
+ *      // The value `developer` will be translated to `développeur`.
+ *      developer: 'développeur'
+ *    }
+ *  }
+ * }
+ *
+ * migrateSituation(situation, instructions) // { "âge": 25, "job": "'développeur'" }
  * ```
- * {
- * keysToMigrate: {
- * oldKey: newKey
- * }
- * valuesToMigrate: {
- *   key: {
- *      oldValue: newValue
- * }
- * }
- * ```
- * An example can be found in {@link https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml | nosgestesclimat repository}.
- * @returns {Object} The migrated situation (and foldedSteps if specified).
+ *
+ * @note An example of instructions can be found {@link https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml | here}.
  */
-export function migrateSituation({
-  situation,
-  foldedSteps = [],
-  migrationInstructions,
-}: {
-  situation: Situation
-  foldedSteps?: DottedName[]
-  migrationInstructions: MigrationType
-}) {
-  let situationMigrated = { ...situation }
-  let foldedStepsMigrated = [...foldedSteps]
+export function migrateSituation(
+  situation: Situation<RuleName>,
+  instructions: Migration,
+): Situation<RuleName> {
+  let newSituation = { ...situation }
+  const currentRules = Object.keys(situation)
+  const valueKeysToMigrate = Object.keys(instructions.valuesToMigrate)
 
-  Object.entries(situationMigrated).map(([ruleName, nodeValue]) => {
-    situationMigrated = handleSpecialCases({
-      ruleName,
-      nodeValue,
-      situation: situationMigrated,
-    })
+  Object.entries(situation).map(([rule, value]) => {
+    handleSpecialCases(rule, value, newSituation)
 
-    // We check if the non supported ruleName is a key to migrate.
-    // Ex: "logement . chauffage . bois . type . bûche . consommation": "xxx" which is now ""logement . chauffage . bois . type . bûches . consommation": "xxx"
-    if (Object.keys(migrationInstructions.keysToMigrate).includes(ruleName)) {
-      const result = handleSituationKeysMigration({
-        ruleName,
-        nodeValue,
-        situation: situationMigrated,
-        foldedSteps: foldedStepsMigrated,
-        migrationInstructions,
-      })
-
-      situationMigrated = result.situationMigrated
-      foldedStepsMigrated = result.foldedStepsMigrated
+    if (currentRules.includes(rule)) {
+      updateKey(rule, value, newSituation, instructions.keysToMigrate[rule])
     }
 
-    const matchingValueToMigrateObject =
-      migrationInstructions.valuesToMigrate[
-        Object.keys(migrationInstructions.valuesToMigrate).find((key) =>
-          ruleName.includes(key),
-        ) as any
-      ]
+    const formattedValue = getValueWithoutQuotes(value) ?? (value as string)
+    const valuesMigration =
+      instructions.valuesToMigrate[
+        valueKeysToMigrate.find((key) => rule.includes(key))
+      ] ?? {}
+    const oldValuesName = Object.keys(valuesMigration)
 
-    const formattedNodeValue =
-      getValueWithoutQuotes(nodeValue) || (nodeValue as string)
-
-    if (
-      // We check if the value of the non supported ruleName value is a value to migrate.
-      // Ex: answer "logement . chauffage . bois . type": "bûche" changed to "bûches"
-      // If a value is specified but empty, we consider it to be deleted (we need to ask the question again)
-      // Ex: answer "transport . boulot . commun . type": "vélo"
-      matchingValueToMigrateObject &&
-      Object.keys(matchingValueToMigrateObject).includes(
-        // If the string start with a ', we remove it along with the last character
-        // Ex: "'bûche'" => "bûche"
-        formattedNodeValue,
-      )
-    ) {
-      const result = handleSituationValuesMigration({
-        ruleName,
-        nodeValue: formattedNodeValue,
-        situation: situationMigrated,
-        foldedSteps: foldedStepsMigrated,
-        migrationInstructions,
-      })
-
-      situationMigrated = result.situationMigrated
-      foldedStepsMigrated = result.foldedStepsMigrated
+    if (oldValuesName.includes(formattedValue)) {
+      updateValue(rule, valuesMigration[formattedValue], newSituation)
     }
   })
 
-  return { situationMigrated, foldedStepsMigrated }
+  return newSituation
+}
+
+/**
+ * Handle migration of old value format : an object { valeur: number, unité: string }.
+ *
+ * @example
+ * ```json
+ * { valeur: number, unité: string }
+ * ```
+ */
+function handleSpecialCases(
+  rule: RuleName,
+  oldValue: Evaluation,
+  situation: Situation<RuleName>,
+): void {
+  // Special case, number store as a string, we have to convert it to a number
+  if (
+    oldValue &&
+    typeof oldValue === 'string' &&
+    !isNaN(parseFloat(oldValue))
+  ) {
+    situation[rule] = parseFloat(oldValue)
+  }
+
+  // Special case : wrong value format, legacy from previous publicodes version
+  // handle the case where valeur is a string "2.33"
+  if (oldValue && oldValue['valeur'] !== undefined) {
+    situation[rule] =
+      typeof oldValue['valeur'] === 'string' &&
+      !isNaN(parseFloat(oldValue['valeur']))
+        ? parseFloat(oldValue['valeur'])
+        : (oldValue['valeur'] as number)
+  }
+  // Special case : other wrong value format, legacy from previous publicodes version
+  // handle the case where nodeValue is a string "2.33"
+  if (oldValue && oldValue['nodeValue'] !== undefined) {
+    situation[rule] =
+      typeof oldValue['nodeValue'] === 'string' &&
+      !isNaN(parseFloat(oldValue['nodeValue']))
+        ? parseFloat(oldValue['nodeValue'])
+        : (oldValue['nodeValue'] as number)
+  }
+}
+
+function updateKey(
+  rule: RuleName,
+  oldValue: Evaluation,
+  situation: Situation<RuleName>,
+  ruleToMigrate: RuleName | undefined,
+): void {
+  if (ruleToMigrate === undefined) {
+    return
+  }
+
+  delete situation[rule]
+
+  if (ruleToMigrate !== '') {
+    situation[ruleToMigrate] =
+      typeof oldValue === 'object' ? (oldValue as any)?.valeur : oldValue
+  }
+}
+
+function updateValue(
+  rule: RuleName,
+  value: string,
+  situation: Situation<RuleName>,
+): void {
+  // The value is not a value to migrate and the key has to be deleted
+  if (value === '') {
+    delete situation[rule]
+  } else {
+    // The value is renamed and needs to be migrated
+    situation[rule] =
+      typeof value === 'string' && value !== 'oui' && value !== 'non'
+        ? `'${value}'`
+        : value
+  }
 }

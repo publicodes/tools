@@ -1,5 +1,12 @@
 import { basename } from 'path'
-import { Rule, Logger, ExprAST, reduceAST, ASTNode } from 'publicodes'
+import {
+  Rule,
+  Logger,
+  ExprAST,
+  reduceAST,
+  ASTNode,
+  Evaluation,
+} from 'publicodes'
 import yaml from 'yaml'
 
 /**
@@ -232,4 +239,23 @@ Avec :
 
 ${yaml.stringify(secondDef, { indent: 2 })}`,
   )
+}
+
+/**
+ * Unquote a string value.
+ *
+ * @param value - The value to parse.
+ *
+ * @returns The value without quotes if it is a string, null otherwise.
+ */
+export function getValueWithoutQuotes(value: Evaluation) {
+  if (
+    typeof value !== 'string' ||
+    !value.startsWith("'") ||
+    value === 'oui' ||
+    value === 'non'
+  ) {
+    return null
+  }
+  return value.slice(1, -1)
 }
