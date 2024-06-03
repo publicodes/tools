@@ -1,10 +1,5 @@
-import { Evaluation } from 'publicodes'
+import { Evaluation, Situation } from 'publicodes'
 import { getValueWithoutQuotes, RuleName } from '../commons'
-
-/**
- * A situation object containing all answers for a given simulation.
- */
-export type Situation = Record<RuleName, Evaluation>
 
 /**
  * Associate a old value to a new value.
@@ -59,9 +54,9 @@ export type Migration = {
  * @note An example of instructions can be found {@link https://github.com/incubateur-ademe/nosgestesclimat/blob/preprod/migration/migration.yaml | here}.
  */
 export function migrateSituation(
-  situation: Situation,
+  situation: Situation<RuleName>,
   instructions: Migration,
-): Situation {
+): Situation<RuleName> {
   let newSituation = { ...situation }
   const currentRules = Object.keys(situation)
   const valueKeysToMigrate = Object.keys(instructions.valuesToMigrate)
@@ -99,7 +94,7 @@ export function migrateSituation(
 function handleSpecialCases(
   rule: RuleName,
   oldValue: Evaluation,
-  situation: Situation,
+  situation: Situation<RuleName>,
 ): void {
   // Special case, number store as a string, we have to convert it to a number
   if (
@@ -133,7 +128,7 @@ function handleSpecialCases(
 function updateKey(
   rule: RuleName,
   oldValue: Evaluation,
-  situation: Situation,
+  situation: Situation<RuleName>,
   ruleToMigrate: RuleName | undefined,
 ): void {
   if (ruleToMigrate === undefined) {
@@ -151,7 +146,7 @@ function updateKey(
 function updateValue(
   rule: RuleName,
   value: string,
-  situation: Situation,
+  situation: Situation<RuleName>,
 ): void {
   // The value is not a value to migrate and the key has to be deleted
   if (value === '') {

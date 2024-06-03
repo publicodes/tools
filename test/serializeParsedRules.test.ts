@@ -894,7 +894,7 @@ describe('More complexe cases', () => {
       },
     }
     const parsedRules = new Engine(rules, {
-      allowOrphanRules: true,
+      strict: { noOrphanRule: false },
     }).getParsedRules()
 
     expect(serializeParsedRules(parsedRules)).toStrictEqual(

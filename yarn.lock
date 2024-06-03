@@ -2498,10 +2498,10 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-publicodes@^1.1.1:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.2.0.tgz#2856891da07633315eff419402bb61109045504d"
-  integrity sha512-qit3KsTqwZct5Xt6uyJ83yXNXxxScKuSRvemUgCRWEczP/mPAX/tiDQUgwwOC2fDoiCuQuZ9EiQwU5HfzHFIJQ==
+publicodes@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.3.0.tgz#5530e029ef6aaea2373c56a846d78732c56abc66"
+  integrity sha512-VBicg3+/SZUe49LzM77CpxWEjPra7sWDnbJyGVShDd2Tuo/p3Krb7ebe/kNM5Z1WDwuqCYLT+X75Co7fi/tMAA==
 
 punycode@^2.1.0:
   version "2.3.1"
