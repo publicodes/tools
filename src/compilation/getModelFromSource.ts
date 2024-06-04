@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from 'fs'
-import glob from 'glob'
+import { sync } from 'glob'
 import yaml from 'yaml'
-import { getDoubleDefError, RawRules } from '../commons'
+import { getDoubleDefError, RawRules, RuleName } from '../commons'
 import { resolveImports } from './resolveImports'
 
 export type GetModelFromSourceOptions = {
@@ -45,33 +45,34 @@ export function getModelFromSource(
       sourcePath = sourcePath + '/**/*.publicodes'
     }
   } catch (e) {}
-  const { jsonModel, namespaces } = glob
-    .sync(sourcePath, { ignore: opts?.ignore })
-    .reduce(
-      ({ jsonModel, namespaces }, filePath: string) => {
-        const rules: RawRules = yaml.parse(readFileSync(filePath, 'utf-8'))
-        if (rules == null) {
-          console.warn(`⚠️ ${filePath} is empty, skipping...`)
-          return jsonModel
-        }
-        const { completeRules, neededNamespaces } = resolveImports(
-          filePath,
-          rules,
-          opts?.verbose,
-        )
-        // PERF: could be smarter?
-        throwErrorIfDuplicatedRules(filePath, jsonModel, completeRules)
-        return {
-          jsonModel: { ...jsonModel, ...completeRules },
-          namespaces: new Set([...namespaces, ...neededNamespaces]),
-        }
-      },
-      { jsonModel: {}, namespaces: new Set<string>() },
-    )
-  namespaces.forEach((namespace: string) => {
+  const { jsonModel, namespaces } = sync(sourcePath, {
+    ignore: opts?.ignore,
+  }).reduce(
+    ({ jsonModel, namespaces }, filePath: string) => {
+      const rules: RawRules = yaml.parse(readFileSync(filePath, 'utf-8'))
+      if (rules == null) {
+        console.warn(`⚠️ ${filePath} is empty, skipping...`)
+        return { jsonModel, namespaces }
+      }
+      const { completeRules, neededNamespaces } = resolveImports(
+        filePath,
+        rules,
+        opts?.verbose,
+      )
+      // PERF: could be smarter?
+      throwErrorIfDuplicatedRules(filePath, jsonModel, completeRules)
+      return {
+        jsonModel: { ...jsonModel, ...completeRules },
+        namespaces: new Set([...namespaces, ...neededNamespaces]),
+      }
+    },
+    { jsonModel: {}, namespaces: new Set<RuleName>() },
+  )
+  namespaces.forEach((namespace: RuleName) => {
     if (jsonModel[namespace] === undefined) {
       jsonModel[namespace] = null
     }
   })
+
   return jsonModel
 }
