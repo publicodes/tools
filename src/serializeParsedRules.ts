@@ -400,7 +400,6 @@ export function serializeParsedRules(
    * Consequently, we need to remove them from the rawNode in order to avoid
    * duplicate mecanisms.
    *
-   *
    * NOTE: for now, the [avec] mecanism is unfolded as full rules. Therefore,
    * we need to remove the [avec] mecanism from the rawNode in order to
    * avoid duplicate rule definitions.
