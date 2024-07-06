@@ -16,8 +16,7 @@
 
 Set of utility functions that could be used to easily write tooling around [Publicodes](https://publi.codes) models.
 
-:warning: <i>The project is currently in under experimentation and maintained
-by the nosgestesclimat.fr team.</i> :warning:
+:warning: <i>The project is not stable yet, don't hesitate [to open an issue](https://github.com/publicodes/tools/issues) if you face a problem!</i> :warning:
 
 </div>
 
