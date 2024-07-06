@@ -31,5 +31,13 @@
   "e": {
     "question": "Question ?",
     "formule": 10
+  },
+  "rule with avec": {
+    "formule": "F1 + F2 + F3",
+    "avec": {
+      "F1": 1,
+      "F2": 2,
+      "F3": 3
+    }
   }
 }

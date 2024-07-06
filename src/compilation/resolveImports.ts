@@ -253,9 +253,47 @@ Supprimez une des deux définitions de la règle '${ruleName}' dans la macro 'im
           return acc
         }
 
-        let rule
         try {
-          rule = engine.getRule(ruleName)
+          const rule = engine.getRule(ruleName)
+          const getUpdatedRule = (ruleName: RuleName, rule: Rule) => {
+            const ruleWithUpdatedDescription = addSourceModelInfomation(
+              importMacro,
+              rule,
+            )
+            // Rules defined in a [avec] mechanism are already resolved in the
+            // engine (as we use [getRule]) so we don't want to duplicate them.
+            if (ruleWithUpdatedDescription['avec'] !== undefined) {
+              delete ruleWithUpdatedDescription['avec']
+            }
+
+            utils
+              .ruleParents(ruleName)
+              .forEach((rule) => neededNamespaces.add(`${namespace} . ${rule}`))
+            return [`${namespace} . ${ruleName}`, ruleWithUpdatedDescription]
+          }
+
+          const ruleWithOverridenAttributes = { ...rule.rawNode, ...attrs }
+
+          acc.push(getUpdatedRule(ruleName, ruleWithOverridenAttributes))
+          const ruleDeps = getDependencies(engine, rule)
+            .filter(([ruleDepName, _]) => {
+              // Avoid to overwrite the updatedRawNode
+              return (
+                !accFind(acc, ruleDepName) &&
+                // The dependency is part of the rule to import so we don't want
+                // to handle it now
+                !rulesToImport.find(({ ruleName: ruleToImportName }) => {
+                  const theDepIsARuleToImport =
+                    ruleName !== ruleToImportName &&
+                    ruleToImportName === ruleDepName
+                  return theDepIsARuleToImport
+                })
+              )
+            })
+            .map(([ruleName, ruleNode]) => {
+              return getUpdatedRule(ruleName, ruleNode)
+            })
+          acc.push(...ruleDeps)
         } catch (e) {
           throw new Error(`[ Erreur dans la macro 'importer!' ]
 La règle '${ruleName}' n'existe pas dans '${importMacro.depuis.nom}'.
@@ -264,39 +302,6 @@ La règle '${ruleName}' n'existe pas dans '${importMacro.depuis.nom}'.
 - Vérifiez que le nom de la règle est correct.
 - Assurez-vous que la règle '${ruleName}' existe dans '${importMacro.depuis.nom}'.`)
         }
-
-        const getUpdatedRule = (ruleName: RuleName, rule: Rule) => {
-          const ruleWithUpdatedDescription = addSourceModelInfomation(
-            importMacro,
-            rule,
-          )
-          utils
-            .ruleParents(ruleName)
-            .forEach((rule) => neededNamespaces.add(`${namespace} . ${rule}`))
-          return [`${namespace} . ${ruleName}`, ruleWithUpdatedDescription]
-        }
-
-        const ruleWithOverridenAttributes = { ...rule.rawNode, ...attrs }
-
-        acc.push(getUpdatedRule(ruleName, ruleWithOverridenAttributes))
-        const ruleDeps = getDependencies(engine, rule)
-          .filter(([ruleDepName, _]) => {
-            // Avoid to overwrite the updatedRawNode
-            return (
-              !accFind(acc, ruleDepName) &&
-              // The dependency is part of the rule to import so we don't want to handle it now
-              !rulesToImport.find(({ ruleName: ruleToImportName }) => {
-                const theDepIsARuleToImport =
-                  ruleName !== ruleToImportName &&
-                  ruleToImportName === ruleDepName
-                return theDepIsARuleToImport
-              })
-            )
-          })
-          .map(([ruleName, ruleNode]) => {
-            return getUpdatedRule(ruleName, ruleNode)
-          })
-        acc.push(...ruleDeps)
       })
     } else {
       let doubleDefinition = accFind(acc, name)
