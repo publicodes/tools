@@ -8,7 +8,7 @@ const updatedDescription = `> ℹ️ Cette règle provient du modèle \`my-exter
 describe('getModelFromSource › rules import', () => {
   it('should import a rule from a package', () => {
     expect(
-      getModelFromSource(join(testDataDir, 'simple-import.publicodes')),
+      getModelFromSource(join(testDataDir, 'import-simple.publicodes')),
     ).toEqual({
       'my-external-package': null,
       'my-external-package . root': null,
@@ -21,7 +21,7 @@ describe('getModelFromSource › rules import', () => {
 
   it('should import a rule from a package with its needed dependency', () => {
     expect(
-      getModelFromSource(join(testDataDir, 'deps-import.publicodes')),
+      getModelFromSource(join(testDataDir, 'import-deps.publicodes')),
     ).toEqual({
       'my-external-package': null,
       'my-external-package . root': null,
@@ -38,7 +38,7 @@ describe('getModelFromSource › rules import', () => {
 
   it('should import a rule from a package with all its needed dependencies', () => {
     expect(
-      getModelFromSource(join(testDataDir, 'multiple-deps-import.publicodes')),
+      getModelFromSource(join(testDataDir, 'import-multiple-deps.publicodes')),
     ).toEqual({
       'my-external-package': null,
       'my-external-package . root': {
@@ -62,7 +62,7 @@ describe('getModelFromSource › rules import', () => {
 
   it('should import a rule from a package with all updated attributes', () => {
     expect(
-      getModelFromSource(join(testDataDir, 'updated-attrs-import.publicodes')),
+      getModelFromSource(join(testDataDir, 'import-updated-attrs.publicodes')),
     ).toEqual({
       'my-external-package': null,
       'my-external-package . root': null,
@@ -96,7 +96,7 @@ Ajout d'une description`,
   it('should import a rule from a package with all updated attributes even in imported rule deps', () => {
     expect(
       getModelFromSource(
-        join(testDataDir, 'updated-attrs-from-deps-import.publicodes'),
+        join(testDataDir, 'import-updated-attrs-from-deps.publicodes'),
       ),
     ).toEqual({
       'my-external-package': null,
@@ -115,7 +115,7 @@ Ajout d'une description`,
 
   it('should import a rule from a package with all dependencies from a complex formula', () => {
     expect(
-      getModelFromSource(join(testDataDir, 'complex-deps-import.publicodes')),
+      getModelFromSource(join(testDataDir, 'import-complex-deps.publicodes')),
     ).toEqual({
       'my-external-package': null,
       'my-external-package . complex': {
@@ -156,7 +156,7 @@ Ajout d'une description`,
 
   it('should throw an error when trying to import an unknown rule', () => {
     expect(() => {
-      getModelFromSource(join(testDataDir, 'unknown-import.publicodes'))
+      getModelFromSource(join(testDataDir, 'import-unknown.publicodes'))
     }).toThrow(
       `[ Erreur dans la macro 'importer!' ]
 La règle 'root . unknown' n'existe pas dans 'my-external-package'.
@@ -168,12 +168,12 @@ La règle 'root . unknown' n'existe pas dans 'my-external-package'.
   })
 
   it('should throw an error if there is no package name specified', () => {
-    const path = join(testDataDir, 'no-name-import.publicodes')
+    const path = join(testDataDir, 'import-no-name.publicodes')
     expect(() => {
       getModelFromSource(path)
     }).toThrow(
       `[ Erreur dans la macro 'importer!' ]
-Le nom du package est manquant dans la macro 'importer!' dans le fichier: no-name-import.publicodes.
+Le nom du package est manquant dans la macro 'importer!' dans le fichier: import-no-name.publicodes.
 
 [ Solution ]
 Ajoutez le nom du package dans la macro 'importer!'.
@@ -191,7 +191,7 @@ importer!:
 
   it('should throw an error if there is a conflict between to imported rules', () => {
     expect(() => {
-      getModelFromSource(join(testDataDir, 'doublon-import.publicodes'))
+      getModelFromSource(join(testDataDir, 'import-doublon.publicodes'))
     }).toThrow(
       "La règle 'root . a' est définie deux fois dans my-external-package",
     )
@@ -216,7 +216,7 @@ importer!:
   it('should import a rule from a package with all dependencies from a complex formula in a custom namespace', () => {
     expect(
       getModelFromSource(
-        join(testDataDir, 'complex-deps-with-namespace-import.publicodes'),
+        join(testDataDir, 'import-complex-deps-with-namespace.publicodes'),
       ),
     ).toEqual({
       pkg: null,
@@ -251,6 +251,30 @@ importer!:
         formule: {
           variations: [{ si: 'root 2 > 10', alors: 10 }, { sinon: 'root 2' }],
         },
+        description: updatedDescription,
+      },
+    })
+  })
+
+  it('should correctly import rules with [avec] mechanism', () => {
+    expect(
+      getModelFromSource(join(testDataDir, 'import-avec-mechanism.publicodes')),
+    ).toEqual({
+      'my-external-package': null,
+      'my-external-package . rule with avec': {
+        formule: 'F1 + F2 + F3',
+        description: updatedDescription,
+      },
+      'my-external-package . rule with avec . F1': {
+        valeur: '1',
+        description: updatedDescription,
+      },
+      'my-external-package . rule with avec . F2': {
+        valeur: '2',
+        description: updatedDescription,
+      },
+      'my-external-package . rule with avec . F3': {
+        valeur: '3',
         description: updatedDescription,
       },
     })
