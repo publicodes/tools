@@ -3,10 +3,10 @@
 name: GitHub release and NPM publishing
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_run:
+    workflows: ['Build, test and check format']
+    types:
+      - completed
     branches:
       - main
 

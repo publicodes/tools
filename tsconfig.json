@@ -11,8 +11,8 @@
     "types": ["jest", "node"],
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
-    "allowSyntheticDefaultImports": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src"],
-  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"],
+  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"]
 }
