@@ -14,6 +14,9 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src"],
-  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"]
+  "include": ["src/**/*"],
+  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"],
+  "ts-node": {
+    "esm": true
+  }
 }
