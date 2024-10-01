@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-// #!/usr/bin/env -S node --loader ts-node/esm --disable-warning=ExperimentalWarning
 
 // eslint-disable-next-line n/shebang
 import { execute } from '@oclif/core'
