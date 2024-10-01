@@ -73,7 +73,7 @@ const TMP_DIR = fs.realpathSync(os.tmpdir())
 
 export async function runInDir(
   dir: 'tmp' | string,
-  fn: () => Promise<void>,
+  fn: (cwd: string) => Promise<void>,
 ): Promise<void> {
   const baseCwd = process.cwd()
   const ctd =
@@ -88,7 +88,7 @@ export async function runInDir(
   process.chdir(ctd)
 
   try {
-    await fn()
+    await fn(ctd)
   } finally {
     process.chdir(baseCwd)
     if (dir === 'tmp' && fs.existsSync(ctd)) {

@@ -20,6 +20,12 @@ export type PackageJson = {
   peerDependencies?: {
     [key: string]: string
   }
+  dependencies?: {
+    [key: string]: string
+  }
+  devDependencies?: {
+    [key: string]: string
+  }
 }
 
 export const basePackageJson: PackageJson = {
@@ -28,10 +34,10 @@ export const basePackageJson: PackageJson = {
   description: '',
   author: '',
   type: 'module',
-  main: 'dist/index.js',
-  types: 'dist/index.d.ts',
+  main: 'build/index.js',
+  types: 'build/index.d.ts',
   license: 'MIT',
-  files: ['dist'],
+  files: ['build'],
   peerDependencies: {
     // TODO: how to get the latest version of publicodes?
     publicodes: '^1.5.1',
