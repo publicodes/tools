@@ -14,9 +14,10 @@ describe('publicodes init', () => {
 
       const { stdout } = await cli.execCommand('init -p yarn')
 
-      expect(stdout).toContain('existing package.json file')
+      expect(stdout).toContain('Updating existing package.json file')
       expect(stdout).toContain('package.json file written')
-      expect(stdout).toContain('🚀 publicodes is ready to use!')
+      expect(stdout).toContain('Files generated')
+      expect(stdout).toContain('New to Publicodes?')
 
       const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'))
       expect(packageJson).toMatchObject<PackageJson>({
@@ -39,6 +40,8 @@ describe('publicodes init', () => {
 
       expect(fs.existsSync('node_modules')).toBe(true)
       expect(fs.existsSync('yarn.lock')).toBe(true)
+      expect(fs.existsSync('README.md')).toBe(true)
+      expect(fs.existsSync('src/base.publicodes')).toBe(true)
     })
   })
 })

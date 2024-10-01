@@ -47,7 +47,7 @@ export const basePackageJson: PackageJson = {
     publicodes: '^1.5.1',
   },
   scripts: {
-    build: 'publicodes build',
+    compile: 'publicodes compile',
   },
 }
 

@@ -4,6 +4,7 @@ import { execSync } from 'node:child_process'
 import { Command, Flags } from '@oclif/core'
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
+import { setTimeout } from 'timers/promises'
 
 import { basePackageJson, getPackageJson, PackageJson } from '../utils/pjson'
 import { OptionFlag } from '@oclif/core/lib/interfaces'
@@ -48,15 +49,15 @@ one.
     p.intro(chalk.bgHex('#2975d1')(' publicodes init '))
 
     const { flags } = await this.parse(Init)
-    const pkgJSON = getPackageJson()
+    let pkgJSON = getPackageJson()
 
     if (pkgJSON) {
       p.log.info(`Updating existing ${chalk.bold('package.json')} file`)
       this.updatePackageJson(pkgJSON)
     } else {
       p.log.step(`Creating a new ${chalk.bold('package.json')} file`)
-      const pjson = await askPackageJsonInfo()
-      this.updatePackageJson(pjson)
+      pkgJSON = await askPackageJsonInfo()
+      this.updatePackageJson(pkgJSON)
     }
 
     const pkgManager: PackageManager =
@@ -65,9 +66,18 @@ one.
       (await askPackageManager())
     await installDeps(pkgManager)
 
-    generateBaseFiles()
+    await generateBaseFiles(pkgJSON, pkgManager)
 
-    p.outro('🚀 publicodes is ready to use!')
+    p.note(
+      `${chalk.bold('You can now:')}
+- write your Publicodes rules in ${chalk.bold.yellow('.src/')}
+- compile them using: ${chalk.bold.yellow(`${pkgManager} run compile`)}`,
+      'Publicodes is ready to use 🚀',
+    )
+
+    p.outro(
+      `New to Publicodes? Learn more at ${chalk.underline.cyan('https://publi.codes/docs')}`,
+    )
   }
 
   private updatePackageJson(pkgJSON: PackageJson): void {
@@ -99,10 +109,10 @@ one.
 
     try {
       fs.writeFileSync(packageJsonPath, JSON.stringify(pkgJSON, null, 2))
-      p.log.success(`${chalk.bold('package.json')} file written`)
+      p.log.step(`${chalk.bold('package.json')} file written`)
     } catch (error) {
       p.cancel(
-        `An error occurred while writing the ${chalk.magenta('package.json')} file`,
+        `An error occurred while writing the ${chalk.bold('package.json')} file`,
       )
       process.exit(1)
     }
@@ -196,6 +206,98 @@ async function installDeps(pkgManager: PackageManager): Promise<void> {
   })
 }
 
-function generateBaseFiles() {
-  p.log.step('Generating files')
+async function generateBaseFiles(
+  pjson: PackageJson,
+  pkgManager: PackageManager,
+): Promise<void> {
+  const s = p.spinner()
+
+  s.start('Generating files')
+  return new Promise(async (resolve) => {
+    try {
+      // Generate README.md
+      if (!fs.existsSync('README.md')) {
+        fs.writeFileSync('README.md', getReadmeContent(pjson, pkgManager))
+      }
+
+      // Generate src directory with a base.publicodes file as an example
+      if (!fs.existsSync('src')) {
+        fs.mkdirSync('src')
+      }
+      if (!fs.existsSync('src/base.publicodes')) {
+        fs.writeFileSync('src/base.publicodes', BASE_PUBLICODES)
+      }
+    } catch (error) {
+      s.stop('An error occurred while generating files')
+      p.log.error(error.message)
+      process.exit(1)
+    } finally {
+      // Wait for the spinner to display the message
+      await setTimeout(1)
+      s.stop('Files generated')
+      resolve()
+    }
+  })
 }
+
+function getReadmeContent(
+  pjson: PackageJson,
+  pkgManager: PackageManager,
+): string {
+  return `# ${pjson.name}
+
+    ${pjson.description}
+
+    ## Installation
+
+    \`\`\`sh
+    npm install ${pjson.name} publicodes
+    \`\`\`
+
+    ## Usage
+
+    \`\`\`typescript
+    import { Engine } from 'publicodes'
+    import rules from '${pjson.name}'
+
+    const engine = new Engine(rules)
+
+    console.log(engine.evaluate('salaire net').nodeValue)
+    // 1957.5
+
+    engine.setSituation({ 'salaire brut': 4000 })
+    console.log(engine.evaluate('salaire net').nodeValue)
+    // 3120
+    \`\`\`
+
+    ## Development
+
+    \`\`\`sh
+    // Install the dependencies
+    ${pkgManager} install
+
+    // Compile the Publicodes rules
+    ${pkgManager} run compile
+
+    // Run the documentation server
+    ${pkgManager} run doc
+    \`\`\`
+`
+}
+
+const BASE_PUBLICODES = `# Règles d'exemples automatiquement générées
+    # Supprimez ce fichier ou ajoutez vos propres règles
+
+    salaire net: salaire brut - cotisations salariales
+
+    salaire brut:
+      titre: Salaire brut mensuel
+      par défaut: 2500 €/mois
+
+    cotisations salariales:
+      produit:
+        - salaire brut
+        - taux
+      avec:
+        taux: 21.7%
+    `
