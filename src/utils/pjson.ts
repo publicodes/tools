@@ -8,6 +8,7 @@ export type PackageJson = {
   type?: string
   types?: string
   files?: string[]
+  // TODO: infer from the git config
   repository?: {
     url: string
     type: string
@@ -26,11 +27,14 @@ export type PackageJson = {
   devDependencies?: {
     [key: string]: string
   }
+  publishConfig?: {
+    access: string
+  }
 }
 
 export const basePackageJson: PackageJson = {
   name: '',
-  version: '1.0.0',
+  version: '0.1.0',
   description: '',
   author: '',
   type: 'module',
@@ -41,6 +45,9 @@ export const basePackageJson: PackageJson = {
   peerDependencies: {
     // TODO: how to get the latest version of publicodes?
     publicodes: '^1.5.1',
+  },
+  scripts: {
+    build: 'publicodes build',
   },
 }
 

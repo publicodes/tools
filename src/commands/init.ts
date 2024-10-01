@@ -7,6 +7,7 @@ import chalk from 'chalk'
 
 import { basePackageJson, getPackageJson, PackageJson } from '../utils/pjson'
 import { OptionFlag } from '@oclif/core/lib/interfaces'
+import { spawn } from 'child_process'
 
 type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
 
@@ -62,7 +63,9 @@ one.
       flags['pkg-manager'] ??
       findPackageManager() ??
       (await askPackageManager())
-    installDeps(pkgManager)
+    await installDeps(pkgManager)
+
+    generateBaseFiles()
 
     p.outro('🚀 publicodes is ready to use!')
   }
@@ -85,6 +88,13 @@ one.
     pkgJSON.devDependencies = {
       ...pkgJSON.devDependencies,
       '@publicodes/tools': `^${this.config.pjson.version}`,
+    }
+    pkgJSON.scripts = {
+      ...pkgJSON.scripts,
+      ...basePackageJson.scripts,
+    }
+    if (pkgJSON.name.startsWith('@')) {
+      pkgJSON.publishConfig = { access: 'public' }
     }
 
     try {
@@ -114,8 +124,8 @@ function askPackageJsonInfo(): Promise<PackageJson> {
       version: () =>
         p.text({
           message: 'Version',
-          defaultValue: '1.0.0',
-          placeholder: '1.0.0',
+          defaultValue: '0.1.0',
+          placeholder: '0.1.0',
         }),
       author: () => p.text({ message: 'Author', defaultValue: '' }),
       license: () =>
@@ -166,15 +176,26 @@ function askPackageManager(): Promise<PackageManager> {
   }) as Promise<PackageManager>
 }
 
-function installDeps(pkgManager: PackageManager): void {
+async function installDeps(pkgManager: PackageManager): Promise<void> {
   const s = p.spinner()
+
   s.start(`Installing dependencies with ${pkgManager}`)
-  try {
-    execSync(`${pkgManager} install -y`, { stdio: 'ignore' })
-    s.stop('Dependencies installed with success', 0)
-  } catch (error) {
-    p.log.error(error.message)
-    p.cancel('An error occurred while installing dependencies')
-    process.exit(1)
-  }
+  return new Promise((resolve) => {
+    const program = spawn(pkgManager, ['install', '-y'], { stdio: 'ignore' })
+
+    program.on('error', (error) => {
+      s.stop('An error occurred while installing dependencies')
+      p.log.error(error.message)
+      process.exit(1)
+    })
+
+    program.on('close', () => {
+      s.stop('Dependencies installed')
+      resolve()
+    })
+  })
+}
+
+function generateBaseFiles() {
+  p.log.step('Generating files')
 }
