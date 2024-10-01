@@ -312,6 +312,17 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
+"@publicodes/tools@^1.2.5":
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/@publicodes/tools/-/tools-1.2.5.tgz#ab3177a027d530718057600f78512473a392d8e7"
+  integrity sha512-Cv2nhqd8ucKhFNi6g9aiUqV+PghAdZXk0ECmzXUQjr7AWYVoQZo+/b6rnGcR5uuwg3HOoYqRY8sUenvz80I2sg==
+  dependencies:
+    "@types/node" "^18.11.18"
+    glob "^10.4.1"
+    path "^0.12.7"
+    publicodes "^1.3.3"
+    yaml "^2.4.5"
+
 "@rollup/rollup-android-arm-eabi@4.18.0":
   version "4.18.0"
   resolved "https://registry.yarnpkg.com/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.18.0.tgz#bbd0e616b2078cd2d68afc9824d1fadb2f2ffd27"
@@ -2125,15 +2136,3 @@ yn@3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/yn/-/yn-3.1.1.tgz#1e87401a09d767c1d5eab26a6e4c185182d2eb50"
   integrity sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==
-
-yocto-spinner@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/yocto-spinner/-/yocto-spinner-0.1.0.tgz#a6579796928a179acbe7a0ffd697e2df7d7a8a4c"
-  integrity sha512-sBra0N4uhNn5UibnOz/HJxB1a0tzZ5zXbqnDe+tfRR3BGy+BmOrzrnQCZRJI7C++JiSZaPygPeNon4QCUmMQ4g==
-  dependencies:
-    yoctocolors "^2.1.1"
-
-yoctocolors@^2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/yoctocolors/-/yoctocolors-2.1.1.tgz#e0167474e9fbb9e8b3ecca738deaa61dd12e56fc"
-  integrity sha512-GQHQqAopRhwU8Kt1DDM8NjibDXHC8eoh1erhGAJPEyveY9qqVeXvVikNKrDz69sHowPMorbPUrH/mx8c50eiBQ==

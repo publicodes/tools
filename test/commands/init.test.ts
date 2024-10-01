@@ -3,6 +3,7 @@ import { CLIExecutor, runInDir } from '../cli-utils'
 import fs from 'fs'
 import { PackageJson } from '../../src/utils/pjson'
 import path from 'path'
+import {} from '@oclif/test'
 
 describe('publicodes init', () => {
   it('should update existing package.json', async () => {
@@ -11,7 +12,7 @@ describe('publicodes init', () => {
     runInDir('tmp', async (cwd) => {
       execSync('yarn init -y')
 
-      const { stdout } = await cli.execCommand('init')
+      const { stdout } = await cli.execCommand('init -p yarn')
 
       expect(stdout).toContain('existing package.json file')
       expect(stdout).toContain('package.json file written')

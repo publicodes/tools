@@ -1,12 +1,14 @@
 import fs from 'fs'
 import path from 'path'
 import { execSync } from 'node:child_process'
-import { Command } from '@oclif/core'
+import { Command, Flags } from '@oclif/core'
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
-import yoctospinner from 'yocto-spinner'
 
 import { basePackageJson, getPackageJson, PackageJson } from '../utils/pjson'
+import { OptionFlag } from '@oclif/core/lib/interfaces'
+
+type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
 
 export default class Init extends Command {
   static override args = {}
@@ -27,11 +29,24 @@ manager. Otherwise, it will update the existing package.json file.
     },
   ]
 
-  static override flags = {}
+  static override flags = {
+    'pkg-manager': Flags.string({
+      char: 'p',
+      summary: 'The package manager to use',
+      description: `
+The package manager that will be used to install dependencies. If not provided,
+the command will try to detect the package manager based on the lock files
+present in the project directory, otherwise it will prompt the user to choose
+one.
+`,
+      options: ['npm', 'yarn', 'pnpm', 'bun'],
+    }) as OptionFlag<PackageManager | undefined>,
+  }
 
   public async run(): Promise<void> {
     p.intro(chalk.bgHex('#2975d1')(' publicodes init '))
 
+    const { flags } = await this.parse(Init)
     const pkgJSON = getPackageJson()
 
     if (pkgJSON) {
@@ -43,7 +58,10 @@ manager. Otherwise, it will update the existing package.json file.
       this.updatePackageJson(pjson)
     }
 
-    const pkgManager = findPackageManager() ?? (await askPackageManager())
+    const pkgManager: PackageManager =
+      flags['pkg-manager'] ??
+      findPackageManager() ??
+      (await askPackageManager())
     installDeps(pkgManager)
 
     p.outro('🚀 publicodes is ready to use!')
@@ -115,8 +133,6 @@ function askPackageJsonInfo(): Promise<PackageJson> {
     },
   )
 }
-
-type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
 
 function findPackageManager(): PackageManager | undefined {
   if (fs.existsSync('yarn.lock')) {
