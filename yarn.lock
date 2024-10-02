@@ -1562,10 +1562,10 @@ process@^0.11.1:
   resolved "https://registry.yarnpkg.com/process/-/process-0.11.10.tgz#7332300e840161bda3e69a1d1d91a7d4bc16f182"
   integrity sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==
 
-publicodes@^1.3.3:
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.3.3.tgz#8e9491b282a408e918458dfedabc4512aac05cb1"
-  integrity sha512-bRGB4M2HfgfwSI0ysHptn6pq3iYqos1/z2x7DghzMkK5uaoSMgvaeuIwjiX2SI1kjTh11zdFdwYB8Swyr8oZdA==
+publicodes@^1.5.1:
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/publicodes/-/publicodes-1.5.1.tgz#549de8fe9cd46ca94b5a984c95e5972126a6273d"
+  integrity sha512-VzTGL+iQUTRoBErP/5LRjq2jeFMPyd0kNcp1FPL9ackiZ0uE2SQHbKr+K6cT0OjKE0gJgPVF8lEDDZAALuLAng==
 
 punycode@^2.1.0:
   version "2.3.1"

@@ -3,7 +3,6 @@ import { CLIExecutor, runInDir } from '../cli-utils'
 import fs from 'fs'
 import { PackageJson } from '../../src/utils/pjson'
 import path from 'path'
-import {} from '@oclif/test'
 
 const cli = new CLIExecutor()
 

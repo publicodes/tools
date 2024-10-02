@@ -4,8 +4,13 @@ import { execSync } from 'node:child_process'
 import { Command, Flags } from '@oclif/core'
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
-import { setTimeout } from 'timers/promises'
 
+import {
+  exitWithError,
+  runAsyncWithSpinner,
+  runWithSpinner,
+  Spinner,
+} from '../utils/cli'
 import { basePackageJson, getPackageJson, PackageJson } from '../utils/pjson'
 import { OptionFlag } from '@oclif/core/lib/interfaces'
 import { spawn } from 'child_process'
@@ -15,7 +20,7 @@ type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
 export default class Init extends Command {
   static override args = {}
 
-  static override summary = 'Initialize a new project'
+  static override summary = 'Initialize a new project.'
 
   static override description = `
 If no package.json file is found in the current directory, this command will
@@ -24,17 +29,20 @@ manager. Otherwise, it will update the existing package.json file.
 `
 
   static override examples = [
-    { command: '<%= command.id %>', description: 'initialize a new project' },
     {
-      command: '<%= command.id %> -p yarn',
-      description: 'initialize a new project with Yarn',
+      command: '<%= config.bin %> <%= command.id %>',
+      description: 'Initialize a new project.',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> -p yarn',
+      description: 'Initialize a new project with Yarn.',
     },
   ]
 
   static override flags = {
     'pkg-manager': Flags.string({
       char: 'p',
-      summary: 'The package manager to use',
+      summary: 'The package manager to use.',
       description: `The package manager that will be used to install dependencies. If not provided,
 the command will try to detect the package manager based on the lock files
 present in the project directory, otherwise it will prompt the user to choose
@@ -44,14 +52,14 @@ one.
     }) as OptionFlag<PackageManager | undefined>,
     'no-install': Flags.boolean({
       char: 'n',
-      summary: 'Do not install dependencies',
+      summary: 'Skip the installation of dependencies.',
       description: `By default, the commmand will try to install the dependencies using the
 specified package manager (or the detected one). Use this flag to skip the
 installation.`,
     }),
     install: Flags.boolean({
       char: 'i',
-      summary: 'Install dependencies',
+      summary: 'Install dependencies.',
       hidden: true,
     }),
   }
@@ -209,33 +217,43 @@ function askPackageManager(): Promise<PackageManager> {
 }
 
 async function installDeps(pkgManager: PackageManager): Promise<void> {
-  const s = p.spinner()
+  return runAsyncWithSpinner(
+    'Installing dependencies',
+    'Dependencies installed',
+    (spinner: Spinner) => {
+      return new Promise<void>((resolve) => {
+        const program = spawn(pkgManager, ['install', '-y'], {
+          stdio: 'ignore',
+        })
 
-  s.start(`Installing dependencies with ${pkgManager}`)
-  return new Promise((resolve) => {
-    const program = spawn(pkgManager, ['install', '-y'], { stdio: 'ignore' })
+        program.on('error', (error) => {
+          exitWithError(
+            'An error occurred while installing dependencies',
+            spinner,
+            error.message,
+          )
+        })
 
-    program.on('error', (error) => {
-      s.stop('An error occurred while installing dependencies')
-      p.log.error(error.message)
-      process.exit(1)
-    })
-
-    program.on('close', () => {
-      s.stop('Dependencies installed')
-      resolve()
-    })
-  })
+        program.on('close', (code) => {
+          if (code !== 0) {
+            exitWithError(
+              `An error occurred while installing dependencies (exec: ${pkgManager} install -y)`,
+              spinner,
+              `Process exited with code ${code}`,
+            )
+          }
+          resolve()
+        })
+      })
+    },
+  )
 }
 
 async function generateBaseFiles(
   pjson: PackageJson,
   pkgManager: PackageManager,
 ): Promise<void> {
-  const s = p.spinner()
-
-  s.start('Generating files')
-  return new Promise(async (resolve) => {
+  return runWithSpinner('Generating files', 'Files generated', (spinner) => {
     try {
       // Generate README.md
       if (!fs.existsSync('README.md')) {
@@ -250,14 +268,11 @@ async function generateBaseFiles(
         fs.writeFileSync('src/base.publicodes', BASE_PUBLICODES)
       }
     } catch (error) {
-      s.stop('An error occurred while generating files')
-      p.log.error(error.message)
-      process.exit(1)
-    } finally {
-      // Wait for the spinner to display the message
-      await setTimeout(1)
-      s.stop('Files generated')
-      resolve()
+      exitWithError(
+        'An error occurred while generating files',
+        spinner,
+        error.message,
+      )
     }
   })
 }
