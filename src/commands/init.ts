@@ -35,14 +35,25 @@ manager. Otherwise, it will update the existing package.json file.
     'pkg-manager': Flags.string({
       char: 'p',
       summary: 'The package manager to use',
-      description: `
-The package manager that will be used to install dependencies. If not provided,
+      description: `The package manager that will be used to install dependencies. If not provided,
 the command will try to detect the package manager based on the lock files
 present in the project directory, otherwise it will prompt the user to choose
 one.
 `,
       options: ['npm', 'yarn', 'pnpm', 'bun'],
     }) as OptionFlag<PackageManager | undefined>,
+    'no-install': Flags.boolean({
+      char: 'n',
+      summary: 'Do not install dependencies',
+      description: `By default, the commmand will try to install the dependencies using the
+specified package manager (or the detected one). Use this flag to skip the
+installation.`,
+    }),
+    install: Flags.boolean({
+      char: 'i',
+      summary: 'Install dependencies',
+      hidden: true,
+    }),
   }
 
   public async run(): Promise<void> {
@@ -64,7 +75,18 @@ one.
       flags['pkg-manager'] ??
       findPackageManager() ??
       (await askPackageManager())
-    await installDeps(pkgManager)
+
+    const shouldInstall =
+      flags.install ||
+      (flags['no-install'] === undefined
+        ? await p.confirm({
+            message: 'Do you want to install the dependencies?',
+          })
+        : !flags['no-install'])
+
+    if (shouldInstall) {
+      await installDeps(pkgManager)
+    }
 
     await generateBaseFiles(pkgJSON, pkgManager)
 
