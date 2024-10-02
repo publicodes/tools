@@ -6,7 +6,8 @@ describe('publicodes --help', () => {
 
     runInDir('tmp', async () => {
       const { stdout } = await cli.execCommand('--help')
-      expect(stdout).toContain('init  Initialize a new project')
+      expect(stdout).toContain('init')
+      expect(stdout).toContain('compile')
     })
   })
 })

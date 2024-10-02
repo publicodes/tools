@@ -24,7 +24,7 @@ export function exitWithError({
   } else {
     p.log.error(ctx)
   }
-  p.log.message(chalk.dim(msg))
+  p.log.message(chalk.dim(msg.trim()))
   p.outro('Exiting due to an error.')
   process.exit(code)
 }

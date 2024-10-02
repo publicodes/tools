@@ -82,7 +82,7 @@ importer!:
       })
 
       if (verbose) {
-        console.debug(`📦 ${packageName} loaded`)
+        logger.log(`📦 ${packageName} loaded`)
       }
       enginesCache[modelPath] = engine
     } catch (e) {
