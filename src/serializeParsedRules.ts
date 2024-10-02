@@ -3,7 +3,7 @@ import { RawRule, RuleName } from './commons'
 
 type SerializedRule = RawRule | number | string | null
 
-function serializedRuleToRawRule(serializedRule: SerializedRule): RawRule {
+function serializedRuleToRawRule(serializedRule: SerializedRule): object {
   if (serializedRule !== null && typeof serializedRule === 'object') {
     return serializedRule
   }

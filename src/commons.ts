@@ -6,6 +6,7 @@ import {
   reduceAST,
   ASTNode,
   Evaluation,
+  PublicodesExpression,
 } from 'publicodes'
 import yaml from 'yaml'
 
@@ -66,7 +67,11 @@ export type ImportMacro = {
 /**
  * Represents a non-parsed NGC rule.
  */
-export type RawRule = Omit<Rule, 'nom'> | ImportMacro
+export type RawRule =
+  | Omit<Rule, 'nom'>
+  | ImportMacro
+  | PublicodesExpression
+  | null
 
 /**
  * Represents a non-parsed NGC model.
@@ -225,8 +230,8 @@ export function substituteInParsedExpr(
 export function getDoubleDefError(
   filePath: string,
   name: string,
-  firstDef: object,
-  secondDef: object,
+  firstDef: RawRule,
+  secondDef: RawRule,
 ): Error {
   return new Error(
     `[${basename(filePath)}] La règle '${name}' est déjà définie

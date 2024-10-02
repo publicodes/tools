@@ -1,4 +1,4 @@
-import Engine, { Rule, RuleNode, utils } from 'publicodes'
+import Engine, { Logger, Rule, RuleNode, utils } from 'publicodes'
 import {
   RuleName,
   getAllRefsInNode,
@@ -39,6 +39,7 @@ const enginesCache = {}
 function getEngine(
   filePath: string,
   { depuis }: ImportMacro,
+  logger: Logger,
   verbose: boolean,
 ): Engine {
   const packageName = depuis?.nom
@@ -76,7 +77,7 @@ importer!:
         logger: {
           log: (_) => {},
           warn: (_) => {},
-          error: (s) => console.error(s),
+          error: (s) => logger.error(s),
         },
       })
 
@@ -227,13 +228,14 @@ function getNamespace({ dans, depuis: { nom } }: ImportMacro): string {
 export function resolveImports(
   filePath: string,
   rules: RawRules,
+  logger: Logger,
   verbose = false,
 ): { completeRules: RawRules; neededNamespaces: Set<string> } {
   let neededNamespaces = new Set<string>()
   const resolvedRules = Object.entries(rules).reduce((acc, [name, value]) => {
     if (name === IMPORT_KEYWORD) {
       const importMacro = value as ImportMacro
-      const engine = getEngine(filePath, importMacro, verbose)
+      const engine = getEngine(filePath, importMacro, logger, verbose)
       const rulesToImport: RuleToImport[] =
         importMacro['les règles']?.map(getRuleToImportInfos)
       const namespace = getNamespace(importMacro)
