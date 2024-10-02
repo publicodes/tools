@@ -8,13 +8,22 @@ export type Spinner = {
   message: (msg?: string) => void
 }
 
-export function exitWithError(
-  ctx: string,
-  spinner: Spinner,
-  msg: string,
+export function exitWithError({
+  ctx,
+  msg,
   code = 1,
-): never {
-  spinner.stop(ctx, code)
+  spinner,
+}: {
+  ctx: string
+  msg: string
+  code?: number
+  spinner?: Spinner
+}): never {
+  if (spinner) {
+    spinner.stop(ctx, code)
+  } else {
+    p.log.error(ctx)
+  }
   p.log.message(chalk.dim(msg))
   p.outro('Exiting due to an error.')
   process.exit(code)

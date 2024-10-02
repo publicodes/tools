@@ -102,7 +102,7 @@ installation.`,
       `${chalk.bold('You can now:')}
 - write your Publicodes rules in ${chalk.bold.yellow('.src/')}
 - compile them using: ${chalk.bold.yellow(`${pkgManager} run compile`)}`,
-      'Publicodes is ready to use 🚀',
+      chalk.bold('Publicodes is ready to use 🚀'),
     )
 
     p.outro(
@@ -141,10 +141,10 @@ installation.`,
       fs.writeFileSync(packageJsonPath, JSON.stringify(pkgJSON, null, 2))
       p.log.step(`${chalk.bold('package.json')} file written`)
     } catch (error) {
-      p.cancel(
-        `An error occurred while writing the ${chalk.bold('package.json')} file`,
-      )
-      process.exit(1)
+      exitWithError({
+        ctx: `An error occurred while writing the ${chalk.bold('package.json')} file`,
+        msg: error.message,
+      })
     }
   }
 }
@@ -227,20 +227,20 @@ async function installDeps(pkgManager: PackageManager): Promise<void> {
         })
 
         program.on('error', (error) => {
-          exitWithError(
-            'An error occurred while installing dependencies',
+          exitWithError({
+            ctx: 'An error occurred while installing dependencies',
+            msg: error.message,
             spinner,
-            error.message,
-          )
+          })
         })
 
         program.on('close', (code) => {
           if (code !== 0) {
-            exitWithError(
-              `An error occurred while installing dependencies (exec: ${pkgManager} install -y)`,
+            exitWithError({
+              ctx: `An error occurred while installing dependencies (exec: ${pkgManager} install -y)`,
+              msg: `Process exited with code ${code}`,
               spinner,
-              `Process exited with code ${code}`,
-            )
+            })
           }
           resolve()
         })
@@ -268,11 +268,11 @@ async function generateBaseFiles(
         fs.writeFileSync('src/base.publicodes', BASE_PUBLICODES)
       }
     } catch (error) {
-      exitWithError(
-        'An error occurred while generating files',
+      exitWithError({
+        ctx: 'An error occurred while generating files',
+        msg: error.message,
         spinner,
-        error.message,
-      )
+      })
     }
   })
 }
@@ -283,58 +283,58 @@ function getReadmeContent(
 ): string {
   return `# ${pjson.name}
 
-    ${pjson.description}
+${pjson.description}
 
-    ## Installation
+## Installation
 
-    \`\`\`sh
-    npm install ${pjson.name} publicodes
-    \`\`\`
+\`\`\`sh
+npm install ${pjson.name} publicodes
+\`\`\`
 
-    ## Usage
+## Usage
 
-    \`\`\`typescript
-    import { Engine } from 'publicodes'
-    import rules from '${pjson.name}'
+\`\`\`typescript
+import { Engine } from 'publicodes'
+import rules from '${pjson.name}'
 
-    const engine = new Engine(rules)
+const engine = new Engine(rules)
 
-    console.log(engine.evaluate('salaire net').nodeValue)
-    // 1957.5
+console.log(engine.evaluate('salaire net').nodeValue)
+// 1957.5
 
-    engine.setSituation({ 'salaire brut': 4000 })
-    console.log(engine.evaluate('salaire net').nodeValue)
-    // 3120
-    \`\`\`
+engine.setSituation({ 'salaire brut': 4000 })
+console.log(engine.evaluate('salaire net').nodeValue)
+// 3120
+\`\`\`
 
-    ## Development
+## Development
 
-    \`\`\`sh
-    // Install the dependencies
-    ${pkgManager} install
+\`\`\`sh
+// Install the dependencies
+${pkgManager} install
 
-    // Compile the Publicodes rules
-    ${pkgManager} run compile
+// Compile the Publicodes rules
+${pkgManager} run compile
 
-    // Run the documentation server
-    ${pkgManager} run doc
-    \`\`\`
+// Run the documentation server
+${pkgManager} run doc
+\`\`\`
 `
 }
 
 const BASE_PUBLICODES = `# Règles d'exemples automatiquement générées
-    # Supprimez ce fichier ou ajoutez vos propres règles
+# Supprimez ce fichier ou ajoutez vos propres règles
 
-    salaire net: salaire brut - cotisations salariales
+salaire net: salaire brut - cotisations salariales
 
-    salaire brut:
-      titre: Salaire brut mensuel
-      par défaut: 2500 €/mois
+salaire brut:
+  titre: Salaire brut mensuel
+  par défaut: 2500 €/mois
 
-    cotisations salariales:
-      produit:
-        - salaire brut
-        - taux
-      avec:
-        taux: 21.7%
-    `
+cotisations salariales:
+  produit:
+    - salaire brut
+    - taux
+  avec:
+    taux: 21.7%
+`
