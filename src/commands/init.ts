@@ -57,10 +57,9 @@ one.
 specified package manager (or the detected one). Use this flag to skip the
 installation.`,
     }),
-    install: Flags.boolean({
-      char: 'i',
-      summary: 'Install dependencies.',
-      hidden: true,
+    yes: Flags.boolean({
+      char: 'y',
+      summary: 'Skip all prompts and use the default values.',
     }),
   }
 
@@ -69,28 +68,33 @@ installation.`,
 
     const { flags } = await this.parse(Init)
     let pkgJSON = getPackageJson()
+    const currentDir = path.basename(process.cwd())
 
     if (pkgJSON) {
       p.log.info(`Updating existing ${chalk.bold('package.json')} file`)
-      this.updatePackageJson(pkgJSON)
+    } else if (flags.yes) {
+      p.log.step(
+        `Creating a new ${chalk.bold('package.json')} file with default values`,
+      )
+      pkgJSON = basePackageJson
+      pkgJSON.name = currentDir
     } else {
       p.log.step(`Creating a new ${chalk.bold('package.json')} file`)
-      pkgJSON = await askPackageJsonInfo()
-      this.updatePackageJson(pkgJSON)
+      pkgJSON = await askPackageJsonInfo(currentDir)
     }
+    this.updatePackageJson(pkgJSON)
 
     const pkgManager: PackageManager =
       flags['pkg-manager'] ??
       findPackageManager() ??
-      (await askPackageManager())
+      (flags.yes ? 'npm' : await askPackageManager())
 
     const shouldInstall =
-      flags.install ||
-      (flags['no-install'] === undefined
+      flags['no-install'] === undefined && !flags.yes
         ? await p.confirm({
             message: 'Do you want to install the dependencies?',
           })
-        : !flags['no-install'])
+        : !flags['no-install']
 
     if (shouldInstall) {
       await installDeps(pkgManager)
@@ -149,9 +153,7 @@ installation.`,
   }
 }
 
-function askPackageJsonInfo(): Promise<PackageJson> {
-  const currentDir = path.basename(process.cwd())
-
+function askPackageJsonInfo(currentDir: string): Promise<PackageJson> {
   return p.group(
     {
       name: () =>
@@ -322,8 +324,8 @@ ${pkgManager} run doc
 `
 }
 
-const BASE_PUBLICODES = `# Règles d'exemples automatiquement générées
-# Supprimez ce fichier ou ajoutez vos propres règles
+const BASE_PUBLICODES = `# Règles d'exemples automatiquement générées.
+# Supprimez ce fichier ou ajoutez vos propres règles.
 
 salaire net: salaire brut - cotisations salariales
 

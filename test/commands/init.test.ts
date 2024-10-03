@@ -11,7 +11,7 @@ describe('publicodes init', () => {
     runInDir('tmp', async (cwd) => {
       execSync('yarn init -y')
 
-      const { stdout } = await cli.execCommand('init -p yarn --install')
+      const { stdout } = await cli.execCommand('init -y -p yarn')
 
       expect(stdout).toContain('Updating existing package.json file')
       expect(stdout).toContain('package.json file written')
@@ -35,7 +35,7 @@ describe('publicodes init', () => {
     runInDir('tmp', async (cwd) => {
       execSync('yarn init -y')
 
-      const { stdout } = await cli.execCommand('init -p yarn --no-install')
+      const { stdout } = await cli.execCommand('init -y --no-install -p yarn')
 
       expect(stdout).toContain('Updating existing package.json file')
       expect(stdout).toContain('package.json file written')
@@ -47,8 +47,8 @@ describe('publicodes init', () => {
         getExpectedBasePackageJson(cwd, packageJson),
       )
 
-      expect(!fs.existsSync('node_modules')).toBe(true)
-      expect(!fs.existsSync('yarn.lock')).toBe(true)
+      expect(fs.existsSync('node_modules')).toBe(false)
+      expect(fs.existsSync('yarn.lock')).toBe(false)
       expect(fs.existsSync('README.md')).toBe(true)
       expect(fs.existsSync('src/base.publicodes')).toBe(true)
     })
