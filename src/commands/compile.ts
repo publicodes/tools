@@ -8,7 +8,7 @@ import { RawRules } from '../commons'
 import { exitWithError, runWithSpinner } from '../utils/cli'
 import { resolveRuleTypes, RuleType } from '../compilation/ruleTypes'
 import Engine from 'publicodes'
-import { getPackageJson } from '../utils/pjson'
+import { readPackageJson } from '../utils/pjson'
 
 export default class Compile extends Command {
   static override args = {
@@ -76,7 +76,7 @@ the package.json file under the \`publicodes\` key. For example:
 
     const rawRules = await parseFiles(filesToCompile, { verbose: false })
     const engine = await initEngine(rawRules)
-    const pkgName = getPackageJson()?.name ?? path.basename(process.cwd())
+    const pkgName = readPackageJson()?.name ?? path.basename(process.cwd())
 
     // Create output directory if it doesn't exist
     if (!fs.existsSync(outputDir)) {

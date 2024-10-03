@@ -11,7 +11,7 @@ import {
   runWithSpinner,
   Spinner,
 } from '../utils/cli'
-import { basePackageJson, getPackageJson, PackageJson } from '../utils/pjson'
+import { basePackageJson, PackageJson, readPackageJson } from '../utils/pjson'
 import { OptionFlag } from '@oclif/core/lib/interfaces'
 import { spawn } from 'child_process'
 
@@ -67,27 +67,13 @@ installation.`,
     p.intro(chalk.bgHex('#2975d1')(' publicodes init '))
 
     const { flags } = await this.parse(Init)
-    let pkgJSON = getPackageJson()
     const currentDir = path.basename(process.cwd())
+    const pkgJSON = await getPackageJson(currentDir, flags.yes)
 
-    if (pkgJSON) {
-      p.log.info(`Updating existing ${chalk.bold('package.json')} file`)
-    } else if (flags.yes) {
-      p.log.step(
-        `Creating a new ${chalk.bold('package.json')} file with default values`,
-      )
-      pkgJSON = basePackageJson
-      pkgJSON.name = currentDir
-    } else {
-      p.log.step(`Creating a new ${chalk.bold('package.json')} file`)
-      pkgJSON = await askPackageJsonInfo(currentDir)
-    }
     this.updatePackageJson(pkgJSON)
 
-    const pkgManager: PackageManager =
-      flags['pkg-manager'] ??
-      findPackageManager() ??
-      (flags.yes ? 'npm' : await askPackageManager())
+    const pkgManager = await getPackageManager(flags['pkg-manager'], flags.yes)
+    // const extraTools = await getExtraTools(flags.yes)
 
     const shouldInstall =
       flags['no-install'] === undefined && !flags.yes
@@ -131,6 +117,7 @@ installation.`,
     }
     pkgJSON.devDependencies = {
       ...pkgJSON.devDependencies,
+      // NOTE: to test with the packaged version
       '@publicodes/tools': `^${this.config.pjson.version}`,
     }
     pkgJSON.scripts = {
@@ -151,6 +138,38 @@ installation.`,
       })
     }
   }
+}
+
+async function getPackageJson(
+  currentDir: string,
+  useDefault: boolean,
+): Promise<PackageJson> {
+  const localPkgJson = readPackageJson()
+
+  if (localPkgJson) {
+    return localPkgJson
+  }
+
+  if (useDefault) {
+    return { ...basePackageJson, name: currentDir }
+  }
+
+  return await askPackageJsonInfo(currentDir)
+}
+
+async function getPackageManager(
+  flagedPkgManager: PackageManager | undefined,
+  useDefault: boolean,
+): Promise<PackageManager> {
+  if (flagedPkgManager) {
+    return flagedPkgManager
+  }
+  const currentPkgManager = findPackageManager()
+  if (currentPkgManager) {
+    return currentPkgManager
+  }
+
+  return useDefault ? 'npm' : await askPackageManager()
 }
 
 function askPackageJsonInfo(currentDir: string): Promise<PackageJson> {

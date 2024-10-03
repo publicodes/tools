@@ -51,10 +51,10 @@ export const basePackageJson: PackageJson = {
   },
 }
 
-export function getPackageJson(): PackageJson | undefined {
+export function readPackageJson(): PackageJson | undefined {
   try {
-    return JSON.parse(fs.readFileSync('package.json', 'utf8'))
-  } catch (error) {
+    return JSON.parse(fs.readFileSync('package.json', 'utf-8'))
+  } catch (e) {
     return undefined
   }
 }

@@ -13,7 +13,6 @@ describe('publicodes init', () => {
 
       const { stdout } = await cli.execCommand('init -y -p yarn')
 
-      expect(stdout).toContain('Updating existing package.json file')
       expect(stdout).toContain('package.json file written')
       expect(stdout).toContain('Dependencies installed')
       expect(stdout).toContain('Files generated')
@@ -37,7 +36,6 @@ describe('publicodes init', () => {
 
       const { stdout } = await cli.execCommand('init -y --no-install -p yarn')
 
-      expect(stdout).toContain('Updating existing package.json file')
       expect(stdout).toContain('package.json file written')
       expect(stdout).toContain('Files generated')
       expect(stdout).toContain('New to Publicodes?')
