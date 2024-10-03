@@ -71,10 +71,9 @@
   },
   "devDependencies": {
     "@oclif/test": "^4.0.9",
-    "@types/jest": "^29.2.5",
+    "@types/jest": "^29.5.13",
     "docdash": "^2.0.1",
     "prettier": "^3.0.0",
-    "ts-jest": "^29.0.4",
     "ts-node": "^10.9.2",
     "tsup": "^8.0.2",
     "typedoc": "^0.24.8",

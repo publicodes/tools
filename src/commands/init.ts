@@ -16,6 +16,7 @@ import { OptionFlag } from '@oclif/core/lib/interfaces'
 import { spawn } from 'child_process'
 
 type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
+type ExtraTool = 'gh-actions' | 'test'
 
 export default class Init extends Command {
   static override args = {}
@@ -63,17 +64,38 @@ installation.`,
     }),
   }
 
+  // TODO: refactor to have a unique project object which is built and passed
+  // to the methods before writing it in one go.
   public async run(): Promise<void> {
     p.intro(chalk.bgHex('#2975d1')(' publicodes init '))
 
     const { flags } = await this.parse(Init)
     const currentDir = path.basename(process.cwd())
-    const pkgJSON = await getPackageJson(currentDir, flags.yes)
+    const pkgJSON = await this.getPackageJson(currentDir, flags.yes)
 
-    this.updatePackageJson(pkgJSON)
+    // TODO: check for existing 'test' directory and '.github/workflows' directory
+    const extraTools = await getExtraTools(flags.yes)
+    // TODO: factorize this
+    if (p.isCancel(extraTools)) {
+      p.cancel('init cancelled')
+      process.exit(1)
+    }
+
+    if (extraTools.includes('gh-actions')) {
+      // TODO
+      // setupGithubActions()
+    }
+    if (extraTools.includes('test')) {
+      setupTests(pkgJSON)
+    }
 
     const pkgManager = await getPackageManager(flags['pkg-manager'], flags.yes)
-    // const extraTools = await getExtraTools(flags.yes)
+    if (p.isCancel(pkgManager)) {
+      p.cancel('init cancelled')
+      process.exit(1)
+    }
+
+    await generateBaseFiles(pkgJSON, pkgManager)
 
     const shouldInstall =
       flags['no-install'] === undefined && !flags.yes
@@ -85,8 +107,6 @@ installation.`,
     if (shouldInstall) {
       await installDeps(pkgManager)
     }
-
-    await generateBaseFiles(pkgJSON, pkgManager)
 
     p.note(
       `${chalk.bold('You can now:')}
@@ -100,8 +120,18 @@ installation.`,
     )
   }
 
-  private updatePackageJson(pkgJSON: PackageJson): void {
-    const packageJsonPath = path.join(process.cwd(), 'package.json')
+  private async getPackageJson(
+    currentDir: string,
+    useDefault: boolean,
+  ): Promise<PackageJson> {
+    let pkgJSON = readPackageJson()
+
+    if (!pkgJSON && useDefault) {
+      pkgJSON = { ...basePackageJson, name: currentDir }
+    }
+    if (!pkgJSON) {
+      pkgJSON = await askPackageJsonInfo(currentDir)
+    }
 
     pkgJSON.type = basePackageJson.type
     pkgJSON.main = basePackageJson.main
@@ -128,33 +158,8 @@ installation.`,
       pkgJSON.publishConfig = { access: 'public' }
     }
 
-    try {
-      fs.writeFileSync(packageJsonPath, JSON.stringify(pkgJSON, null, 2))
-      p.log.step(`${chalk.bold('package.json')} file written`)
-    } catch (error) {
-      exitWithError({
-        ctx: `An error occurred while writing the ${chalk.bold('package.json')} file`,
-        msg: error.message,
-      })
-    }
+    return pkgJSON
   }
-}
-
-async function getPackageJson(
-  currentDir: string,
-  useDefault: boolean,
-): Promise<PackageJson> {
-  const localPkgJson = readPackageJson()
-
-  if (localPkgJson) {
-    return localPkgJson
-  }
-
-  if (useDefault) {
-    return { ...basePackageJson, name: currentDir }
-  }
-
-  return await askPackageJsonInfo(currentDir)
 }
 
 async function getPackageManager(
@@ -237,13 +242,45 @@ function askPackageManager(): Promise<PackageManager> {
   }) as Promise<PackageManager>
 }
 
+async function getExtraTools(useDefault: boolean): Promise<ExtraTool[]> {
+  if (useDefault) {
+    return ['gh-actions', 'test']
+  }
+  return p.multiselect({
+    message: `Select extra tools (press ${chalk.bold.italic('space')} to unselect)`,
+    options: [
+      {
+        value: 'gh-actions',
+        label: 'GitHub Actions',
+        hint: 'automate build, test and publishing',
+      },
+      { value: 'test', label: 'Unit test', hint: 'Vitest + example' },
+    ],
+    required: false,
+    initialValues: ['gh-actions', 'test'],
+  }) as Promise<ExtraTool[]>
+}
+
+function setupTests(pkgJSON: PackageJson) {
+  pkgJSON.devDependencies = {
+    ...pkgJSON.devDependencies,
+    vitest: '^2.1.2',
+    '@types/jest': '^29.5.13',
+  }
+  pkgJSON.scripts = {
+    ...pkgJSON.scripts,
+    test: 'vitest --globals',
+  }
+  return pkgJSON
+}
+
 async function installDeps(pkgManager: PackageManager): Promise<void> {
   return runAsyncWithSpinner(
     'Installing dependencies',
     'Dependencies installed',
     (spinner: Spinner) => {
       return new Promise<void>((resolve) => {
-        const program = spawn(pkgManager, ['install', '-y'], {
+        const program = spawn(pkgManager, ['install'], {
           stdio: 'ignore',
         })
 
@@ -258,7 +295,7 @@ async function installDeps(pkgManager: PackageManager): Promise<void> {
         program.on('close', (code) => {
           if (code !== 0) {
             exitWithError({
-              ctx: `An error occurred while installing dependencies (exec: ${pkgManager} install -y)`,
+              ctx: `An error occurred while installing dependencies (exec: ${pkgManager} install)`,
               msg: `Process exited with code ${code}`,
               spinner,
             })
@@ -276,6 +313,10 @@ async function generateBaseFiles(
 ): Promise<void> {
   return runWithSpinner('Generating files', 'Files generated', (spinner) => {
     try {
+      // Generate package.json
+      const packageJsonPath = path.join(process.cwd(), 'package.json')
+      fs.writeFileSync(packageJsonPath, JSON.stringify(pjson, null, 2))
+
       // Generate README.md
       if (!fs.existsSync('README.md')) {
         fs.writeFileSync('README.md', getReadmeContent(pjson, pkgManager))
@@ -285,9 +326,28 @@ async function generateBaseFiles(
       if (!fs.existsSync('src')) {
         fs.mkdirSync('src')
       }
-      if (!fs.existsSync('src/base.publicodes')) {
-        fs.writeFileSync('src/base.publicodes', BASE_PUBLICODES)
+      if (!fs.existsSync('src/salaire.publicodes')) {
+        fs.writeFileSync('src/salaire.publicodes', BASE_PUBLICODES)
       }
+      if (!fs.existsSync('.gitignore')) {
+        try {
+          execSync('git init', { stdio: 'ignore' })
+        } catch (error) {
+          p.log.warn(
+            `Could not initialize a git repository (make sure ${chalk.bold.italic('git')} is installed)`,
+          )
+        }
+        fs.writeFileSync(
+          '.gitignore',
+          `node_modules\n${pjson.files?.join('\n')}`,
+        )
+      }
+
+      if (!fs.existsSync('test')) {
+        fs.mkdirSync('test')
+      }
+
+      fs.writeFileSync('test/salaire.test.ts', BASE_TEST_FILE)
     } catch (error) {
       exitWithError({
         ctx: 'An error occurred while generating files',
@@ -309,7 +369,7 @@ ${pjson.description}
 ## Installation
 
 \`\`\`sh
-npm install ${pjson.name} publicodes
+${pkgManager} install ${pjson.name} publicodes
 \`\`\`
 
 ## Usage
@@ -337,6 +397,13 @@ ${pkgManager} install
 // Compile the Publicodes rules
 ${pkgManager} run compile
 
+${
+  pjson.scripts?.test
+    ? `// Run the tests
+${pkgManager} run test`
+    : ''
+}
+
 // Run the documentation server
 ${pkgManager} run doc
 \`\`\`
@@ -350,7 +417,8 @@ salaire net: salaire brut - cotisations salariales
 
 salaire brut:
   titre: Salaire brut mensuel
-  par défaut: 2500 €/mois
+  par défaut: 2500 
+  unité: €/mois
 
 cotisations salariales:
   produit:
@@ -358,4 +426,31 @@ cotisations salariales:
     - taux
   avec:
     taux: 21.7%
+`
+
+const BASE_TEST_FILE = `import Engine, { serializeEvaluation, serializeUnit } from "publicodes";
+import rules from "../build";
+
+describe("Salaire net", () => {
+  test("salaire brut par défaut", () => {
+    const engine = new Engine(rules);
+    const result = engine.evaluate("salaire net");
+
+    expect(result.nodeValue).toBe(1957.5);
+    expect(serializeEvaluation(result)).toBe("1957.5€/mois");
+  });
+
+  test.each([
+    [1957.5, 2500],
+    [2740.5, 3500],
+    [0, 0],
+  ])("%f €/mois, avec salaire brut = %f €/mois", (salaireNet, salaireBrut) => {
+    const engine = new Engine(rules);
+    engine.setSituation({ "salaire brut": salaireBrut });
+    const result = engine.evaluate("salaire net");
+
+    expect(result.nodeValue).toBe(salaireNet);
+    expect(serializeUnit(result.unit)).toBe("€/mois");
+  });
+});
 `

@@ -13,7 +13,6 @@ describe('publicodes init', () => {
 
       const { stdout } = await cli.execCommand('init -y -p yarn')
 
-      expect(stdout).toContain('package.json file written')
       expect(stdout).toContain('Dependencies installed')
       expect(stdout).toContain('Files generated')
       expect(stdout).toContain('New to Publicodes?')
@@ -26,7 +25,8 @@ describe('publicodes init', () => {
       expect(fs.existsSync('node_modules')).toBe(true)
       expect(fs.existsSync('yarn.lock')).toBe(true)
       expect(fs.existsSync('README.md')).toBe(true)
-      expect(fs.existsSync('src/base.publicodes')).toBe(true)
+      expect(fs.existsSync('src/salaire.publicodes')).toBe(true)
+      expect(fs.existsSync('test/salaire.test.ts')).toBe(true)
     })
   })
 
@@ -36,7 +36,6 @@ describe('publicodes init', () => {
 
       const { stdout } = await cli.execCommand('init -y --no-install -p yarn')
 
-      expect(stdout).toContain('package.json file written')
       expect(stdout).toContain('Files generated')
       expect(stdout).toContain('New to Publicodes?')
 
@@ -48,7 +47,7 @@ describe('publicodes init', () => {
       expect(fs.existsSync('node_modules')).toBe(false)
       expect(fs.existsSync('yarn.lock')).toBe(false)
       expect(fs.existsSync('README.md')).toBe(true)
-      expect(fs.existsSync('src/base.publicodes')).toBe(true)
+      expect(fs.existsSync('src/salaire.publicodes')).toBe(true)
     })
   })
 })
