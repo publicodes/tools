@@ -30,6 +30,10 @@ export type PackageJson = {
   publishConfig?: {
     access: string
   }
+  publicodes?: {
+    files?: string[]
+    output?: string
+  }
 }
 
 export const basePackageJson: PackageJson = {

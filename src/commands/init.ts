@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs, { appendFileSync } from 'fs'
 import path from 'path'
 import { execSync } from 'node:child_process'
 import { Command, Flags } from '@oclif/core'
@@ -141,6 +141,10 @@ installation.`,
     pkgJSON.description = pkgJSON.description ?? basePackageJson.description
     pkgJSON.author = pkgJSON.author ?? basePackageJson.author
     pkgJSON.files = basePackageJson.files!.concat(pkgJSON.files ?? [])
+    pkgJSON.scripts = {
+      ...pkgJSON.scripts,
+      ...basePackageJson.scripts,
+    }
     pkgJSON.peerDependencies = {
       ...pkgJSON.peerDependencies,
       ...basePackageJson.peerDependencies,
@@ -149,10 +153,6 @@ installation.`,
       ...pkgJSON.devDependencies,
       // NOTE: to test with the packaged version
       '@publicodes/tools': `^${this.config.pjson.version}`,
-    }
-    pkgJSON.scripts = {
-      ...pkgJSON.scripts,
-      ...basePackageJson.scripts,
     }
     if (pkgJSON.name.startsWith('@')) {
       pkgJSON.publishConfig = { access: 'public' }
@@ -269,7 +269,7 @@ function setupTests(pkgJSON: PackageJson) {
   }
   pkgJSON.scripts = {
     ...pkgJSON.scripts,
-    test: 'vitest --globals',
+    test: 'vitest run --globals',
   }
   return pkgJSON
 }
@@ -342,6 +342,11 @@ async function generateBaseFiles(
           `node_modules\n${pjson.files?.join('\n')}`,
         )
       }
+
+      fs.appendFileSync(
+        '.gitattributes',
+        '*.publicodes linguist-language=YAML\n',
+      )
 
       if (!fs.existsSync('test')) {
         fs.mkdirSync('test')
