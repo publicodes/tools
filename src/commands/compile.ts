@@ -89,7 +89,7 @@ the package.json file under the \`publicodes\` key. For example:
 
     await generateBaseFiles(rawRules, outputDir, pkgName)
 
-    p.outro('Compilation complete! 🎉')
+    p.outro('Compilation done.')
   }
 
   async generateDTS(engine: Engine, outputDir: string): Promise<void> {
@@ -130,10 +130,10 @@ export type PString = \`'\${string}'\`
 /**
  * Corresponding Publicodes situation with types inferred for each rule.
  *  
- *  @note
- *  This represents the situation as needed by the 'setSituation' method of the
- *  {@link Engine} class with raw values (i.e. string constants are enclosed in
- *  "''" and boolean values are 'oui' or 'non').
+ * @note
+ * This represents the situation as needed by the 'setSituation' method of the
+ * {@link Engine} class with raw values (i.e. string constants are enclosed in
+ * "''" and boolean values are 'oui' or 'non').
  */
 export type Situation = Partial<{
 ${serializedRuleTypes}
