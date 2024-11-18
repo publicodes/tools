@@ -5,6 +5,7 @@ import path from 'path'
 import fs from 'fs'
 import { getModelFromSource, GetModelFromSourceOptions } from '../compilation'
 import { RawRules } from '../commons'
+import { serializeParsedRules } from '../serializeParsedRules'
 import { exitWithError, runWithSpinner } from '../utils/cli'
 import { resolveRuleTypes, RuleType } from '../compilation/ruleTypes'
 import Engine from 'publicodes'
@@ -87,7 +88,11 @@ the package.json file under the \`publicodes\` key. For example:
 
     await this.generateDTS(engine, outputDir)
 
-    await generateBaseFiles(rawRules, outputDir, pkgName)
+    await generateBaseFiles(
+      serializeParsedRules(engine.getParsedRules()),
+      outputDir,
+      pkgName,
+    )
 
     p.outro('Compilation done.')
   }
