@@ -99,6 +99,13 @@ the package.json file under the \`publicodes\` key. For example:
       const serializedRuleTypes = typesEntries
         .map(([name, type]) => `  "${name}": ${serializeType(type)}`)
         .join(',\n')
+      const serializedRulesValue = typesEntries
+        .map(([name, type]) => {
+          const title = engine.getRule(name)?.rawNode?.titre
+          return `${title ? `  /** ${title} */\n` : ''}  "${name}": ${serializeJSType(type)}`
+        })
+        .join(',\n')
+      // TODO: could be little bit more optimized
       const serializedQuestionsRuleTypes = typesEntries
         .filter(([name]) => engine.getRule(name).rawNode.question)
         .map(([name, type]) => {
@@ -137,6 +144,14 @@ export type PString = \`'\${string}'\`
  */
 export type Situation = Partial<{
 ${serializedRuleTypes}
+}>
+
+/**
+ * Associates for each rule name its corresponding value type (in JavaScript
+* form) that will be returned by the {@link Engine.evaluate} method.
+ */
+export type RuleValue = Partial<{
+${serializedRulesValue}
 }>
 
 /**
