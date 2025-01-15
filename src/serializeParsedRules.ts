@@ -24,8 +24,14 @@ function serializeValue(node: ASTNode, needParens = false): SerializedRule {
           return node.nodeValue ? 'oui' : 'non'
         case 'string':
           return `'${node.nodeValue}'`
-        case 'number':
-          return Number(node.nodeValue)
+        case 'number': {
+          // @ts-ignore
+          if (node.unit) {
+            // @ts-ignore
+            return `${node.nodeValue} ${serializeUnit(node.unit)}`
+          }
+          return node.nodeValue as number
+        }
         default: {
           if (node.nodeValue === null) {
             return null

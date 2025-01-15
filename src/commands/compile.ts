@@ -55,6 +55,12 @@ the package.json file under the \`publicodes\` key. For example:
   ]
 
   static override flags = {
+    ignore: Flags.string({
+      char: 'i',
+      summary: 'Ignore files matching the specified glob pattern.',
+      multiple: true,
+    }),
+
     output: Flags.string({
       char: 'o',
       summary: 'Specify the output directory. Default is "./publicodes-build".',
@@ -70,6 +76,10 @@ the package.json file under the \`publicodes\` key. For example:
         ? // TODO: test with production package
           this.config.pjson?.publicodes?.files ?? ['src/']
         : argv
+
+    // TODO: refactor config management
+    const ignoredFiles: string[] =
+      this.config.pjson?.publicodes?.ignore ?? flags.ignore ?? []
 
     const outputDir = path.resolve(
       flags.output ??

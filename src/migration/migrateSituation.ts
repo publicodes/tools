@@ -1,4 +1,4 @@
-import { Evaluation, Situation } from 'publicodes'
+import { Evaluation, PublicodesExpression, Situation } from 'publicodes'
 import { getValueWithoutQuotes, RuleName } from '../commons'
 
 /**
@@ -93,7 +93,7 @@ export function migrateSituation(
  */
 function handleSpecialCases(
   rule: RuleName,
-  oldValue: Evaluation,
+  oldValue: PublicodesExpression,
   situation: Situation<RuleName>,
 ): void {
   // Special case, number store as a string, we have to convert it to a number
@@ -127,7 +127,7 @@ function handleSpecialCases(
 
 function updateKey(
   rule: RuleName,
-  oldValue: Evaluation,
+  oldValue: PublicodesExpression,
   situation: Situation<RuleName>,
   ruleToMigrate: RuleName | undefined,
 ): void {

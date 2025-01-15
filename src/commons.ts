@@ -5,7 +5,6 @@ import {
   ExprAST,
   reduceAST,
   ASTNode,
-  Evaluation,
   PublicodesExpression,
 } from 'publicodes'
 import yaml from 'yaml'
@@ -253,7 +252,7 @@ ${yaml.stringify(secondDef, { indent: 2 })}`,
  *
  * @returns The value without quotes if it is a string, null otherwise.
  */
-export function getValueWithoutQuotes(value: Evaluation) {
+export function getValueWithoutQuotes(value: PublicodesExpression) {
   if (
     typeof value !== 'string' ||
     !value.startsWith("'") ||
