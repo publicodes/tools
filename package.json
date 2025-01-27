@@ -1,15 +1,17 @@
 {
   "name": "@publicodes/tools",
-  "version": "1.3.0-2",
+  "version": "1.4.0",
   "description": "A CLI tool for Publicodes",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "publicodes-build/index.js",
   "bin": {
     "publicodes": "./bin/run.js"
   },
   "files": [
+    "publicodes-build",
     "dist",
-    "bin"
+    "bin",
+    "quick-doc"
   ],
   "exports": {
     ".": {
@@ -51,10 +53,12 @@
     "build": "tsup",
     "watch": "tsup --watch",
     "clean": "rm -rf dist docs",
-    "test": "vitest --globals",
+    "test": "vitest run --globals",
     "docs": "typedoc",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "compile": "publicodes compile",
+    "dev": "publicodes dev"
   },
   "engines": {
     "node": ">=17"
@@ -62,24 +66,34 @@
   "dependencies": {
     "@clack/prompts": "^0.7.0",
     "@oclif/core": "^4.0.23",
+    "@publicodes/react-ui": "^1.5.4",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^18.11.18",
     "chalk": "^5.3.0",
+    "chokidar": "^4.0.3",
     "glob": "^10.4.1",
     "path": "^0.12.7",
     "publicodes": "^1.6.1",
-    "yaml": "^2.4.5"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.3",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.11",
+    "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@oclif/test": "^4.0.9",
     "@types/jest": "^29.5.13",
+    "@types/react": "^19.0.8",
     "docdash": "^2.0.1",
-    "prettier": "^3.0.0",
+    "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
     "tsup": "^8.0.2",
     "typedoc": "^0.24.8",
     "typedoc-plugin-export-functions": "^1.0.0",
     "typescript": "^4.9.4",
-    "vitest": "^2.1.1"
+    "vitest": "^2.1.2"
   },
   "tsup": {
     "entry": [
@@ -106,5 +120,10 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
+  "types": "publicodes-build/index.d.ts",
+  "peerDependencies": {
+    "publicodes": "^1.5.1"
   }
 }

@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { DEFAULT_BUILD_DIR } from '../commons'
+import { execSync } from 'child_process'
 
 export type PackageJson = {
   name: string
@@ -49,10 +50,14 @@ export const basePackageJson: PackageJson = {
   files: [DEFAULT_BUILD_DIR],
   peerDependencies: {
     // TODO: how to get the latest version of publicodes?
-    publicodes: '^1.5.1',
+    publicodes: '^' + getLastVersion('publicodes'),
+  },
+  devDependencies: {
+    '@publicodes/tools': '^' + getLastVersion('@publicodes/tools'),
   },
   scripts: {
     compile: 'publicodes compile',
+    dev: 'publicodes dev',
   },
 }
 
@@ -61,5 +66,15 @@ export function readPackageJson(): PackageJson | undefined {
     return JSON.parse(fs.readFileSync('package.json', 'utf-8'))
   } catch (e) {
     return undefined
+  }
+}
+
+function getLastVersion(pkg: string): string {
+  try {
+    return execSync(`npm show ${pkg} version`, {
+      encoding: 'utf-8',
+    }).trim()
+  } catch (error) {
+    return 'latest'
   }
 }

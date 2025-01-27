@@ -1,5 +1,6 @@
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
+import { spawn } from 'child_process'
 import { setTimeout } from 'timers/promises'
 
 export type Spinner = {
@@ -65,4 +66,20 @@ export async function runAsyncWithSpinner<T>(
   const res = await fn(s)
   s.stop(stopMsg)
   return res
+}
+
+export function spawnAsync(command, ...args): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: 'ignore' })
+
+    child.on('error', reject)
+
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(`Command "${command}" failed with code ${code}`)
+      }
+    })
+  })
 }

@@ -1,7 +1,7 @@
 import { execSync } from 'child_process'
 import { CLIExecutor, runInDir } from '../cli-utils'
 import fs from 'fs'
-import { PackageJson } from '../../src/utils/pjson'
+import { basePackageJson, PackageJson } from '../../src/utils/pjson'
 import path from 'path'
 
 const cli = new CLIExecutor()
@@ -21,6 +21,10 @@ describe('publicodes init', () => {
       expect(packageJson).toMatchObject<PackageJson>(
         getExpectedBasePackageJson(cwd, packageJson),
       )
+
+      expect(
+        packageJson.devDependencies['@publicodes/tools'],
+      ).not.toBeUndefined()
 
       expect(fs.existsSync('node_modules')).toBe(true)
       expect(fs.existsSync('yarn.lock')).toBe(true)
@@ -43,6 +47,9 @@ describe('publicodes init', () => {
       expect(packageJson).toMatchObject<PackageJson>(
         getExpectedBasePackageJson(cwd, packageJson),
       )
+      expect(
+        packageJson.devDependencies['@publicodes/tools'],
+      ).not.toBeUndefined()
 
       expect(fs.existsSync('node_modules')).toBe(false)
       expect(fs.existsSync('yarn.lock')).toBe(false)
@@ -62,13 +69,8 @@ function getExpectedBasePackageJson(
     main: 'publicodes-build/index.js',
     types: 'publicodes-build/index.d.ts',
     files: ['publicodes-build'],
-    peerDependencies: {
-      publicodes: '^1.5.1',
-    },
-    devDependencies: {
-      '@publicodes/tools':
-        packageJson.devDependencies?.['@publicodes/tools'] ?? '',
-    },
+    peerDependencies: basePackageJson.peerDependencies,
+    devDependencies: basePackageJson.devDependencies,
     version: '1.0.0',
     description: '',
     author: '',

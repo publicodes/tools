@@ -1,20 +1,21 @@
-import fs, { appendFileSync } from 'fs'
-import path from 'path'
-import { execSync } from 'node:child_process'
-import { Command, Flags } from '@oclif/core'
 import * as p from '@clack/prompts'
+import { Command, Flags } from '@oclif/core'
 import chalk from 'chalk'
+import fs from 'fs'
+import { execSync } from 'node:child_process'
+import path from 'path'
 
+import { OptionFlag } from '@oclif/core/lib/interfaces'
+import { DEFAULT_BUILD_DIR } from '../commons'
 import {
   exitWithError,
   runAsyncWithSpinner,
   runWithSpinner,
+  spawnAsync,
   Spinner,
 } from '../utils/cli'
 import { basePackageJson, PackageJson, readPackageJson } from '../utils/pjson'
-import { OptionFlag } from '@oclif/core/lib/interfaces'
-import { spawn } from 'child_process'
-import { DEFAULT_BUILD_DIR } from '../commons'
+import { aw } from 'vitest/dist/chunks/reporters.D7Jzd9GS'
 
 type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
 type ExtraTool = 'gh-actions' | 'test'
@@ -112,7 +113,9 @@ installation.`,
     p.note(
       `${chalk.bold('You can now:')}
 - write your Publicodes rules in ${chalk.bold.yellow('.src/')}
-- compile them using: ${chalk.bold.yellow(`${pkgManager} run compile`)}`,
+- compile them using: ${chalk.bold.yellow(`${pkgManager} run compile`)}
+- explore them in browser with: ${chalk.bold.yellow(`${pkgManager} run dev`)}
+`,
       chalk.bold('Publicodes is ready to use 🚀'),
     )
 
@@ -152,8 +155,7 @@ installation.`,
     }
     pkgJSON.devDependencies = {
       ...pkgJSON.devDependencies,
-      // NOTE: to test with the packaged version
-      '@publicodes/tools': `^${this.config.pjson.version}`,
+      ...basePackageJson.devDependencies,
     }
     if (pkgJSON.name.startsWith('@')) {
       pkgJSON.publishConfig = { access: 'public' }
@@ -279,35 +281,19 @@ async function installDeps(pkgManager: PackageManager): Promise<void> {
   return runAsyncWithSpinner(
     'Installing dependencies',
     'Dependencies installed',
-    (spinner: Spinner) => {
-      return new Promise<void>((resolve) => {
-        const program = spawn(pkgManager, ['install'], {
-          stdio: 'ignore',
+    async (spinner: Spinner) => {
+      try {
+        await spawnAsync(pkgManager, 'install')
+      } catch (error) {
+        exitWithError({
+          ctx: 'An error occurred while installing dependencies',
+          msg: error,
+          spinner,
         })
-
-        program.on('error', (error) => {
-          exitWithError({
-            ctx: 'An error occurred while installing dependencies',
-            msg: error.message,
-            spinner,
-          })
-        })
-
-        program.on('close', (code) => {
-          if (code !== 0) {
-            exitWithError({
-              ctx: `An error occurred while installing dependencies (exec: ${pkgManager} install)`,
-              msg: `Process exited with code ${code}`,
-              spinner,
-            })
-          }
-          resolve()
-        })
-      })
+      }
     },
   )
 }
-
 async function generateBaseFiles(
   pjson: PackageJson,
   pkgManager: PackageManager,
@@ -354,6 +340,7 @@ async function generateBaseFiles(
       }
 
       fs.writeFileSync('test/salaire.test.ts', BASE_TEST_FILE)
+      fs.writeFileSync('test/salaire.publicodes', BASE_PUBLICODES_FILE)
     } catch (error) {
       exitWithError({
         ctx: 'An error occurred while generating files',
@@ -432,6 +419,8 @@ cotisations salariales:
     - taux
   avec:
     taux: 21.7%
+
+SMIC mensuel: 1802 €/mois
 `
 
 const BASE_TEST_FILE = `import Engine, { serializeEvaluation, serializeUnit } from "publicodes";
@@ -460,4 +449,18 @@ describe("Salaire net", () => {
     expect(serializeUnit(result.unit)).toBe("€/mois");
   });
 });
+`
+
+const BASE_PUBLICODES_FILE = `
+# Ce fichier contient des exemples de situations pour tester les règles
+# Pour le moment, il est uniquement utilisé par la commande "publicodes dev"
+
+salaire SMIC: 
+  contexte:
+    salaire brut: smic mensuel
+
+salaire médian cadre:
+  contexte:
+    salaire brut: 2600 €/mois
+    cotisations salariales . taux: 25%
 `
