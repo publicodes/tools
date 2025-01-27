@@ -9,11 +9,14 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "sourceMap": true,
-    "types": ["jest", "node"],
+    "types": ["vitest/globals", "node"],
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src"],
-  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"]
+  "include": ["src/**/*", "quick-doc"],
+  "exclude": ["./node_modules/", "./dist/", "./jest.config.js", "./test/"],
+  "ts-node": {
+    "esm": true
+  }
 }

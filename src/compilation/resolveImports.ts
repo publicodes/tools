@@ -1,4 +1,4 @@
-import Engine, { Rule, RuleNode, utils } from 'publicodes'
+import Engine, { Logger, Rule, RuleNode, utils } from 'publicodes'
 import {
   RuleName,
   getAllRefsInNode,
@@ -7,21 +7,30 @@ import {
   RuleImportWithOverridenAttrs,
   IMPORT_KEYWORD,
   getDoubleDefError,
+  DEFAULT_BUILD_DIR,
 } from '../commons'
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { dirname, join, basename } from 'path'
 
 /**
  * @param {string} packageName - The package name.
  *
  * @returns {string} The path to the package model in the node_modules folder.
+ *
+ * @note It tries to find the model in the `publicodes-build` folder first otherwise it looks for the model at the root of the package.
  */
-const packageModelPath = (packageName: string): string => {
+function getPackageModelPath(packageName: string): string {
   if (packageName.startsWith('@')) {
     const [scope, name] = packageName.split('/')
-    return `./node_modules/${scope}/${name}/${name}.model.json`
+    const publicodesBuildPath = `./node_modules/${scope}/${name}/${DEFAULT_BUILD_DIR}/${name}.model.json`
+    return existsSync(publicodesBuildPath)
+      ? publicodesBuildPath
+      : `./node_modules/${scope}/${name}/${name}.model.json`
   }
-  return `./node_modules/${packageName}/${packageName}.model.json`
+  const publicodesBuildPath = `./node_modules/${packageName}/${DEFAULT_BUILD_DIR}/${packageName}.model.json`
+  return existsSync(publicodesBuildPath)
+    ? publicodesBuildPath
+    : `./node_modules/${packageName}/${packageName}.model.json`
 }
 
 // Stores engines initialized with the rules from package
@@ -39,6 +48,7 @@ const enginesCache = {}
 function getEngine(
   filePath: string,
   { depuis }: ImportMacro,
+  logger: Logger,
   verbose: boolean,
 ): Engine {
   const packageName = depuis?.nom
@@ -67,7 +77,7 @@ importer!:
   const modelPath =
     depuis.source !== undefined
       ? join(fileDirPath, depuis.source)
-      : packageModelPath(packageName)
+      : getPackageModelPath(packageName)
 
   if (!enginesCache[modelPath]) {
     try {
@@ -76,12 +86,12 @@ importer!:
         logger: {
           log: (_) => {},
           warn: (_) => {},
-          error: (s) => console.error(s),
+          error: (s) => logger.error(s),
         },
       })
 
       if (verbose) {
-        console.debug(`📦 ${packageName} loaded`)
+        logger.log(`📦 ${packageName} loaded`)
       }
       enginesCache[modelPath] = engine
     } catch (e) {
@@ -227,13 +237,14 @@ function getNamespace({ dans, depuis: { nom } }: ImportMacro): string {
 export function resolveImports(
   filePath: string,
   rules: RawRules,
+  logger: Logger,
   verbose = false,
 ): { completeRules: RawRules; neededNamespaces: Set<string> } {
   let neededNamespaces = new Set<string>()
   const resolvedRules = Object.entries(rules).reduce((acc, [name, value]) => {
     if (name === IMPORT_KEYWORD) {
       const importMacro = value as ImportMacro
-      const engine = getEngine(filePath, importMacro, verbose)
+      const engine = getEngine(filePath, importMacro, logger, verbose)
       const rulesToImport: RuleToImport[] =
         importMacro['les règles']?.map(getRuleToImportInfos)
       const namespace = getNamespace(importMacro)

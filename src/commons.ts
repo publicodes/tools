@@ -5,7 +5,7 @@ import {
   ExprAST,
   reduceAST,
   ASTNode,
-  Evaluation,
+  PublicodesExpression,
 } from 'publicodes'
 import yaml from 'yaml'
 
@@ -66,7 +66,11 @@ export type ImportMacro = {
 /**
  * Represents a non-parsed NGC rule.
  */
-export type RawRule = Omit<Rule, 'nom'> | ImportMacro
+export type RawRule =
+  | Omit<Rule, 'nom'>
+  | ImportMacro
+  | PublicodesExpression
+  | null
 
 /**
  * Represents a non-parsed NGC model.
@@ -225,8 +229,8 @@ export function substituteInParsedExpr(
 export function getDoubleDefError(
   filePath: string,
   name: string,
-  firstDef: object,
-  secondDef: object,
+  firstDef: RawRule,
+  secondDef: RawRule,
 ): Error {
   return new Error(
     `[${basename(filePath)}] La règle '${name}' est déjà définie
@@ -248,7 +252,7 @@ ${yaml.stringify(secondDef, { indent: 2 })}`,
  *
  * @returns The value without quotes if it is a string, null otherwise.
  */
-export function getValueWithoutQuotes(value: Evaluation) {
+export function getValueWithoutQuotes(value: PublicodesExpression) {
   if (
     typeof value !== 'string' ||
     !value.startsWith("'") ||
@@ -259,3 +263,7 @@ export function getValueWithoutQuotes(value: Evaluation) {
   }
   return value.slice(1, -1)
 }
+
+/** Used by the CLI */
+
+export const DEFAULT_BUILD_DIR = 'publicodes-build'

@@ -6,6 +6,7 @@ import Engine, {
   Unit,
   EvaluatedNode,
   utils,
+  Evaluation,
 } from 'publicodes'
 import type { RuleNode, ASTNode } from 'publicodes'
 import { RuleName } from '../commons'
@@ -271,10 +272,10 @@ function updateRefCounting(
 
 function replaceRuleWithEvaluatedNodeValue(
   rule: RuleNode,
-  nodeValue: number | boolean | string | Record<string, unknown>,
+  nodeValue: Evaluation,
   unit: Unit | undefined,
-): ASTNode {
-  const constantNode: ASTNode = {
+): EvaluatedNode<'constant'> {
+  const constantNode: EvaluatedNode<'constant'> = {
     nodeValue,
     type:
       typeof nodeValue === 'number'
@@ -287,19 +288,12 @@ function replaceRuleWithEvaluatedNodeValue(
 
     nodeKind: 'constant',
     missingVariables: {},
+    unit,
     rawNode: {
       valeur: nodeValue,
     },
     isNullable: false,
   }
-  const explanationThen: ASTNode =
-    unit !== undefined
-      ? {
-          nodeKind: 'unité',
-          unit,
-          explanation: constantNode,
-        }
-      : constantNode
 
   if (rule.explanation.valeur.nodeKind === 'contexte') {
     // We remove the contexte as it's now considered as a constant.
@@ -316,14 +310,14 @@ function replaceRuleWithEvaluatedNodeValue(
          * - alors: <rule>
          * - sinon: <rule> . $SITUATION
          */
-        node.explanation.alors = explanationThen
+        node.explanation.alors = constantNode
         return node
       }
     }),
     rule,
   )
 
-  return explanationThen
+  return constantNode
 }
 
 function isNullable(node: ASTNode): boolean {

@@ -10,6 +10,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           cache: yarn
+      - uses: oven-sh/setup-bun@v2
+
       - run: yarn install --immutable
 
       - name: Build package
@@ -20,3 +22,6 @@ jobs:
 
       - name: Check file formatting
         run: yarn format:check
+
+      - name: pkg.pr.new
+        run: npx pkg-pr-new publish

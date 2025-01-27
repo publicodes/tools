@@ -2,7 +2,7 @@ import Engine, { RuleNode } from 'publicodes'
 import { serializeParsedRules } from '../../src'
 import { RuleName, RawRules, disabledLogger } from '../../src/commons'
 import { constantFolding } from '../../src/optims/'
-import { callWithEngine } from '../utils.test'
+import { callWithEngine } from '../utils'
 
 function constantFoldingWith(rawRules: any, targets?: RuleName[]): RawRules {
   const res = callWithEngine(
