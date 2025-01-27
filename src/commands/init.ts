@@ -14,6 +14,7 @@ import {
 import { basePackageJson, PackageJson, readPackageJson } from '../utils/pjson'
 import { OptionFlag } from '@oclif/core/lib/interfaces'
 import { spawn } from 'child_process'
+import { DEFAULT_BUILD_DIR } from '../commons'
 
 type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun'
 type ExtraTool = 'gh-actions' | 'test'
@@ -434,7 +435,8 @@ cotisations salariales:
 `
 
 const BASE_TEST_FILE = `import Engine, { serializeEvaluation, serializeUnit } from "publicodes";
-import rules from "../build";
+import { describe, expect, test } from "vitest";
+import rules from "../${DEFAULT_BUILD_DIR}/index.js";
 
 describe("Salaire net", () => {
   test("salaire brut par défaut", () => {

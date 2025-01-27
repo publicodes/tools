@@ -59,9 +59,9 @@ function getExpectedBasePackageJson(
   return {
     name: path.basename(cwd),
     type: 'module',
-    main: 'build/index.js',
-    types: 'build/index.d.ts',
-    files: ['build'],
+    main: 'publicodes-build/index.js',
+    types: 'publicodes-build/index.d.ts',
+    files: ['publicodes-build'],
     peerDependencies: {
       publicodes: '^1.5.1',
     },

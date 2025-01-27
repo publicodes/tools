@@ -4,7 +4,7 @@ import chalk from 'chalk'
 import path from 'path'
 import fs from 'fs'
 import { getModelFromSource, GetModelFromSourceOptions } from '../compilation'
-import { RawRules } from '../commons'
+import { DEFAULT_BUILD_DIR, RawRules } from '../commons'
 import { serializeParsedRules } from '../serializeParsedRules'
 import { exitWithError, runWithSpinner } from '../utils/cli'
 import { resolveRuleTypes, RuleType } from '../compilation/ruleTypes'
@@ -32,7 +32,7 @@ the package.json file under the \`publicodes\` key. For example:
       // ...
       "publicodes": {
         "files": ["src/"],
-        "output": "build"
+        "output": "${DEFAULT_BUILD_DIR}",
       }
     }
 `
@@ -40,7 +40,7 @@ the package.json file under the \`publicodes\` key. For example:
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: `Compile all publicodes files in the src/ directory into the build/ directory.`,
+      description: `Compile all publicodes files in the src/ directory into the ${DEFAULT_BUILD_DIR}/ directory.`,
     },
     {
       command: '<%= config.bin %> <%= command.id %> src/**/*.publicodes',
@@ -63,7 +63,7 @@ the package.json file under the \`publicodes\` key. For example:
 
     output: Flags.string({
       char: 'o',
-      summary: 'Specify the output directory. Default is "./publicodes-build".',
+      summary: `Specify the output directory. Default is "./${DEFAULT_BUILD_DIR}".`,
     }),
   }
 
@@ -84,7 +84,7 @@ the package.json file under the \`publicodes\` key. For example:
     const outputDir = path.resolve(
       flags.output ??
         this.config.pjson?.publicodes?.output ??
-        'publicodes-build',
+        DEFAULT_BUILD_DIR,
     )
 
     const rawRules = await parseFiles(filesToCompile, { verbose: false })

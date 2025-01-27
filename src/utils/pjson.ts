@@ -1,4 +1,5 @@
 import fs from 'fs'
+import { DEFAULT_BUILD_DIR } from '../commons'
 
 export type PackageJson = {
   name: string
@@ -42,10 +43,10 @@ export const basePackageJson: PackageJson = {
   description: '',
   author: '',
   type: 'module',
-  main: 'build/index.js',
-  types: 'build/index.d.ts',
+  main: `${DEFAULT_BUILD_DIR}/index.js`,
+  types: `${DEFAULT_BUILD_DIR}/index.d.ts`,
   license: 'MIT',
-  files: ['build'],
+  files: [DEFAULT_BUILD_DIR],
   peerDependencies: {
     // TODO: how to get the latest version of publicodes?
     publicodes: '^1.5.1',

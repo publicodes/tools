@@ -263,3 +263,7 @@ export function getValueWithoutQuotes(value: PublicodesExpression) {
   }
   return value.slice(1, -1)
 }
+
+/** Used by the CLI */
+
+export const DEFAULT_BUILD_DIR = 'publicodes-build'
