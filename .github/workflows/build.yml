@@ -22,3 +22,6 @@ jobs:
 
       - name: Check file formatting
         run: yarn format:check
+
+      - name: pkg.pr.new
+        run: npx pkg-pr-new publish
