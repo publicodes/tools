@@ -7,21 +7,30 @@ import {
   RuleImportWithOverridenAttrs,
   IMPORT_KEYWORD,
   getDoubleDefError,
+  DEFAULT_BUILD_DIR,
 } from '../commons'
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { dirname, join, basename } from 'path'
 
 /**
  * @param {string} packageName - The package name.
  *
  * @returns {string} The path to the package model in the node_modules folder.
+ *
+ * @note It tries to find the model in the `publicodes-build` folder first otherwise it looks for the model at the root of the package.
  */
-const packageModelPath = (packageName: string): string => {
+function getPackageModelPath(packageName: string): string {
   if (packageName.startsWith('@')) {
     const [scope, name] = packageName.split('/')
-    return `./node_modules/${scope}/${name}/${name}.model.json`
+    const publicodesBuildPath = `./node_modules/${scope}/${name}/${DEFAULT_BUILD_DIR}/${name}.model.json`
+    return existsSync(publicodesBuildPath)
+      ? publicodesBuildPath
+      : `./node_modules/${scope}/${name}/${name}.model.json`
   }
-  return `./node_modules/${packageName}/${packageName}.model.json`
+  const publicodesBuildPath = `./node_modules/${packageName}/${DEFAULT_BUILD_DIR}/${packageName}.model.json`
+  return existsSync(publicodesBuildPath)
+    ? publicodesBuildPath
+    : `./node_modules/${packageName}/${packageName}.model.json`
 }
 
 // Stores engines initialized with the rules from package
@@ -68,7 +77,7 @@ importer!:
   const modelPath =
     depuis.source !== undefined
       ? join(fileDirPath, depuis.source)
-      : packageModelPath(packageName)
+      : getPackageModelPath(packageName)
 
   if (!enginesCache[modelPath]) {
     try {
