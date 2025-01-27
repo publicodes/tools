@@ -48,19 +48,9 @@ export function getModelFromSource(
   sourcePaths: string | string[],
   opts?: GetModelFromSourceOptions,
 ): RawRules {
-  const normalizedSourcePathsOrGlobs = (
-    Array.isArray(sourcePaths) ? sourcePaths : [sourcePaths]
-  ).map((pathOrGlob) => {
-    try {
-      if (statSync(pathOrGlob).isDirectory()) {
-        return pathOrGlob + '/**/*.publicodes'
-      }
-    } catch (e) {}
-    return pathOrGlob
-  })
   const logger = opts?.logger ?? console
 
-  const { jsonModel, namespaces } = sync(normalizedSourcePathsOrGlobs, {
+  const { jsonModel, namespaces } = sync(normalizeSourcePaths(sourcePaths), {
     ignore: opts?.ignore,
   }).reduce(
     ({ jsonModel, namespaces }, filePath: string) => {
@@ -91,4 +81,17 @@ export function getModelFromSource(
   })
 
   return jsonModel
+}
+
+export function normalizeSourcePaths(sourcePaths: string | string[]): string[] {
+  return (Array.isArray(sourcePaths) ? sourcePaths : [sourcePaths]).map(
+    (pathOrGlob) => {
+      try {
+        if (statSync(pathOrGlob).isDirectory()) {
+          return pathOrGlob + '/**/*.publicodes'
+        }
+      } catch (e) {}
+      return pathOrGlob
+    },
+  )
 }

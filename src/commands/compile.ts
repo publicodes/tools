@@ -74,7 +74,7 @@ the package.json file under the \`publicodes\` key. For example:
     const filesToCompile: string[] =
       argv.length === 0
         ? // TODO: test with production package
-          this.config.pjson?.publicodes?.files ?? ['src/']
+          (this.config.pjson?.publicodes?.files ?? ['src/'])
         : argv
 
     // TODO: refactor config management
