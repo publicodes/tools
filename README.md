@@ -1,3 +1,5 @@
+## This package has been moved to the [publicodes repository](https://github.com/publicodes/publicodes/tree/master/packages/tools)
+
 <div align="center">
   <h3 align="center">
 	<big><code>@publicodes/tools</code></big>
